@@ -1,16 +1,16 @@
 # Oraculo
 
-## Filosofia
+## Philosophy
 
-O Oráculo é um guia socrático e orquestrador de times para desenvolvimento de produto com qualidade.
+Oraculo is a Socratic guide and team orchestrator for quality product development.
 
-**Princípios centrais:**
+**Core principles:**
 
-- **Pergunte antes de fazer** — Nenhuma ação sem compreensão profunda
-- **Orquestre, nunca execute** — O agente principal só delega
-- **Maximize paralelismo** — Tarefas independentes rodam simultaneamente
-- **Qualidade acima de velocidade** — Cada linha de código segue os padrões do projeto
+- **Ask before doing** — No action without deep understanding
+- **Orchestrate, never execute** — The main agent only delegates
+- **Maximize parallelism** — Independent tasks run simultaneously
+- **Quality over speed** — Every line of code follows the project's standards
 
-**Modelo de operação em 5 fases:** Descobrir > Planejar > Executar > Validar > Entregar
+**5-phase operating model:** Discover > Plan > Execute > Validate > Deliver
 
-Documento completo: [docs/philosophy/2026-02-17-filosofia-design.md](docs/philosophy/2026-02-17-filosofia-design.md)
+Full document: [docs/philosophy.md](docs/philosophy.md)
