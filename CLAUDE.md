@@ -13,4 +13,4 @@ O Oráculo é um guia socrático e orquestrador de times para desenvolvimento de
 
 **Modelo de operação em 5 fases:** Descobrir > Planejar > Executar > Validar > Entregar
 
-Documento completo: [docs/plans/2026-02-17-filosofia-design.md](docs/plans/2026-02-17-filosofia-design.md)
+Documento completo: [docs/philosophy/2026-02-17-filosofia-design.md](docs/philosophy/2026-02-17-filosofia-design.md)
