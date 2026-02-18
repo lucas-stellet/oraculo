@@ -1,12 +1,25 @@
-# Brainstorming Phase — System Design
+# Epic Phase — System Design
 
 ## 1. Session Structure
 
-The Brainstorming phase follows a structured flow with two macro-movements: **Diverge** (expand the problem space) then **Converge** (narrow to a validated definition). Oraculo progresses through seven steps, advancing only when each step's exit condition is satisfied.
+The Epic phase follows a structured flow with two macro-movements: **Diverge** (expand the problem space) then **Converge** (narrow to a validated definition). Oraculo progresses through eight phases, advancing only when each phase's exit condition is satisfied.
 
-### 1.1 Entry — Reframing
+### 1.0 Entry — Session Setup & Triage
 
-The user arrives with an idea. Oraculo separates the problem from any proposed solution before proceeding.
+The user arrives with an idea. Oraculo captures the raw idea, detects reasoning level, and confirms this is epic-sized work.
+
+**Triage signals for epic scope:**
+- Involves more than one area or discipline
+- Has parts that could be delivered independently
+- Significant uncertainties about how to solve it
+
+If the work appears small and focused, Oraculo suggests `/oraculo:story` instead.
+
+**Exit condition:** Raw idea captured, reasoning level determined internally, epic-sized scope confirmed.
+
+### 1.1 Reframing
+
+Oraculo separates the problem from any proposed solution before proceeding.
 
 **Trigger questions:**
 - "You described what you want to build. What problem does this solve for the user?"
@@ -47,12 +60,10 @@ While the dialogue progresses, Oraculo dispatches sub-agents to analyze the exis
 - Architectural patterns the new feature must respect
 - Tests that cover related behavior (potential breakage points)
 - Technical constraints that limit or enable specific approaches
-- Past decisions recorded in SQLite that relate to this domain
 
 **How results enter the conversation:**
 - "The analysis found that [component X] already handles a similar case. Do you want to build on that or create something independent? Why?"
 - "There's an edge case in [area Y] that the current code explicitly handles. How does your idea behave in that scenario?"
-- "A previous decision rejected [approach Z] for [reason]. Does that reasoning still apply?"
 
 **Timing:** Codebase analysis is triggered at the start of Divergence (step 1.2). Results are introduced into the dialogue as they become available — during Divergence if ready early, or during Convergence if analysis takes longer.
 
@@ -83,8 +94,6 @@ Each assumption is evaluated on two axes:
 - **Impact** (1-5): if wrong, how badly does it break the idea?
 - **Evidence** (1-5): how much data supports this? (1 = pure intuition, 5 = validated data)
 - **Risk score** = Impact × (6 - Evidence). Higher score = higher priority.
-
-Assumptions are recorded in SQLite with status "unvalidated." Oraculo explicitly states: "I'm recording this as an unvalidated assumption. Do you have any evidence that already confirms part of this?"
 
 **Exit condition:** All assumptions with risk score above threshold are acknowledged by the user. Each critical assumption (high impact, low evidence) has either supporting evidence or is flagged as a known risk for the Plan phase.
 
@@ -118,9 +127,13 @@ The final checkpoint before advancing to Plan. Oraculo evaluates four risk dimen
 
 Only when all four risks are addressed does the session produce its final artifacts and hand off to Plan.
 
+### 1.8 Artifact Generation
+
+Oraculo generates the Requirements Document and saves it to `.oraculo/projects/<project-name>/epic.md`. After presenting the document, it suggests decomposing the epic into stories with `/oraculo:story`.
+
 ## 2. Output Artifacts
 
-The Brainstorming phase produces four structured artifacts that feed directly into the Plan phase.
+The Epic phase produces structured artifacts that feed directly into stories and the Plan phase.
 
 ### 2.1 Job Stories
 
@@ -128,11 +141,11 @@ One or more Job Stories in the format:
 
 > "When [specific situation/context], I want [motivation/job to be done], so I can [expected measurable outcome]."
 
-Job Stories become the input for task decomposition in the Plan phase. Each task in the DAG must trace back to a Job Story.
+Job Stories become the input for story decomposition. Each story must trace back to a Job Story or REC-N.
 
 ### 2.2 Opportunity Solution Tree (OST)
 
-A structured tree persisted in SQLite:
+A structured tree:
 
 ```
 Outcome (business metric / user behavior)
@@ -140,8 +153,6 @@ Outcome (business metric / user behavior)
         └── Solution (proposed approach)
               └── Assumption (hypothesis + validation criteria)
 ```
-
-The tree grows across sessions. When the user returns with a new idea, Oraculo queries existing opportunities: "In a previous session, we identified opportunity X linked to outcome Y. Does this new idea address the same opportunity or a new one?"
 
 ### 2.3 Assumption Register
 
@@ -152,7 +163,7 @@ A prioritized list of assumptions with:
 - Status: unvalidated / validated / refuted
 - Associated evidence (if any)
 
-Critical assumptions (high risk) become explicit inputs for the Plan phase — they may generate validation tasks before any implementation begins.
+Critical assumptions (high risk) become explicit inputs for the Plan phase.
 
 ### 2.4 Codebase Impact Summary
 
@@ -160,72 +171,81 @@ Results from sub-agent analysis, recorded as:
 - Existing components that relate to the idea
 - Architectural constraints identified
 - Edge cases from current code that the new feature must handle
-- Past decisions from SQLite that are relevant
+
+### 2.5 Requirements Document
+
+The primary output — a 9-section document saved to `.oraculo/projects/<project-name>/epic.md`. Each REC-N requirement is a candidate for decomposition into stories.
 
 ## 3. Scaling with Complexity
 
-Oraculo selects the brainstorming depth based on the idea's characteristics at entry.
+Oraculo selects the exploration depth based on the idea's characteristics at entry. The Epic phase uses only two complexity levels:
 
-### 3.1 Minimal Brainstorming
-
-**When:** The user describes a small, well-scoped change to existing behavior. The problem is clear and the solution space is narrow.
-
-**Flow:** Reframing (1.1) → basic assumption check (1.5) → Exit Gate (1.7). Typically 3-5 questions. The exit gate still applies — all four risks must be addressed even for small changes.
-
-### 3.2 Standard Brainstorming
+### 3.1 Standard Epic
 
 **When:** The user describes a new feature or a significant change to existing functionality. The problem needs exploration but the domain is understood.
 
-**Flow:** Full sequence — Reframing → Divergence → Codebase Analysis → Convergence → Assumption Mapping → Stress Test → Exit Gate.
+**Flow:** Full sequence — Session Setup → Reframing → Divergence → Codebase Analysis → Convergence → Assumption Mapping → Stress Test → Exit Gate → Artifact Generation.
 
-### 3.3 Deep Brainstorming
+### 3.2 Deep Epic
 
 **When:** The idea is vague, ambitious, cross-cutting, or the user cannot clearly articulate the problem even after initial reframing.
 
 **Flow:** Full sequence with parallel sub-agents exploring multiple angles simultaneously:
 - Agent analyzing codebase impact across multiple domains
 - Agent exploring technical feasibility of different approaches
-- Agent reviewing past decisions and related features in SQLite
+- Agent reviewing related past patterns and conventions
 
 Results are consolidated and fed back into the dialogue, enabling richer questioning grounded in evidence.
 
-### 3.4 Complexity Selection Criteria
+## 4. Reasoning Levels
 
-Oraculo evaluates at entry:
+The Epic phase operates at two reasoning levels that share the same Socratic discipline but differ in domain of inquiry.
 
-| Signal | Minimal | Standard | Deep |
-|--------|---------|----------|------|
-| User can state the problem clearly | Yes | Partially | No |
-| Solution space is narrow | Yes | Moderate | Wide or unknown |
-| Affected codebase area | Single component | Multiple components | Cross-cutting |
-| Past decisions exist in SQLite | None relevant | Some relevant | Many relevant or contradictory |
+### 4.1 Light Reasoning (Executor/Developer)
 
-## 4. Integration with Oraculo's Operating Model
+- Received a task from someone else
+- Technical expertise, limited product context
+- Focuses on: understanding task, technical risks, edge cases
+- Codebase Analysis is the **center of gravity**
+- Escalates to PM on product context gaps
 
-### 4.1 Relationship with Plan Phase
+### 4.2 Deep Reasoning (Decision-Maker/PM)
 
-The Brainstorming phase produces the requirements document referenced in the main design:
-- Job Stories define **what** needs to happen
-- The OST provides **why** (connected to outcomes)
-- The Assumption Register defines **what must be validated first**
-- The Codebase Impact Summary defines **constraints** for the DAG
+- Exploring idea they identified
+- Has user data, business metrics, strategic vision
+- Focuses on: user behavior, business impact, technical feasibility
+- Uses full framework toolkit (JTBD, Four Forces, PR/FAQ, OST)
+- Answers all gate questions autonomously
 
-The Plan phase receives these artifacts and decomposes them into a task DAG. No task enters the DAG without traceability to a Job Story and an Outcome.
+### 4.3 Selection Signals
 
-### 4.2 Entry Point
+| Signal | Light | Deep |
+|--------|-------|------|
+| User describes a task received from someone else | Yes | — |
+| User describes an idea or problem they identified | — | Yes |
+| User has business metrics or user data to share | — | Yes |
+| User focuses on implementation approach | Yes | — |
+| User's role is primarily technical | Yes | — |
+| User's role involves product decisions | — | Yes |
 
-The Brainstorming phase is invoked via `/oraculo:brainstorm`. Any team member can start it — Product, Development, or anyone with an idea. Oraculo adapts the depth and language to the user's context.
+### 4.4 Complexity × Reasoning Matrix
 
-### 4.3 Persistence in SQLite
+|  | Standard | Deep Complexity |
+|--|----------|-----------------|
+| **Light** | Full Light flow with all phases. Codebase Analysis is center of gravity. No business questions. | Full Light flow with parallel sub-agents analyzing codebase across multiple domains. Long session, no business questions. |
+| **Deep** | Full flow — all frameworks, all questions, all gates. | Full flow with parallel sub-agents. Maximum duration and depth across all dimensions. |
 
-Everything from the Brainstorming phase is recorded:
-- The raw idea as originally stated
-- The reframed problem
-- All questions asked and answers given
-- The OST built during the session
-- Assumptions with their risk scores and status
-- Codebase analysis results
-- The exit gate evaluation
-- The final Job Stories
+## 5. Integration with Stories
 
-This enables continuity across sessions and team members. Any team member can query SQLite to understand the full reasoning behind the requirements — not just what was decided, but why, and what was explicitly rejected.
+The Epic phase produces a Requirements Document with REC-N items. To implement:
+
+1. Invoke `/oraculo:story <project-name>`
+2. The Story skill reads `.oraculo/projects/<project-name>/epic.md`
+3. The user selects which REC-N to work on
+4. The Story skill runs a focused session to produce an executable story definition
+
+Each REC-N can generate one or more stories depending on its scope.
+
+## 6. Output Path
+
+All epic artifacts are saved to `.oraculo/projects/<project-name>/epic.md` inside the target application. The project name is derived from the idea's domain or explicitly asked from the user during artifact generation.

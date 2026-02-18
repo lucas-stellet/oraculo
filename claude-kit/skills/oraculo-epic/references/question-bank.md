@@ -1,6 +1,18 @@
 # Question Bank
 
-All questions organized by phase and reasoning level. Referenced by the main brainstorm skill.
+All questions organized by phase and reasoning level. Referenced by the main epic skill.
+
+---
+
+## 0. Triage
+
+### Epic scope confirmation
+
+- "Does this involve more than one area or discipline?"
+- "Are there parts that could be delivered independently?"
+- "Are there significant uncertainties about how to solve this?"
+
+If answers suggest small, focused, well-understood work → suggest `/oraculo:story` instead.
 
 ---
 

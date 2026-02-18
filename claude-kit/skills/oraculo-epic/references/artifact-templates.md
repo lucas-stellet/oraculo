@@ -1,6 +1,6 @@
 # Artifact Templates
 
-Exact output formats for the Brainstorming phase. Each artifact adapts to the reasoning level (Light/Deep).
+Exact output formats for the Epic phase. Each artifact adapts to the reasoning level (Light/Deep).
 
 ---
 
@@ -141,7 +141,7 @@ Generated when the Exit Gate identifies gaps the developer cannot fill.
 ```markdown
 ### Questions for PM
 
-Context: During brainstorming for "[task description]", the following gaps
+Context: During epic exploration for "[task description]", the following gaps
 were identified that require product context to resolve.
 
 1. **[Risk dimension]:** [specific question with context from the session]
@@ -150,7 +150,7 @@ were identified that require product context to resolve.
 2. **[Risk dimension]:** [specific question]
    - Why it matters: [what is blocked]
 
-Session reference: [link or identifier to the brainstorming session]
+Session reference: [link or identifier to the session]
 ```
 
 The Exit Gate remains open until these questions are answered or the team explicitly accepts the risk.

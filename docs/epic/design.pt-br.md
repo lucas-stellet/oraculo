@@ -1,12 +1,25 @@
-# Fase de Brainstorming — Design do Sistema
+# Fase Epic — Design do Sistema
 
 ## 1. Estrutura da Sessão
 
-A fase de Brainstorming segue um fluxo estruturado com dois macro-movimentos: **Divergir** (expandir o espaço do problema) e depois **Convergir** (estreitar para uma definição validada). O Oraculo avança por sete etapas, progredindo apenas quando a condição de saída de cada etapa é satisfeita.
+A fase Epic segue um fluxo estruturado com dois macro-movimentos: **Divergir** (expandir o espaço do problema) e depois **Convergir** (estreitar para uma definição validada). O Oraculo avança por oito fases, progredindo apenas quando a condição de saída de cada fase é satisfeita.
 
-### 1.1 Entrada — Reenquadramento
+### 1.0 Entrada — Setup da Sessão & Triagem
 
-O usuário chega com uma ideia. O Oraculo separa o problema de qualquer solução proposta antes de prosseguir.
+O usuário chega com uma ideia. O Oraculo captura a ideia crua, detecta o nível de reasoning e confirma que é um trabalho do tamanho de um epic.
+
+**Sinais de triagem para escopo epic:**
+- Envolve mais de uma área ou disciplina
+- Tem partes que poderiam ser entregues independentemente
+- Há incertezas significativas sobre como resolver
+
+Se o trabalho parece pequeno e focado, o Oraculo sugere `/oraculo:story` no lugar.
+
+**Condição de saída:** Ideia crua capturada, nível de reasoning determinado internamente, escopo de epic confirmado.
+
+### 1.1 Reenquadramento
+
+O Oraculo separa o problema de qualquer solução proposta antes de prosseguir.
 
 **Perguntas de gatilho:**
 - "Você descreveu o que quer construir. Que problema isso resolve para o usuário?"
@@ -47,12 +60,10 @@ Enquanto o diálogo avança, o Oraculo dispara sub-agentes para analisar a base 
 - Padrões arquiteturais que a nova feature deve respeitar
 - Testes que cobrem comportamento relacionado (pontos potenciais de quebra)
 - Restrições técnicas que limitam ou habilitam abordagens específicas
-- Decisões passadas registradas no SQLite que se relacionam com este domínio
 
 **Como os resultados entram na conversa:**
 - "A análise encontrou que [componente X] já trata um caso similar. Você quer construir sobre isso ou criar algo independente? Por quê?"
 - "Há um edge case em [área Y] que o código atual trata explicitamente. Como sua ideia se comporta nesse cenário?"
-- "Uma decisão anterior rejeitou [abordagem Z] por [motivo]. Esse raciocínio ainda se aplica?"
 
 **Timing:** A análise da codebase é disparada no início da Divergência (etapa 1.2). Resultados são introduzidos no diálogo conforme ficam disponíveis — durante a Divergência se prontos cedo, ou durante a Convergência se a análise demorar mais.
 
@@ -84,8 +95,6 @@ Cada premissa é avaliada em dois eixos:
 - **Evidência** (1-5): quantos dados suportam isso? (1 = intuição pura, 5 = dados validados)
 - **Score de risco** = Impacto × (6 - Evidência). Score maior = prioridade maior.
 
-Premissas são registradas no SQLite com status "não validada". O Oraculo declara explicitamente: "Estou registrando isso como premissa não validada. Você tem alguma evidência que já confirme parte disso?"
-
 **Condição de saída:** Todas as premissas com score de risco acima do limiar foram reconhecidas pelo usuário. Cada premissa crítica (alto impacto, baixa evidência) tem evidência de suporte ou está sinalizada como risco conhecido para a fase de Plan.
 
 ### 1.6 Stress Test — Working Backwards
@@ -98,7 +107,7 @@ O Oraculo roda um PR/FAQ simplificado para testar se a ideia tem clareza suficie
 - "Qual seria a principal objeção da engenharia?"
 - "Como você mediria sucesso três meses após o lançamento?"
 
-**Condição de saída:** O usuário consegue responder todas as quatro perguntas sem hesitação significativa ou contradição com respostas anteriores. Se o usuário tiver dificuldade, o Oraculo identifica qual lacuna existe e volta à etapa que a endereça (tipicamente 1.2 ou 1.4).
+**Condição de saída:** O usuário consegue responder todas as quatro perguntas sem hesitação significativa ou contradição com respostas anteriores.
 
 ### 1.7 Portão de Saída
 
@@ -110,17 +119,15 @@ O checkpoint final antes de avançar para o Plan. O Oraculo avalia quatro dimens
 3. **Viabilidade técnica** — A análise da codebase confirmou viabilidade (ou sinalizou riscos conhecidos)?
 4. **Viabilidade de negócio** — As métricas de sucesso estão definidas e o impacto no negócio é compreendido?
 
-**Comportamento do portão:** O Oraculo avalia cada risco e apresenta a avaliação ao usuário. Se qualquer risco estiver sem resposta, o Oraculo identifica a lacuna específica e redireciona para a etapa apropriada:
-- Lacuna de valor → retorna a 1.2 (Divergência)
-- Lacuna de usabilidade → retorna a 1.2 (Exploração de edge cases)
-- Lacuna de viabilidade técnica → retorna a 1.3 (Análise da Codebase)
-- Lacuna de viabilidade de negócio → retorna a 1.4 (Convergência)
+**Comportamento do portão:** O Oraculo avalia cada risco e apresenta a avaliação ao usuário. Se qualquer risco estiver sem resposta, o Oraculo identifica a lacuna específica e redireciona para a etapa apropriada.
 
-Somente quando todos os quatro riscos estão endereçados a sessão produz seus artefatos finais e faz handoff para o Plan.
+### 1.8 Geração de Artefatos
+
+O Oraculo gera o Documento de Requisitos e salva em `.oraculo/projects/<nome-projeto>/epic.md`. Após apresentar o documento, sugere decompor o epic em stories com `/oraculo:story`.
 
 ## 2. Artefatos de Saída
 
-A fase de Brainstorming produz quatro artefatos estruturados que alimentam diretamente a fase de Plan.
+A fase Epic produz artefatos estruturados que alimentam stories e a fase de Plan.
 
 ### 2.1 Job Stories
 
@@ -128,11 +135,9 @@ Uma ou mais Job Stories no formato:
 
 > "Quando [situação/contexto específico], eu quero [motivação/trabalho a ser feito], para que eu possa [resultado esperado mensurável]."
 
-Job Stories se tornam o input para decomposição de tarefas na fase de Plan. Cada tarefa no DAG deve rastrear de volta a uma Job Story.
-
 ### 2.2 Opportunity Solution Tree (OST)
 
-Uma árvore estruturada persistida no SQLite:
+Uma árvore estruturada:
 
 ```
 Outcome (métrica de negócio / comportamento do usuário)
@@ -141,91 +146,83 @@ Outcome (métrica de negócio / comportamento do usuário)
               └── Premissa (hipótese + critério de validação)
 ```
 
-A árvore cresce entre sessões. Quando o usuário retorna com uma nova ideia, o Oraculo consulta oportunidades existentes: "Em uma sessão anterior, identificamos a oportunidade X ligada ao outcome Y. Essa nova ideia endereça a mesma oportunidade ou uma nova?"
-
 ### 2.3 Registro de Premissas
 
-Uma lista priorizada de premissas com:
-- Descrição da premissa
-- Categoria (problema / solução / valor / viabilidade)
-- Score de risco (impacto × falta de evidência)
-- Status: não validada / validada / refutada
-- Evidência associada (se houver)
-
-Premissas críticas (alto risco) se tornam inputs explícitos para a fase de Plan — podem gerar tarefas de validação antes de qualquer implementação começar.
+Uma lista priorizada de premissas com descrição, categoria, score de risco, status e evidência associada.
 
 ### 2.4 Resumo de Impacto na Codebase
 
-Resultados da análise dos sub-agentes, registrados como:
-- Componentes existentes que se relacionam com a ideia
-- Restrições arquiteturais identificadas
-- Edge cases do código atual que a nova feature deve tratar
-- Decisões passadas do SQLite que são relevantes
+Resultados da análise dos sub-agentes: componentes relacionados, restrições arquiteturais, edge cases do código atual.
+
+### 2.5 Documento de Requisitos
+
+O output primário — um documento de 9 seções salvo em `.oraculo/projects/<nome-projeto>/epic.md`. Cada requisito REC-N é um candidato para decomposição em stories.
 
 ## 3. Escalando com a Complexidade
 
-O Oraculo seleciona a profundidade do brainstorming com base nas características da ideia na entrada.
+O Oraculo seleciona a profundidade da exploração com base nas características da ideia na entrada. A fase Epic usa dois níveis de complexidade:
 
-### 3.1 Brainstorming Mínimo
-
-**Quando:** O usuário descreve uma mudança pequena e bem delimitada em comportamento existente. O problema é claro e o espaço de solução é estreito.
-
-**Fluxo:** Reenquadramento (1.1) → verificação básica de premissas (1.5) → Portão de Saída (1.7). Tipicamente 3-5 perguntas. O portão ainda se aplica — todos os quatro riscos devem ser endereçados mesmo para mudanças pequenas.
-
-### 3.2 Brainstorming Padrão
+### 3.1 Epic Padrão
 
 **Quando:** O usuário descreve uma nova feature ou uma mudança significativa em funcionalidade existente. O problema precisa de exploração mas o domínio é compreendido.
 
-**Fluxo:** Sequência completa — Reenquadramento → Divergência → Análise da Codebase → Convergência → Mapeamento de Premissas → Stress Test → Portão de Saída.
+**Fluxo:** Sequência completa — Setup → Reenquadramento → Divergência → Análise da Codebase → Convergência → Mapeamento de Premissas → Stress Test → Portão de Saída → Geração de Artefatos.
 
-### 3.3 Brainstorming Profundo
+### 3.2 Epic Profundo
 
 **Quando:** A ideia é vaga, ambiciosa, transversal, ou o usuário não consegue articular o problema claramente mesmo após o reenquadramento inicial.
 
-**Fluxo:** Sequência completa com sub-agentes paralelos explorando múltiplos ângulos simultaneamente:
-- Agente analisando impacto na codebase em múltiplos domínios
-- Agente explorando viabilidade técnica de diferentes abordagens
-- Agente revisando decisões passadas e features relacionadas no SQLite
+**Fluxo:** Sequência completa com sub-agentes paralelos explorando múltiplos ângulos simultaneamente.
 
-Resultados são consolidados e alimentados de volta no diálogo, habilitando questionamento mais rico ancorado em evidências.
+## 4. Níveis de Reasoning
 
-### 3.4 Critérios de Seleção de Complexidade
+A fase Epic opera em dois níveis de reasoning que compartilham a mesma disciplina socrática mas diferem no domínio de investigação.
 
-O Oraculo avalia na entrada:
+### 4.1 Light Reasoning (Executor/Desenvolvedor)
 
-| Sinal | Mínimo | Padrão | Profundo |
-|-------|--------|--------|----------|
-| Usuário consegue declarar o problema claramente | Sim | Parcialmente | Não |
-| Espaço de solução é estreito | Sim | Moderado | Amplo ou desconhecido |
-| Área da codebase afetada | Componente único | Múltiplos componentes | Transversal |
-| Decisões passadas existem no SQLite | Nenhuma relevante | Algumas relevantes | Muitas relevantes ou contraditórias |
+- Recebeu uma tarefa de outra pessoa
+- Expertise técnica, contexto de produto limitado
+- Foco: entendimento da tarefa, riscos técnicos, edge cases
+- Análise da Codebase é o **centro de gravidade**
+- Escala para PM em lacunas de contexto de produto
 
-## 4. Integração com o Modelo Operacional do Oraculo
+### 4.2 Deep Reasoning (Tomador de Decisão/PM)
 
-### 4.1 Relacionamento com a Fase de Plan
+- Explorando ideia que ele identificou
+- Tem dados de usuários, métricas de negócio, visão estratégica
+- Foco: comportamento do usuário, impacto no negócio, viabilidade técnica
+- Usa toolkit completo de frameworks (JTBD, Quatro Forças, PR/FAQ, OST)
+- Responde todas as perguntas do gate autonomamente
 
-A fase de Brainstorming produz o documento de requisitos referenciado no design principal:
-- Job Stories definem **o que** precisa acontecer
-- A OST fornece **por que** (conectado a outcomes)
-- O Registro de Premissas define **o que deve ser validado primeiro**
-- O Resumo de Impacto na Codebase define **restrições** para o DAG
+### 4.3 Sinais de Seleção
 
-A fase de Plan recebe esses artefatos e os decompõe em um DAG de tarefas. Nenhuma tarefa entra no DAG sem rastreabilidade a uma Job Story e um Outcome.
+| Sinal | Light | Deep |
+|-------|-------|------|
+| Usuário descreve tarefa recebida de outra pessoa | Sim | — |
+| Usuário descreve ideia ou problema que ele identificou | — | Sim |
+| Usuário tem métricas de negócio ou dados de usuários | — | Sim |
+| Usuário foca na abordagem de implementação | Sim | — |
+| Papel primariamente técnico | Sim | — |
+| Papel envolve decisões de produto | — | Sim |
 
-### 4.2 Ponto de Entrada
+### 4.4 Matriz Complexidade × Reasoning
 
-A fase de Brainstorming é invocada via `/oraculo:brainstorm`. Qualquer membro do time pode iniciá-la — Produto, Desenvolvimento ou qualquer pessoa com uma ideia. O Oraculo adapta a profundidade e a linguagem ao contexto do usuário.
+|  | Padrão | Complexidade Profunda |
+|--|--------|-----------------------|
+| **Light** | Fluxo Light completo com todas as fases. Análise da Codebase é centro de gravidade. Sem perguntas de negócio. | Fluxo Light completo com sub-agentes paralelos. Sessão longa, sem perguntas de negócio. |
+| **Deep** | Fluxo completo — todos os frameworks, todas as perguntas, todos os gates. | Fluxo completo com sub-agentes paralelos. Duração e profundidade máximas. |
 
-### 4.3 Persistência no SQLite
+## 5. Integração com Stories
 
-Tudo da fase de Brainstorming é registrado:
-- A ideia crua como originalmente declarada
-- O problema reenquadrado
-- Todas as perguntas feitas e respostas dadas
-- A OST construída durante a sessão
-- Premissas com seus scores de risco e status
-- Resultados da análise da codebase
-- A avaliação do portão de saída
-- As Job Stories finais
+A fase Epic produz um Documento de Requisitos com itens REC-N. Para implementar:
 
-Isso habilita continuidade entre sessões e membros do time. Qualquer membro do time pode consultar o SQLite para entender o raciocínio completo por trás dos requisitos — não apenas o que foi decidido, mas por quê, e o que foi explicitamente rejeitado.
+1. Invocar `/oraculo:story <nome-projeto>`
+2. A skill Story lê `.oraculo/projects/<nome-projeto>/epic.md`
+3. O usuário seleciona qual REC-N trabalhar
+4. A skill Story roda uma sessão focada para produzir uma definição de story executável
+
+Cada REC-N pode gerar uma ou mais stories dependendo do escopo.
+
+## 6. Caminho de Saída
+
+Todos os artefatos do epic são salvos em `.oraculo/projects/<nome-projeto>/epic.md` dentro da aplicação-alvo.

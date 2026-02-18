@@ -1,12 +1,12 @@
-# Fase de Brainstorming — Filosofia
+# Fase Epic — Filosofia
 
 ## 1. Propósito
 
-A fase de Brainstorming existe para transformar ideias cruas em definições de problema validadas.
+A fase Epic existe para transformar ideias cruas em definições de problema validadas.
 
-Usuários raramente chegam com um entendimento completo do que precisam. Eles trazem intuições, ideias meio formadas ou soluções disfarçadas de problemas. A fase de Brainstorming é onde o Oraculo cumpre seu papel mais fundamental: **o guia socrático que instiga um pensamento mais profundo antes de qualquer ação.**
+Usuários raramente chegam com um entendimento completo do que precisam. Eles trazem intuições, ideias meio formadas ou soluções disfarçadas de problemas. A fase Epic é onde o Oraculo cumpre seu papel mais fundamental: **o guia socrático que instiga um pensamento mais profundo antes de qualquer ação.**
 
-Esta fase não é opcional. Toda feature, toda mudança, todo "ajuste rápido" passa pelo Brainstorming — mesmo que minimamente. A profundidade escala com a complexidade da ideia, mas a disciplina nunca é pulada.
+A fase Epic é desenhada para trabalho que é grande, incerto ou abrange múltiplas áreas. Ela requer exploração profunda antes que o espaço do problema possa ser estreitado para unidades executáveis de trabalho (stories).
 
 ## 2. Crença Central
 
@@ -18,7 +18,7 @@ O trabalho do Oraculo não é aceitar ideias. É **interrogá-las até que colap
 
 ## 3. Fundações Teóricas
 
-A fase de Brainstorming se baseia em metodologias estabelecidas de product discovery, adaptadas ao modelo socrático do Oraculo.
+A fase Epic se baseia em metodologias estabelecidas de product discovery, adaptadas ao modelo socrático do Oraculo.
 
 ### 3.1 Double Diamond — Divergir Antes de Convergir
 
@@ -38,7 +38,7 @@ Usuários não querem features — eles "contratam" produtos para fazer progress
 
 O framework de Teresa Torres fornece a espinha dorsal estrutural: Outcome desejado no topo, ramificando em Oportunidades (necessidades reais do usuário), depois Soluções potenciais, depois Experimentos para validar premissas. Essa árvore impede que soluções apareçam sem ancoragem baseada em evidências.
 
-**Por que importa:** Sem estrutura, o brainstorming se torna uma conversa errante. A OST mantém cada ideia conectada a uma necessidade real do usuário e a um outcome mensurável. Soluções que não conseguem rastrear de volta a uma oportunidade não têm fundação.
+**Por que importa:** Sem estrutura, a exploração se torna uma conversa errante. A OST mantém cada ideia conectada a uma necessidade real do usuário e a um outcome mensurável. Soluções que não conseguem rastrear de volta a uma oportunidade não têm fundação.
 
 ### 3.4 Assumption Mapping — Priorizar o Que Pode Matar a Ideia
 
@@ -58,23 +58,23 @@ O modelo das Quatro Forças do JTBD mapeia o que impulsiona e resiste à adoçã
 
 **Por que importa:** Uma solução pode ser tecnicamente perfeita e ainda assim falhar porque os usuários têm ansiedade com mudança ou apego aos hábitos atuais. Essas forças revelam o lado humano da adoção que listas de features ignoram.
 
-## 4. O Que Torna o Brainstorming do Oraculo Único
+## 4. O Que Torna a Exploração Epic do Oraculo Única
 
 Frameworks tradicionais de discovery assumem um time de humanos com quadros brancos, post-its e entrevistas com clientes. O Oraculo opera sobre três princípios que o diferenciam:
 
 ### 4.1 Exploração Consciente do Contexto
 
-O Oraculo não faz brainstorming no vácuo. Ele explora ideias com consciência do que já existe — o estado atual do produto, decisões passadas, abordagens rejeitadas e o raciocínio por trás delas. Isso impede que o time revissite becos sem saída ou contradiga decisões estabelecidas sem consciência.
+O Oraculo não explora no vácuo. Ele explora ideias com consciência do que já existe — o estado atual do produto, decisões passadas, abordagens rejeitadas e o raciocínio por trás delas. Isso impede que o time revisite becos sem saída ou contradiga decisões estabelecidas sem consciência.
 
 ### 4.2 Sabedoria Acumulada
 
-Toda sessão de brainstorming se constrói sobre as anteriores. O Oraculo carrega a memória de explorações passadas — oportunidades já mapeadas, premissas já validadas ou refutadas, padrões já identificados. O brainstorming se enriquece com o tempo, não se repete.
+Toda sessão de epic se constrói sobre as anteriores. O Oraculo carrega a memória de explorações passadas — oportunidades já mapeadas, premissas já validadas ou refutadas, padrões já identificados. A exploração se enriquece com o tempo, não se repete.
 
 ### 4.3 Investigação Multi-Ângulo
 
 Para ideias complexas, o Oraculo pode explorar múltiplas dimensões simultaneamente — viabilidade técnica, comportamento do usuário, impacto no negócio, edge cases — e entrelaçar as descobertas em um diálogo socrático coerente. O usuário recebe perguntas informadas por evidências, não apenas intuição.
 
-## 5. Princípios Específicos do Brainstorming
+## 5. Princípios Específicos da Exploração Epic
 
 Estes princípios estendem os princípios centrais do Oraculo para esta fase específica:
 
@@ -86,6 +86,12 @@ Estes princípios estendem os princípios centrais do Oraculo para esta fase esp
 
 - **Premissas são explícitas ou não existem** — Toda crença sobre usuários, comportamento ou viabilidade deve ser declarada em voz alta. Premissas implícitas são as que matam projetos.
 
-- **O contexto existente tem voz** — O que já existe — decisões, padrões, histórico — tem um lugar na mesa durante o brainstorming. Ele restringe, habilita e informa. Ignorá-lo leva a planos que colidem com a realidade.
+- **O contexto existente tem voz** — O que já existe — decisões, padrões, histórico — tem um lugar na mesa durante a exploração. Ele restringe, habilita e informa. Ignorá-lo leva a planos que colidem com a realidade.
 
-- **Gate antes de avançar** — A fase de Brainstorming tem um portão de saída. Se o usuário não consegue articular o problema claramente, definir critérios de sucesso e reconhecer premissas críticas, o Oraculo não avança para o Plan. Isso não é burocracia — é qualidade.
+- **Gate antes de avançar** — A fase Epic tem um portão de saída. Se o usuário não consegue articular o problema claramente, definir critérios de sucesso e reconhecer premissas críticas, o Oraculo não avança para o Plan. Isso não é burocracia — é qualidade.
+
+## 6. Relacionamento com Stories
+
+A fase Epic produz um Documento de Requisitos com requisitos REC-N. Cada REC-N é um candidato para decomposição em uma ou mais stories via `/oraculo:story`. O Epic define o **espaço do problema**; stories definem **trabalho executável** dentro desse espaço.
+
+Um epic sem stories é uma definição de problema validada esperando ser decomposta. Uma story sem epic é um pedaço de trabalho standalone que não precisa da profundidade completa de exploração.

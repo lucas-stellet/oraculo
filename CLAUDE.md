@@ -28,13 +28,19 @@ Distributable kit of Claude Code skills/commands. This folder is meant to be cop
 ```
 claude-kit/
 └── skills/
-    └── oraculo-brainstorm/
-        ├── SKILL.md                       # /oraculo:brainstorm skill
+    ├── oraculo-epic/
+    │   ├── SKILL.md                       # /oraculo:epic skill
+    │   └── references/
+    │       ├── question-bank.md           # Question templates by phase/level
+    │       ├── frameworks.md              # Framework descriptions
+    │       ├── artifact-templates.md      # Intermediate artifact formats (OST, Codebase Impact)
+    │       └── requirements-template.md   # Primary output: Requirements document template
+    └── oraculo-story/
+        ├── SKILL.md                       # /oraculo:story skill
         └── references/
             ├── question-bank.md           # Question templates by phase/level
-            ├── frameworks.md              # Framework descriptions
-            ├── artifact-templates.md      # Intermediate artifact formats (OST, Codebase Impact)
-            └── requirements-template.md   # Primary output: Requirements document template
+            ├── frameworks.md              # Framework descriptions (simplified)
+            └── story-template.md          # Primary output: Story document template
 ```
 
-Only `SKILL.md` appears as a slash command. Reference files inside the skill directory are internal — they don't pollute the command list.
+Only `SKILL.md` files appear as slash commands. Reference files inside skill directories are internal — they don't pollute the command list.

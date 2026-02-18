@@ -1,12 +1,12 @@
-# Brainstorming Phase — Philosophy
+# Epic Phase — Philosophy
 
 ## 1. Purpose
 
-The Brainstorming phase exists to transform raw ideas into validated problem definitions.
+The Epic phase exists to transform raw ideas into validated problem definitions.
 
-Users rarely arrive with a fully formed understanding of what they need. They come with intuitions, half-formed ideas, or solutions disguised as problems. The Brainstorming phase is where Oraculo fulfills its most fundamental role: **the Socratic guide that instigates deeper thinking before any action is taken.**
+Users rarely arrive with a fully formed understanding of what they need. They come with intuitions, half-formed ideas, or solutions disguised as problems. The Epic phase is where Oraculo fulfills its most fundamental role: **the Socratic guide that instigates deeper thinking before any action is taken.**
 
-This phase is not optional. Every feature, every change, every "quick fix" passes through Brainstorming — even if minimally. The depth scales with the complexity of the idea, but the discipline never skips.
+The Epic phase is designed for work that is large, uncertain, or spans multiple areas. It requires deep exploration before the problem space can be narrowed to executable units of work (stories).
 
 ## 2. Core Belief
 
@@ -18,7 +18,7 @@ Oraculo's job is not to accept ideas. It is to **interrogate them until they eit
 
 ## 3. Theoretical Foundations
 
-The Brainstorming phase draws from established product discovery methodologies, adapted to Oraculo's Socratic model.
+The Epic phase draws from established product discovery methodologies, adapted to Oraculo's Socratic model.
 
 ### 3.1 Double Diamond — Diverge Before You Converge
 
@@ -38,7 +38,7 @@ Users don't want features — they "hire" products to make progress in specific 
 
 Teresa Torres' framework provides the structural backbone: desired Outcome at the top, branching into Opportunities (real user needs), then potential Solutions, then Experiments to validate assumptions. This tree prevents solutions from appearing without evidence-based anchoring.
 
-**Why it matters:** Without structure, brainstorming becomes a wandering conversation. The OST keeps every idea connected to a real user need and a measurable outcome. Solutions that can't trace back to an opportunity have no foundation.
+**Why it matters:** Without structure, exploration becomes a wandering conversation. The OST keeps every idea connected to a real user need and a measurable outcome. Solutions that can't trace back to an opportunity have no foundation.
 
 ### 3.4 Assumption Mapping — Prioritize What Could Kill the Idea
 
@@ -58,23 +58,23 @@ The JTBD Four Forces model maps what drives and resists adoption: Push (frustrat
 
 **Why it matters:** A solution can be technically perfect and still fail because users are anxious about change or attached to their current habits. These forces reveal the human side of adoption that feature lists ignore.
 
-## 4. What Makes Oraculo's Brainstorming Unique
+## 4. What Makes Oraculo's Epic Exploration Unique
 
 Traditional discovery frameworks assume a team of humans with whiteboards, sticky notes, and customer interviews. Oraculo operates on three principles that differentiate it:
 
 ### 4.1 Context-Aware Exploration
 
-Oraculo doesn't brainstorm in a vacuum. It explores ideas with awareness of what already exists — the product's current state, past decisions, rejected approaches, and the reasoning behind them. This prevents the team from revisiting dead ends or contradicting established decisions without awareness.
+Oraculo doesn't explore in a vacuum. It explores ideas with awareness of what already exists — the product's current state, past decisions, rejected approaches, and the reasoning behind them. This prevents the team from revisiting dead ends or contradicting established decisions without awareness.
 
 ### 4.2 Accumulated Wisdom
 
-Every brainstorming session builds on previous ones. Oraculo carries the memory of past explorations — opportunities already mapped, assumptions already validated or refuted, patterns already identified. The brainstorming grows richer over time, not repetitive.
+Every epic session builds on previous ones. Oraculo carries the memory of past explorations — opportunities already mapped, assumptions already validated or refuted, patterns already identified. The exploration grows richer over time, not repetitive.
 
 ### 4.3 Multi-Angle Inquiry
 
 For complex ideas, Oraculo can explore multiple dimensions simultaneously — technical feasibility, user behavior, business impact, edge cases — and weave the findings into a coherent Socratic dialogue. The user receives questions informed by evidence, not just intuition.
 
-## 5. Principles Specific to Brainstorming
+## 5. Principles Specific to Epic Exploration
 
 These principles extend the core Oraculo principles for this specific phase:
 
@@ -86,6 +86,12 @@ These principles extend the core Oraculo principles for this specific phase:
 
 - **Assumptions are explicit or they don't exist** — Every belief about users, behavior, or feasibility must be stated out loud. Implicit assumptions are the ones that kill projects.
 
-- **Existing context has a voice** — What already exists — decisions, patterns, history — has a seat at the table during brainstorming. It constrains, enables, and informs. Ignoring it leads to plans that collide with reality.
+- **Existing context has a voice** — What already exists — decisions, patterns, history — has a seat at the table during exploration. It constrains, enables, and informs. Ignoring it leads to plans that collide with reality.
 
-- **Gate before advancing** — The Brainstorming phase has an exit gate. If the user cannot articulate the problem clearly, define success criteria, and acknowledge critical assumptions, Oraculo does not advance to Plan. This is not bureaucracy — it is quality.
+- **Gate before advancing** — The Epic phase has an exit gate. If the user cannot articulate the problem clearly, define success criteria, and acknowledge critical assumptions, Oraculo does not advance to Plan. This is not bureaucracy — it is quality.
+
+## 6. Relationship to Stories
+
+The Epic phase produces a Requirements Document with REC-N requirements. Each REC-N is a candidate for decomposition into one or more stories via `/oraculo:story`. The Epic defines the **problem space**; stories define **executable work** within that space.
+
+An epic without stories is a validated problem definition waiting to be decomposed. A story without an epic is a standalone piece of work that doesn't need the full exploration depth.

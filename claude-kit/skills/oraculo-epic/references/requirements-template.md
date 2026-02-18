@@ -2,7 +2,7 @@
 
 <!--
   TEMPLATE RULES:
-  - This document is the OUTPUT of the Discovery phase (brainstorm skill).
+  - This document is the OUTPUT of the Epic skill (/oraculo:epic).
   - It captures WHAT and WHY — never HOW.
   - No technical implementation details: no data models, no API design, no stack choices, no architecture.
   - Technical details belong to a separate "Code Design" document produced in the Plan phase.

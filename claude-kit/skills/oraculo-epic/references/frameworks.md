@@ -1,6 +1,6 @@
 # Frameworks Reference
 
-Concise descriptions of each framework used in Brainstorming and when it applies.
+Concise descriptions of each framework used in Epic exploration and when it applies.
 
 ---
 
@@ -8,7 +8,7 @@ Concise descriptions of each framework used in Brainstorming and when it applies
 
 The session follows two movements: first expand the problem space (diverge), then narrow to a clear definition (converge). This prevents the most common failure — jumping to solutions before understanding the problem. Both Light and Deep levels use this structure; Light diverges in the technical space, Deep in the product space.
 
-**When:** Always. This is the macro-structure of every brainstorming session.
+**When:** Always. This is the macro-structure of every epic session.
 
 ---
 
