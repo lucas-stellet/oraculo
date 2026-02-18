@@ -33,7 +33,8 @@ claude-kit/
         └── references/
             ├── question-bank.md           # Question templates by phase/level
             ├── frameworks.md              # Framework descriptions
-            └── artifact-templates.md      # Output artifact formats
+            ├── artifact-templates.md      # Intermediate artifact formats (OST, Codebase Impact)
+            └── requirements-template.md   # Primary output: Requirements document template
 ```
 
 Only `SKILL.md` appears as a slash command. Reference files inside the skill directory are internal — they don't pollute the command list.

@@ -27,7 +27,8 @@ You are Oraculo — a Socratic guide that transforms raw ideas into validated pr
 Read the reference files for detailed question templates, framework descriptions, and artifact formats:
 - `references/question-bank.md` — All questions by phase and level
 - `references/frameworks.md` — Framework descriptions and when to apply
-- `references/artifact-templates.md` — Exact output formats
+- `references/artifact-templates.md` — Intermediate artifact formats (Job Stories, OST, Assumption Register)
+- `references/requirements-template.md` — **Primary output template.** The Requirements document generated at the end of every session. Contains XML instructions for each section.
 
 ---
 
@@ -413,29 +414,40 @@ For each risk, present your assessment:
 
 ## Phase 8: Artifact Generation
 
-**OBJECTIVE:** Produce all output artifacts and present them to the user.
+**OBJECTIVE:** Produce the Requirements Document and present it to the user.
 
-Generate artifacts using the exact formats from the `references/artifact-templates.md` file (relative to this skill).
+### Primary output: Requirements Document
 
-### Artifacts to generate
+Read `references/requirements-template.md` and generate the document following the XML instructions in each section. This is the **primary and mandatory output** of every brainstorming session.
 
-#### Always (both levels, all complexities):
+The template has 9 sections: Summary, Problem, Context & Motivation, Requirements (REC-N), User Experience, Scope, Assumptions & Risks, Success Criteria, Open Questions. Follow the `<format>`, `<rules>`, and `<examples>` within each section strictly.
 
-1. **Job Stories** — Deep: User Job Stories. Light: System Stories.
-2. **Assumption Register** — All assumptions discovered during the session, scored and categorized.
+**Key principles:**
+- The document captures WHAT and WHY — never HOW
+- No technical implementation details: no data models, no API design, no stack choices, no architecture
+- Requirements use REC-N IDs with "Eu como..., quero..., para..." format and GIVEN/WHEN/THEN acceptance criteria
+- Match the user's language throughout
+
+### Secondary artifacts (presented inline before the document)
+
+Before generating the Requirements Document, present these intermediate artifacts inline in the conversation. They are NOT part of the document — they are session artifacts that helped build it.
+
+Use the formats from `references/artifact-templates.md`:
 
 #### Standard and Deep complexity only:
 
-3. **Opportunity Solution Tree** — Deep: Full tree. Light: Shallow tree.
-4. **Codebase Impact Summary** — Deep: Standard format. Light: Expanded format.
+1. **Opportunity Solution Tree** — Deep: Full tree. Light: Shallow tree.
+2. **Codebase Impact Summary** — Deep: Standard format. Light: Expanded format.
 
 #### Light only (when applicable):
 
-5. **Questions for PM** — If the Exit Gate generated escalation items.
+3. **Questions for PM** — If the Exit Gate generated escalation items.
 
 ### Presentation
 
-Present each artifact in order. After presenting all artifacts, summarize:
+1. Present the secondary artifacts inline (if applicable).
+2. Generate the Requirements Document following the template.
+3. After presenting the document, summarize:
 
 > **Session summary:**
 > - **Reasoning level:** [Light/Deep]
@@ -443,7 +455,7 @@ Present each artifact in order. After presenting all artifacts, summarize:
 > - **Phases completed:** [list]
 > - **Critical assumptions:** [count] ([count] unvalidated)
 > - **Risks accepted:** [list any risks the user explicitly accepted]
-> - **Next step:** This output feeds into the Plan phase. When ready, invoke `/oraculo:plan` to decompose these Job Stories into a task DAG.
+> - **Next step:** This output feeds into the Plan phase. When ready, invoke `/oraculo:plan` to decompose these requirements into a Code Design document and task DAG.
 
 ---
 
