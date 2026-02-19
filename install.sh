@@ -17,13 +17,25 @@ if [ ! -d "$SOURCE" ]; then
 fi
 
 DEST="$TARGET/.claude/skills"
+SKILLS_SRC="$SOURCE/skills"
 
-if [ -d "$DEST" ]; then
-  echo "Removing old skills at $DEST"
-  rm -rf "$DEST"
-fi
+# Find all directories containing a SKILL.md and copy them flat into .claude/skills/
+# e.g. oraculo/epic/ → oraculo-epic/
+find "$SKILLS_SRC" -name "SKILL.md" -print0 | while IFS= read -r -d '' skill_file; do
+  skill_dir="$(dirname "$skill_file")"
+  rel_path="${skill_dir#"$SKILLS_SRC"/}"
+  flat_name="${rel_path//\//-}"
+  dest_dir="$DEST/$flat_name"
 
-mkdir -p "$DEST"
-cp -R "$SOURCE"/skills/ "$DEST"/
+  if [ -d "$dest_dir" ]; then
+    echo "Updating $flat_name"
+    rm -rf "$dest_dir"
+  else
+    echo "Installing $flat_name"
+  fi
+
+  mkdir -p "$dest_dir"
+  cp -R "$skill_dir"/ "$dest_dir"/
+done
 
 echo "Installed oraculo skills to $DEST"
