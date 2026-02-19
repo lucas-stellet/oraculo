@@ -19,6 +19,24 @@ Full document: [docs/philosophy.md](docs/philosophy.md)
 
 Full document: [docs/design.md](docs/design.md)
 
+## Epic Phase
+
+Transforms raw ideas into validated problem definitions through Socratic exploration. Uses Double Diamond, JTBD, OST, and Assumption Mapping frameworks.
+
+Full document: [docs/epic/philosophy.md](docs/epic/philosophy.md)
+
+## Story Phase
+
+Transforms work items into well-defined, executable units. Same Socratic discipline as Epic, with less depth and more focus.
+
+Full document: [docs/story/philosophy.md](docs/story/philosophy.md)
+
+## CLI
+
+The CLI is the **Trust Layer** — the deterministic, validated core that skills and agents depend on. Grounded in Design by Contract, Pit of Success, and Trusted Computing Base.
+
+Full document: [docs/cli/philosophy.md](docs/cli/philosophy.md)
+
 ## Project Structure
 
 ### `claude-kit/`
