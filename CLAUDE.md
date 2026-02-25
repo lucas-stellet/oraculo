@@ -16,8 +16,8 @@ Full document: [docs/philosophy.md](docs/philosophy.md)
 ## Design
 
 Two operating modes:
-- **Full** (with epic): Discover > Plan > Execute > Validate
-- **Reduced** (story only): Plan > Execute > Validate
+- **Product Engineering** (with epic): Discover > Plan > Execute > Validate
+- **Software Engineering*** (story only): Plan > Execute > Validate
 
 Full document: [docs/design.md](docs/design.md)
 
