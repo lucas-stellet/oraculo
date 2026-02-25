@@ -39,6 +39,12 @@ The CLI is the **Trust Layer** — the deterministic, validated core that skills
 
 Full document: [docs/cli/philosophy.md](docs/cli/philosophy.md)
 
+## Agents
+
+The agent layer is Oraculo's execution workforce. The orchestrator decomposes work into a DAG and dispatches code agents (with TDD skill) and QA agents (with clean context). All agents work on the same branch — no worktrees. Ephemeral SQLite tracks state; committed markdowns capture outcomes.
+
+Full document: [docs/agents/design.md](docs/agents/design.md)
+
 ## Project Structure
 
 ### `claude-kit/`
