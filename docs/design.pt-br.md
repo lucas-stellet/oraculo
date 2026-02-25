@@ -2,7 +2,13 @@
 
 ## 1. Modelo de Operação
 
-O Oráculo opera em 5 fases, sempre delegando a execução.
+O Oráculo opera em dois modos, sempre delegando a execução.
+
+**Modo completo (para épicos):** Descobrir > Planejar > Executar > Validar
+
+**Modo reduzido (para stories sem épico):** Planejar > Executar > Validar
+
+No modo reduzido, a fase de Descobrir é pulada — o contexto vem direto do usuário. O caminho mínimo é Planejar → Executar → Validar.
 
 ### 1.1 Descobrir (Discover)
 
@@ -18,13 +24,9 @@ O Oráculo monta um time de agentes e delega. Cada agente recebe uma tarefa espe
 
 ### 1.4 Validar (Validate)
 
-Um agente de QA dedicado revisa a implementação. Ele verifica: testes passam, padrões do projeto foram respeitados, edge cases estão cobertos, a implementação atende os requisitos documentados. O agente de QA é independente dos agentes que executaram — olhar fresco, sem viés.
+Um agente de QA dedicado revisa a implementação. Ele verifica: testes passam, padrões do projeto foram respeitados, edge cases estão cobertos, a implementação atende os requisitos documentados. O agente de QA é independente dos agentes que executaram — olhar fresco, sem viés. Se o QA reprova, volta à fase apropriada — nunca força a barra, nunca conclui com ressalvas.
 
-### 1.5 Entregar (Deliver)
-
-Só após a validação do QA, o Oráculo consolida o resultado. Se o QA reprova, volta à fase apropriada — nunca força a barra, nunca entrega com ressalvas.
-
-**Regra de ouro:** O Oráculo nunca pula fases. Mesmo uma "tarefa simples" passa por descoberta mínima e planejamento antes de execução.
+**Regra de ouro:** O Oráculo nunca pula fases dentro do modo escolhido. No modo completo, mesmo uma "tarefa simples" passa por descoberta, planejamento e execução antes de validar. No modo reduzido, planejamento é sempre o ponto de partida.
 
 ## 2. Documentação como Memória do Projeto
 
@@ -55,7 +57,7 @@ O Oráculo é construído inteiramente sobre o ecossistema do Claude Code. Cada 
 
 ### Skills (Comandos)
 
-Os pontos de entrada do Oráculo. Cada fase do modelo de operação é uma skill invocável — `/oraculo:discover`, `/oraculo:plan`, `/oraculo:execute`, etc. O usuário interage com o Oráculo através desses comandos.
+Os pontos de entrada do Oráculo. Cada fase do modelo de operação é uma skill invocável — `/oraculo:epic` (modo completo), `/oraculo:story` (modo reduzido), `/oraculo:plan`, `/oraculo:execute`, etc. O usuário interage com o Oráculo através desses comandos.
 
 ### Teams (Agentes)
 
@@ -83,6 +85,8 @@ O Oráculo é uma ferramenta de time, não de desenvolvedor solo.
 
 ### Fluxo típico
 
+**Modo completo (épico):**
+
 1. Alguém do time tem uma ideia ou identifica um problema
 2. Inicia o Oráculo na fase de Descoberta — perguntas, refinamento, edge cases
 3. Requisitos validados viram um plano com tarefas em DAG
@@ -90,5 +94,12 @@ O Oráculo é uma ferramenta de time, não de desenvolvedor solo.
 5. Agente de QA valida independentemente
 6. Overview em Markdown é gerado, SQLite tem o histórico completo
 7. O próximo membro do time que olhar aquela feature encontra tudo documentado
+
+**Modo reduzido (story sem épico):**
+
+1. Usuário descreve a story com contexto suficiente
+2. Oráculo planeja diretamente — DAG de tarefas, dependências
+3. Agentes executam em paralelo
+4. Agente de QA valida independentemente
 
 **O Oráculo reduz a distância entre a ideia e o código de qualidade.** Ele não substitui o time — ele amplifica a capacidade do time de pensar bem e executar com rigor.

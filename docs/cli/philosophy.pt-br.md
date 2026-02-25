@@ -93,7 +93,7 @@ O CLI é opinativo e versionado. Ele conhece o modelo operacional do Oraculo —
 
 Quando o modelo operacional evolui, o CLI evolui com ele. Mudanças em estruturas de artefatos, novas fases, novas regras de validação — estas se tornam novas versões do CLI com caminhos de migração explícitos.
 
-Não há sistema de plugins ou mecanismo de extensão. O CLI cresce com o Oraculo como uma ferramenta única e coesa. Atualmente ele cobre a fase Discover; conforme o Oraculo amadurece, ele cobrirá todas as cinco fases: Discover, Plan, Execute, Validate e Deliver.
+Não há sistema de plugins ou mecanismo de extensão. O CLI cresce com o Oraculo como uma ferramenta única e coesa. Atualmente ele cobre a fase Discover; conforme o Oraculo amadurece, ele cobrirá todas as fases centrais: Discover, Plan, Execute e Validate.
 
 ## 7. O Que o CLI Não É
 

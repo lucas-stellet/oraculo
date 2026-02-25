@@ -42,7 +42,7 @@ Code agents are the hands of the system. They receive a focused task, a constrai
 
 QA agents are the immune system. They validate all output with fresh eyes, no shared memory with the agent that produced it, and no incentive to agree.
 
-**Independence is architectural, not aspirational.** The QA agent operates with a completely clean context window — no memory of the generation process, no access to the code agent's reasoning. This is what breaks the sycophancy cycle where an agent tends to agree with its own errors. No edge in the DAG connects Execute directly to Deliver without passing through Validate.
+**Independence is architectural, not aspirational.** The QA agent operates with a completely clean context window — no memory of the generation process, no access to the code agent's reasoning. This is what breaks the sycophancy cycle where an agent tends to agree with its own errors. No DAG node in Execute can be marked complete without passing through Validate.
 
 **Validation is adversarial, not cooperative.** A QA agent that merely confirms "looks good" is worthless. Effective validation requires agents with orthogonal expertise — one that checks functional correctness, another that actively tries to break the system with malicious inputs and edge cases. Consensus without challenge amplifies errors into accepted facts.
 

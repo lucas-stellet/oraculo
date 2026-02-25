@@ -2,11 +2,19 @@
 
 ## 1. Operating Model
 
-Oraculo operates in 5 phases, always delegating execution.
+Oraculo operates in two modes depending on the scope of the work.
+
+**Full mode (epics):** Discover > Plan > Execute > Validate
+
+**Reduced mode (stories without an epic):** Plan > Execute > Validate
+
+Stories without an associated epic skip Discover — context comes directly from the user. The minimum path is always Plan > Execute > Validate.
 
 ### 1.1 Discover
 
 Oraculo instigates the user with questions. It explores the idea, identifies risks, and surfaces edge cases. The output is a requirements document validated by the user.
+
+_Mandatory for epics. Skipped when a story is submitted directly with sufficient context._
 
 ### 1.2 Plan
 
@@ -18,13 +26,9 @@ Oraculo assembles a team of agents and delegates. Each agent receives a specific
 
 ### 1.4 Validate
 
-A dedicated QA agent reviews the implementation. It verifies: tests pass, project standards were followed, edge cases are covered, the implementation meets the documented requirements. The QA agent is independent from the executing agents — fresh eyes, no bias.
+A dedicated QA agent reviews the implementation. It verifies: tests pass, project standards were followed, edge cases are covered, the implementation meets the documented requirements. The QA agent is independent from the executing agents — fresh eyes, no bias. If QA rejects, Oraculo returns to the appropriate phase — never forces through, never accepts with caveats.
 
-### 1.5 Deliver
-
-Only after QA validation does Oraculo consolidate the result. If QA rejects, it returns to the appropriate phase — never forces through, never delivers with caveats.
-
-**Golden rule:** Oraculo never skips phases. Even a "simple task" goes through minimal discovery and planning before execution.
+**Golden rule:** Oraculo never skips the core phases (Plan, Execute, Validate). For epics, Discover is mandatory.
 
 ## 2. Documentation as Project Memory
 
@@ -47,7 +51,7 @@ A SQLite database within the project serves as Oraculo's memory. The entire jour
 
 When an implementation is completed and validated by QA, Oraculo generates a single Markdown file with the overview — a summary of what was implemented, the key decisions, and the outcome. Clean, concise, made for human reading. The granular detail stays in SQLite for anyone who needs to dig deeper.
 
-**Benefit:** The project stays clean. One `.db` file and one Markdown per completed feature. Anyone on the team can query SQLite for the full history or read the Markdown for a quick summary.
+**Benefit:** The project stays clean. One `.db` file and one Markdown per validated feature. Anyone on the team can query SQLite for the full history or read the Markdown for a quick summary.
 
 ## 3. Claude Code Ecosystem
 
@@ -55,7 +59,7 @@ Oraculo is built entirely on the Claude Code ecosystem. Each native capability i
 
 ### Skills (Commands)
 
-The entry points of Oraculo. Each phase of the operating model is an invocable skill — `/oraculo:discover`, `/oraculo:plan`, `/oraculo:execute`, etc. The user interacts with Oraculo through these commands.
+The entry points of Oraculo. Each phase of the operating model is an invocable skill — `/oraculo:epic`, `/oraculo:story`, and so on. The user interacts with Oraculo through these commands.
 
 ### Teams (Agents)
 
@@ -83,12 +87,19 @@ Oraculo is a team tool, not a solo developer tool.
 
 ### Typical flow
 
+**Epic flow (full mode):**
+
 1. Someone on the team has an idea or identifies a problem
-2. Starts Oraculo in the Discover phase — questions, refinement, edge cases
+2. Starts Oraculo with `/oraculo:epic` — questions, refinement, edge cases
 3. Validated requirements become a plan with tasks in a DAG
 4. Agents execute in parallel, following TDD and project standards
-5. QA agent validates independently
-6. Markdown overview is generated, SQLite holds the complete history
-7. The next team member who looks at that feature finds everything documented
+5. QA agent validates independently — if rejected, returns to the appropriate phase
+
+**Story flow (reduced mode):**
+
+1. A work item is already defined or the user supplies direct context
+2. Starts Oraculo with `/oraculo:story` — skips Discover, goes straight to Plan
+3. Agents execute in parallel, following TDD and project standards
+4. QA agent validates independently — if rejected, returns to the appropriate phase
 
 **Oraculo reduces the distance between an idea and quality code.** It does not replace the team — it amplifies the team's ability to think well and execute with rigor.

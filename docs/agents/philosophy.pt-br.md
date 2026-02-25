@@ -42,7 +42,7 @@ Code agents sao as maos do sistema. Recebem uma tarefa focada, um contexto restr
 
 QA agents sao o sistema imunologico. Validam todo output com olhos frescos, sem memoria compartilhada com o agente que o produziu e sem incentivo para concordar.
 
-**Independencia e arquitetural, nao aspiracional.** O QA agent opera com uma context window completamente limpa — sem memoria do processo de geracao, sem acesso ao raciocinio do code agent. Isso e o que quebra o ciclo de sycophancy onde um agente tende a concordar com seus proprios erros. Nenhuma aresta no DAG conecta Execute diretamente a Deliver sem passar por Validate.
+**Independencia e arquitetural, nao aspiracional.** O QA agent opera com uma context window completamente limpa — sem memoria do processo de geracao, sem acesso ao raciocinio do code agent. Isso e o que quebra o ciclo de sycophancy onde um agente tende a concordar com seus proprios erros. Nenhum no de Execute pode ser marcado como completo sem passar por Validate.
 
 **Validacao e adversarial, nao cooperativa.** Um QA agent que meramente confirma "parece bom" e inutil. Validacao efetiva requer agentes com expertise ortogonal — um que verifica corretude funcional, outro que ativamente tenta quebrar o sistema com inputs maliciosos e edge cases. Consenso sem desafio amplifica erros em fatos aceitos.
 

@@ -15,7 +15,9 @@ Full document: [docs/philosophy.md](docs/philosophy.md)
 
 ## Design
 
-**5-phase operating model:** Discover > Plan > Execute > Validate > Deliver
+Two operating modes:
+- **Full** (with epic): Discover > Plan > Execute > Validate
+- **Reduced** (story only): Plan > Execute > Validate
 
 Full document: [docs/design.md](docs/design.md)
 
