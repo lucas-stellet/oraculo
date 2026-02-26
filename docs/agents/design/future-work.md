@@ -54,7 +54,7 @@ This document lists capabilities that were explored during research but deferred
 
 **What:** A three-tier memory architecture — working memory (assembled on demand), episodic memory (immutable event log), and semantic memory (validated knowledge). Includes a curation pipeline (episode scoring, LLM reflection, multi-agent jury for promotion) and relational linking between knowledge entries.
 
-**Why deferred:** The current simple model (CLAUDE.md + markdowns + ephemeral SQLite) covers the essential needs. The three-tier system adds significant complexity: schema design, curation triggers, severity thresholds, embedding generation, and search evolution (FTS5 → sqlite-vec → graph queries).
+**Why deferred:** The current simple model (CLAUDE.md + markdowns + SQLite with transient operations and persistent knowledge) covers the essential needs. The three-tier system adds significant complexity: schema design, curation triggers, severity thresholds, embedding generation, and search evolution (FTS5 → sqlite-vec → graph queries).
 
 **Research findings:** Synthesis 05 provided production-ready schemas for all three tiers, composite FTS5 scoring with temporal decay, a complete curation pipeline (Episode → Score → Reflection → MAR Consensus → Promotion), and a three-phase search evolution roadmap within pure SQLite.
 

@@ -1,6 +1,6 @@
 # Agents Design — Runtime
 
-## 1. Ephemeral SQLite
+## 1. SQLite — Operational State + Knowledge
 
 A single SQLite database at `.oraculo/oraculo.db` serves the entire project. It is listed in `.gitignore` and is not committed to the repository. The database holds two categories of data: transient operational state (tasks, dependencies, QA verdicts) that can be cleaned after epic completion, and persistent knowledge (lessons learned, codebase patterns) that accumulates across all epics.
 
@@ -85,9 +85,9 @@ Requirements documents, story definitions, and task summaries capture the accumu
 
 These files are committed to the repository. They serve as historical record and as context for future work in the same area.
 
-### Ephemeral SQLite — Execution State
+### SQLite — Operational State + Knowledge
 
-Task status, dependencies, QA verdicts, and operational data live in SQLite for the duration of the epic. This is the working memory of the system — essential during execution, disposable after.
+Transient data (task status, dependencies, QA verdicts) lives in SQLite for the duration of the epic — essential during execution, cleanable after. The knowledge table persists across all epics, accumulating lessons learned. This is the system's working memory plus its long-term memory.
 
 ### What This Is Not
 

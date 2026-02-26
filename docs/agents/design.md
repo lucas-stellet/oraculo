@@ -9,7 +9,7 @@ Two operating modes mirror the system-level design:
 - **Product Engineering** (epics): Discover > Plan > Execute > Validate
 - **Software Engineering** (stories): Plan > Execute > Validate
 
-All agents work on the same branch in the same directory. The orchestrator coordinates file access through DAG dependencies. The CLI Trust Layer validates every state transition. Ephemeral SQLite tracks execution state; committed markdowns capture decisions and outcomes.
+All agents work on the same branch in the same directory. The orchestrator coordinates file access through DAG dependencies. The CLI Trust Layer validates every state transition. SQLite tracks operational state and accumulated knowledge; committed markdowns capture decisions and outcomes.
 
 Full details: [`design/overview.md`](design/overview.md)
 

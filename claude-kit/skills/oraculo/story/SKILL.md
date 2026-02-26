@@ -80,7 +80,7 @@ Phase 4: Artifact Generation
 ### Step 0.1 — Check for parent epic
 
 If the user passed a project name as argument (e.g., `/oraculo:story gastos-app`):
-- Search for `.oraculo/projects/<project-name>/epic.md`
+- Search for `.oraculo/epics/<epic-name>/requirements.md` (where `<epic-name>` matches the project name argument)
 - If found: read the epic, then ask:
   > "I found the epic for this project. Which requirement (REC-N) do you want to work on, or is this something new?"
 - If not found: proceed as standalone — no reference to epic
@@ -248,7 +248,7 @@ Read `references/story-template.md` and generate the document following the inst
 
 ### Output path
 
-The Story Document is saved to `.oraculo/projects/<project-name>/story-<title-slug>.md` inside the target application. The title slug is derived from the story title (lowercase, hyphenated).
+The Story Document is saved to `.oraculo/epics/<epic-name>/stories/<story-name>/requirements.md` inside the target application. The story name is derived from the story title (lowercase, hyphenated).
 
 If no project name was provided, ask the user:
 > "What project name should this story be saved under?"

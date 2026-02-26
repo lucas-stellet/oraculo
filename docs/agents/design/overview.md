@@ -10,7 +10,7 @@ The full mode. An idea enters as a raw problem statement. The orchestrator guide
 
 **Software Engineering** (stories without an epic): Plan > Execute > Validate
 
-The reduced mode. Context comes directly from the user — a bug report, a feature request with sufficient detail, a refactoring task. Discovery is skipped. The orchestrator decomposes the work into a DAG and proceeds directly to execution and validation.
+The shorter path. Context comes directly from the user — a bug report, a feature request with sufficient detail, a refactoring task. Discovery is skipped. The orchestrator decomposes the work into a DAG and proceeds directly to execution and validation.
 
 Both modes share the same agent infrastructure, the same QA pipeline, and the same CLI Trust Layer. The only difference is whether Discover runs.
 
@@ -58,7 +58,7 @@ A task follows this path through the system:
 
 **5. Resolution.** If approved, the task is marked complete. If rejected, the orchestrator spawns a new code agent with QA's feedback — fresh context, no memory of the previous attempt. A circuit breaker limits rejection cycles before escalating to the human.
 
-**6. Integration.** Once all tasks in a story are validated, a single markdown summary is generated and committed. The ephemeral SQLite data has served its purpose. The Deliver/Merge phase (merging to mainline) is future work.
+**6. Integration.** Once all tasks in a story are validated, a single markdown summary is generated and committed. The transient operational data in SQLite has served its purpose. The Deliver/Merge phase (merging to mainline) is future work.
 
 ## 4. Key Invariants
 
@@ -74,4 +74,4 @@ These hold across all phases and all agents:
 
 5. **Skills define agent behavior.** The orchestrator assigns skills to agents based on task needs. The skill is the containment mechanism — it defines the workflow, constraints, and quality gates for the agent.
 
-6. **Single markdown artifact.** When a story completes, the system produces one committed markdown file summarizing what was done. The operational detail stays in ephemeral SQLite.
+6. **Single markdown artifact.** When a story completes, the system produces one committed markdown file summarizing what was done. The operational detail stays in SQLite (transient data, cleanable after epic completion).

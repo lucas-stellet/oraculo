@@ -23,7 +23,7 @@ The Epic skill is for deep problem-space exploration — work that spans multipl
 Read the reference files for detailed question templates, framework descriptions, and artifact formats:
 - `references/question-bank.md` — All questions by phase and level
 - `references/frameworks.md` — Framework descriptions and when to apply
-- `references/artifact-templates.md` — Intermediate artifact formats (Job Stories, OST, Assumption Register)
+- `references/artifact-templates.md` — Intermediate artifact formats (Job Stories, Assumption Register, Codebase Impact)
 - `references/requirements-template.md` — **Primary output template.** The Requirements document generated at the end of every session. Contains XML instructions for each section.
 
 ---
@@ -335,10 +335,10 @@ Explore all four categories fully:
 
 **OBJECTIVE:** Test whether the idea has sufficient clarity to proceed.
 
-### IF Deep — PR/FAQ (Working Backwards):
+### IF Deep — Constraint-Focused Validation:
 
 Ask the four stress test questions from the question bank:
-1. "If this feature launched tomorrow, how would the announcement read in two sentences?"
+1. "From everything we explored, what is THE bottleneck — the single constraint that limits the most value?"
 2. "What would a skeptical customer's first question be?"
 3. "What would engineering's main objection be?"
 4. "How would you measure success three months after launch?"
@@ -433,8 +433,7 @@ Use the formats from `references/artifact-templates.md`:
 
 #### Standard and Deep complexity:
 
-1. **Opportunity Solution Tree** — Deep: Full tree. Light: Shallow tree.
-2. **Codebase Impact Summary** — Deep: Standard format. Light: Expanded format.
+1. **Codebase Impact Summary** — Deep: Standard format. Light: Expanded format.
 
 #### Light only (when applicable):
 
@@ -442,7 +441,7 @@ Use the formats from `references/artifact-templates.md`:
 
 ### Output path
 
-The Requirements Document is saved to `.oraculo/projects/<project-name>/epic.md` inside the target application. The project name is derived from the idea's domain or explicitly asked from the user.
+The Requirements Document is saved to `.oraculo/epics/<epic-name>/requirements.md` inside the target application. The epic name is derived from the idea's domain or explicitly asked from the user.
 
 ### Presentation
 
