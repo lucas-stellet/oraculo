@@ -56,9 +56,9 @@ Memory is simple and practical. It serves agents without burdening the system.
 
 **Epic markdowns are the accumulated intelligence.** Requirements documents, story definitions, and task summaries capture the decisions and reasoning of each feature. These are committed to the repository and serve as the historical record.
 
-**Ephemeral SQLite tracks execution state.** Task status, dependencies, QA verdicts, and operational data live in SQLite — per-epic, not committed, disposable after the epic completes. This is infrastructure, not knowledge.
+**SQLite tracks operational state and accumulated knowledge.** A single database per project (`.oraculo/oraculo.db`) holds two categories of data. Transient operational data — task status, dependencies, QA verdicts — is essential during execution and can be cleaned after epic completion. Persistent knowledge — lessons learned, codebase patterns, conventions — accumulates across all epics and survives their lifecycle. The database is not committed (`.gitignore`), but the knowledge it contains is the project's long-term memory.
 
-**No complex memory system.** There is no three-tier architecture, no curation pipeline, no semantic knowledge store. The system keeps what it needs in the simplest form that works: markdown for humans, SQLite for machines, CLAUDE.md for agents.
+**Simple knowledge store, not a complex memory system.** The `knowledge` table with full-text search provides a single, queryable store for codebase findings. There is no three-tier architecture, no curation pipeline, no promotion scoring. This is a practical knowledge store — not the deferred rich memory system described in future-work.md.
 
 ## 7. What This Document Is Not
 
