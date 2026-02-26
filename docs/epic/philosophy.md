@@ -34,29 +34,19 @@ Users don't want features — they "hire" products to make progress in specific 
 
 > "When [specific situation], I want [motivation], so I can [expected outcome]."
 
-### 3.3 Opportunity Solution Tree (OST) — Structure the Exploration
+**Four Forces of Progress.** JTBD includes a model of what drives and resists adoption: Push (frustration with current state), Pull (attraction of the new), Anxiety (fear of the unknown), and Habit (inertia of current behavior). These forces surface adoption edge cases that purely functional analysis misses — a solution can be technically perfect and still fail because users are anxious about change or attached to their current habits.
 
-Teresa Torres' framework provides the structural backbone: desired Outcome at the top, branching into Opportunities (real user needs), then potential Solutions, then Experiments to validate assumptions. This tree prevents solutions from appearing without evidence-based anchoring.
+### 3.3 Theory of Constraints (TOC) — Focus on the Bottleneck
 
-**Why it matters:** Without structure, exploration becomes a wandering conversation. The OST keeps every idea connected to a real user need and a measurable outcome. Solutions that can't trace back to an opportunity have no foundation.
+Every system has a single constraint that limits its throughput. TOC asks: what is the one bottleneck that, if removed, would unlock the most value? Applied to discovery, this forces prioritization — instead of exploring every opportunity equally, the session identifies which problem is the real constraint for the user or the system.
+
+**Why it matters:** Without focus, exploration produces a broad but shallow map. TOC forces convergence toward the highest-impact problem. This same principle applies later in execution, where QA throughput governs the pace of code production.
 
 ### 3.4 Assumption Mapping — Prioritize What Could Kill the Idea
 
 Every idea carries hidden assumptions. Assumption Mapping makes them explicit and scores them by risk: impact if wrong multiplied by lack of evidence. The riskiest assumptions become the priority before any investment.
 
 **Why it matters:** Teams don't fail because they lack ideas. They fail because they build on unvalidated beliefs. Making assumptions explicit — and prioritizing the most dangerous ones — is the difference between disciplined exploration and wishful thinking.
-
-### 3.5 Working Backwards (PR/FAQ) — Stress Test the Idea
-
-Amazon's technique of writing a fictional press release before building forces clarity about who benefits, what changes, and why it matters. If the announcement doesn't sound compelling, the idea isn't ready.
-
-**Why it matters:** Describing the end result as if it already exists forces the user to confront gaps in their thinking that abstract discussion misses. It answers: "Would anyone care about this?"
-
-### 3.6 Four Forces of Progress — Map Behavioral Edge Cases
-
-The JTBD Four Forces model maps what drives and resists adoption: Push (frustration with current state), Pull (attraction of the new), Anxiety (fear of the unknown), and Habit (inertia of current behavior). This surfaces edge cases that purely functional analysis misses.
-
-**Why it matters:** A solution can be technically perfect and still fail because users are anxious about change or attached to their current habits. These forces reveal the human side of adoption that feature lists ignore.
 
 ## 4. What Makes Oraculo's Epic Exploration Unique
 
