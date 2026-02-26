@@ -4,11 +4,11 @@
 
 Oraculo operates in two modes depending on the scope of the work.
 
-**Full mode (epics):** Discover > Plan > Execute > Validate
+**Product Engineering (epics):** Discover > Plan > Execute > Validate
 
-**Reduced mode (stories without an epic):** Plan > Execute > Validate
+**Software Engineering (stories without an epic):** Plan > Execute > Validate
 
-Stories without an associated epic skip Discover — context comes directly from the user. The minimum path is always Plan > Execute > Validate.
+Stories without an associated epic skip Discover — context comes directly from the user. The minimum path is always Plan > Execute > Validate. Standalone stories use a lightweight epic created automatically by the CLI, preserving the hierarchical data model transparently.
 
 ### 1.1 Discover
 
@@ -34,24 +34,27 @@ A dedicated QA agent reviews the implementation. It verifies: tests pass, projec
 
 Everything Oraculo produces is recorded. Nothing is lost, but without polluting the project.
 
-### SQLite Storage
+### SQLite — Operational State + Accumulated Knowledge
 
-A SQLite database within the project serves as Oraculo's memory. The entire journey of a feature lives there — proposed ideas, accepted and rejected decisions, requirements, execution plans, QA results, agent logs. A single file, versionable, queryable, without scattering dozens of markdowns across the repository.
+A single SQLite database (`.oraculo/oraculo.db`) within the project serves two purposes:
 
-**What SQLite stores:**
+**Transient operational data** — Task status, dependencies, QA verdicts, and execution state. This data is essential during active development but can be cleaned after an epic completes.
 
-- Proposed ideas and their original context
-- Decisions made — accepted and rejected, with justifications
-- Requirements generated during the discovery phase
-- Execution plans — the DAG, tasks, dependencies
-- QA validation results
-- Complete history of each implementation
+**Persistent knowledge** — The `knowledge` table accumulates lessons learned, codebase patterns, and conventions discovered across all epics. This data survives epic lifecycle and grows richer over time.
 
-### Markdown Only at the End
+On epic/story completion:
+1. Generate a markdown overview (summary of what was implemented, key decisions, QA outcome)
+2. Extract lessons learned into the `knowledge` table
+3. Operational data for that epic may be cleaned (optional)
 
-When an implementation is completed and validated by QA, Oraculo generates a single Markdown file with the overview — a summary of what was implemented, the key decisions, and the outcome. Clean, concise, made for human reading. The granular detail stays in SQLite for anyone who needs to dig deeper.
+### Markdown as Phase Output
 
-**Benefit:** The project stays clean. One `.db` file and one Markdown per validated feature. Anyone on the team can query SQLite for the full history or read the Markdown for a quick summary.
+Each phase of the operating model produces its own markdown artifact:
+- **Discover** outputs a requirements document (`requirements.md` at epic level)
+- **Plan** consumes requirements and produces the DAG (tracked in SQLite)
+- **Validate** triggers generation of an overview markdown summarizing the implementation
+
+SQLite holds operational state and accumulated knowledge. Markdown files capture product definitions and implementation summaries. The project stays clean — one `.db` file, one `requirements.md` per epic/story, and one overview per validated implementation.
 
 ## 3. Claude Code Ecosystem
 
@@ -61,9 +64,9 @@ Oraculo is built entirely on the Claude Code ecosystem. Each native capability i
 
 The entry points of Oraculo. Each phase of the operating model is an invocable skill — `/oraculo:epic`, `/oraculo:story`, and so on. The user interacts with Oraculo through these commands.
 
-### Teams (Agents)
+### Team of Agents
 
-The execution engine. Oraculo uses Claude Code's team functionality to assemble teams of specialized agents — code agents, QA agent, research agents. Each agent receives well-defined context and scope. Oraculo is the team leader, never an executing member.
+The execution engine. Oraculo uses Claude Code's team functionality to assemble a team of specialized agents — code agents, research agents, and QA agents. Each agent receives well-defined context and scope. Oraculo is the team leader, never an executing member.
 
 ### Hooks
 
@@ -87,7 +90,7 @@ Oraculo is a team tool, not a solo developer tool.
 
 ### Typical flow
 
-**Epic flow (full mode):**
+**Epic flow (Product Engineering):**
 
 1. Someone on the team has an idea or identifies a problem
 2. Starts Oraculo with `/oraculo:epic` — questions, refinement, edge cases
@@ -95,7 +98,7 @@ Oraculo is a team tool, not a solo developer tool.
 4. Agents execute in parallel, following TDD and project standards
 5. QA agent validates independently — if rejected, returns to the appropriate phase
 
-**Story flow (reduced mode):**
+**Story flow (Software Engineering):**
 
 1. A work item is already defined or the user supplies direct context
 2. Starts Oraculo with `/oraculo:story` — skips Discover, goes straight to Plan
