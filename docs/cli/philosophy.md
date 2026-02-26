@@ -93,7 +93,7 @@ The CLI is opinionated and versioned. It knows Oraculo's operating model — the
 
 When the operating model evolves, the CLI evolves with it. Changes to artifact structures, new phases, new validation rules — these become new CLI versions with explicit migration paths.
 
-There is no plugin system or extension mechanism. The CLI grows with Oraculo as a single, cohesive tool. Currently it covers the Discover phase; as Oraculo matures, it will cover all core phases: Discover, Plan, Execute, and Validate.
+There is no plugin system or extension mechanism. The CLI grows with Oraculo as a single, cohesive tool. It covers all core phases: Discover, Plan, Execute, and Validate.
 
 ## 7. What the CLI Is Not
 
