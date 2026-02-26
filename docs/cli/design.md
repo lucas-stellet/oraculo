@@ -124,7 +124,7 @@ Categories: `pattern`, `convention`, `constraint`, `dependency`, `test`, `archit
 
 Rules:
 
-- Stories always belong to an epic. CLI enforces this; standalone stories use a lightweight epic.
+- Stories always belong to an epic. CLI enforces this. When a story is created without an explicit epic, the CLI auto-creates a **lightweight epic** — a minimal epic with the name derived from the story and no requirements markdown. This preserves the hierarchical data model while keeping the standalone story UX seamless.
 - Each level's `requirements.md` is the product definition — WHAT and WHY, never HOW.
 - The SQLite database is infrastructure — `.gitignore`.
 - Markdown files are versionable in git.
@@ -189,6 +189,7 @@ CREATE TABLE task_results (
 CREATE TABLE validations (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     story_id    INTEGER NOT NULL REFERENCES stories(id),
+    task_id     INTEGER REFERENCES tasks(id),              -- NULL = story-level validation
     verdict     TEXT NOT NULL CHECK (verdict IN ('approved','rejected')),
     created_at  TEXT DEFAULT (datetime('now'))
 );
@@ -228,9 +229,11 @@ Design decisions:
 - `epics` and `stories` track metadata only. Content lives in Markdown files.
 - `tasks` track status lifecycle and metadata. Rich completion data in `task_results`.
 - `task_dependencies` models the DAG. CLI can validate no cycles exist.
-- `validations` stores only the structural verdict. QA analysis lives in Markdown.
+- `validations` stores structural verdicts at two levels: per-task (`task_id` filled) during execution and per-story (`task_id` NULL) as the final gate. QA analysis lives in Markdown.
 - `knowledge` uses FTS5 for full-text search. Sync triggers keep index consistent.
 - JSON arrays (`skills_used`, `files_modified`) stored as TEXT — simple, queryable with `json_each()`.
+
+**Knowledge persistence:** Unlike operational tables (`tasks`, `task_dependencies`, `task_results`, `validations`), the `knowledge` table is persistent — it accumulates lessons learned across all epics and survives epic completion. Operational data can be cleaned after an epic completes; knowledge data is retained.
 
 ## 5. Output Format
 
