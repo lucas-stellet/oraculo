@@ -47,11 +47,21 @@ A circuit breaker limits QA rejection cycles (default 3) before escalating to th
 
 Full details: [`design/qa-agent.md`](design/qa-agent.md)
 
+## 4.5 Research Agent
+
+Research agents investigate the codebase and external references to provide evidence for decision-making. They are dispatched during Discover (when no prior context exists) and during Plan (for technical feasibility analysis).
+
+Each research agent receives a focused investigation scope: relevant directories, specific patterns to look for, or external references to analyze. They return structured findings — not opinions. The orchestrator integrates findings into the dialogue or the planning process.
+
+Research agents do not write code, run tests, or modify files. They observe, analyze, and report.
+
+Full details: [`design/research-agent.md`](design/research-agent.md)
+
 ## 5. Runtime
 
-### Ephemeral SQLite
+### SQLite — Operational State + Knowledge
 
-Task status, dependencies, QA verdicts, and operational data live in a SQLite database at `.oraculo/oraculo.db`. The database uses the schema from [`docs/cli/design.md`](../cli/design.md) §4.3 — `epics`, `stories`, `tasks`, `task_dependencies`, `task_results`, `validations`, and `knowledge` tables. It is listed in `.gitignore` and is not committed. The database is infrastructure — essential during execution, disposable after.
+A single SQLite database at `.oraculo/oraculo.db` tracks two categories of data. Operational state (tasks, dependencies, QA verdicts) is transient — essential during execution, cleanable after epic completion. The `knowledge` table is persistent — it accumulates lessons learned across all epics. The database uses the schema from [`docs/cli/design.md`](../cli/design.md) §4.3. It is listed in `.gitignore` and not committed, but its knowledge data is the project's long-term memory.
 
 ### Single Markdown Artifact
 
@@ -62,9 +72,9 @@ When a story completes, the system generates one committed markdown file summari
 Three sources, three purposes:
 - **CLAUDE.md** — Project conventions, architecture, code style (persistent, committed)
 - **Epic markdowns** — Requirements, decisions, outcomes per feature (persistent, committed)
-- **Ephemeral SQLite** — Execution state during active development (transient, not committed)
+- **SQLite** — Operational state (transient) + accumulated knowledge (persistent), not committed
 
-No three-tier memory architecture, no curation pipeline, no semantic knowledge store. The simplest model that works.
+No three-tier memory architecture, no curation pipeline. A simple knowledge table with full-text search — not a promotion scoring system.
 
 Full details: [`design/runtime.md`](design/runtime.md)
 
