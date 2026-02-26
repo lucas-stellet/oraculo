@@ -30,39 +30,7 @@ so that [observable/testable outcome].
 
 ---
 
-## 2. Opportunity Solution Tree (OST)
-
-### Deep — Full Tree
-
-```
-Outcome: [business metric or user behavior change]
-└── Opportunity: [user need, written in first person]
-      ├── Solution A: [proposed approach]
-      │     ├── Assumption: [hypothesis]
-      │     │     └── Validation: [how to test]
-      │     └── Assumption: [hypothesis]
-      │           └── Validation: [how to test]
-      └── Solution B: [alternative approach]
-            └── Assumption: [hypothesis]
-                  └── Validation: [how to test]
-```
-
-### Light — Shallow Tree
-
-```
-Requirement: [task as received]
-└── Solution: [proposed implementation approach]
-      ├── Feasibility Assumption: [hypothesis about architecture fit]
-      │     └── Validation: [how to verify]
-      └── Feasibility Assumption: [hypothesis about risk]
-            └── Validation: [how to verify]
-```
-
-No Outcome node — outside the developer's scope.
-
----
-
-## 3. Assumption Register
+## 2. Assumption Register
 
 Format is identical for both levels. Content scope differs.
 
@@ -89,7 +57,7 @@ Format is identical for both levels. Content scope differs.
 
 ---
 
-## 4. Codebase Impact Summary
+## 3. Codebase Impact Summary
 
 ### Deep — Standard
 
@@ -134,7 +102,7 @@ Format is identical for both levels. Content scope differs.
 
 ---
 
-## 5. Questions for PM (Light only)
+## 4. Questions for PM (Light only)
 
 Generated when the Exit Gate identifies gaps the developer cannot fill.
 

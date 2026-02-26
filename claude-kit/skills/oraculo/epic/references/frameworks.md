@@ -16,23 +16,17 @@ The session follows two movements: first expand the problem space (diverge), the
 
 Users don't want features — they "hire" products to make progress in specific circumstances. JTBD explores the functional, emotional, and social dimensions of the user's need, producing Job Stories instead of feature descriptions.
 
-**When:** Divergence phase. Full dimensions (functional, emotional, social) in Deep only. Light uses a technical variant focused on system behavior and pre-conditions.
+Includes the **Four Forces of Progress** — Push (frustration with current state), Pull (attraction of the new), Anxiety (fear of the unknown), Habit (inertia of current behavior). These forces surface adoption edge cases that functional analysis misses.
+
+**When:** Divergence phase. Full dimensions (functional, emotional, social) and all four forces in Deep only. Light uses a technical variant focused on system behavior, pre-conditions, and technical adoption forces.
 
 ---
 
-## Four Forces of Progress
+## Theory of Constraints (TOC)
 
-Maps what drives and resists change: **Push** (frustration with current state), **Pull** (attraction of the new), **Anxiety** (fear of the unknown), **Habit** (inertia of current behavior). Surfaces adoption edge cases that functional analysis misses.
+Every system has a single constraint that limits its throughput. TOC asks: what is the one bottleneck that, if removed, would unlock the most value? Applied to discovery, this forces prioritization toward the highest-impact problem.
 
-**When:** Divergence phase, both levels. Light applies forces to technical adoption (system change); Deep applies them to user adoption (behavior change).
-
----
-
-## Opportunity Solution Tree (OST)
-
-Teresa Torres' framework: desired Outcome at top, branching into Opportunities (user needs), then Solutions, then Assumptions with validation criteria. Keeps every idea connected to a real need and measurable outcome.
-
-**When:** Deep builds and extends the tree actively. Light queries the existing tree passively to check if the task connects to a mapped opportunity.
+**When:** Convergence phase, both levels. Deep identifies the user/business constraint. Light identifies the technical constraint. The same principle applies later in execution, where QA throughput governs the pace.
 
 ---
 
@@ -44,16 +38,8 @@ Makes hidden assumptions explicit and scores them by risk: Impact (if wrong, how
 
 ---
 
-## Working Backwards (PR/FAQ)
-
-Amazon's technique of writing a fictional press release before building. Forces clarity about who benefits, what changes, and why it matters. If the announcement doesn't sound compelling, the idea isn't ready.
-
-**When:** Stress Test phase, Deep only. Replaced by Technical Viability Checklist in Light.
-
----
-
 ## Technical Viability Checklist
 
-Light-mode replacement for PR/FAQ. Tests whether the implementation approach fits the current architecture, what tests are needed, what code review objections might arise, and what technical acceptance criteria apply.
+Light-mode stress test. Tests whether the implementation approach fits the current architecture, what tests are needed, what code review objections might arise, and what technical acceptance criteria apply.
 
-**When:** Stress Test phase, Light only. Replaces Working Backwards.
+**When:** Exit Gate phase, Light only.

@@ -53,7 +53,7 @@ If answers suggest small, focused, well-understood work → suggest `/oraculo:st
 
 ---
 
-## 3. Divergence — Four Forces
+## 3. Divergence — JTBD Four Forces
 
 ### Deep
 
@@ -138,9 +138,9 @@ All assumptions with risk score above threshold acknowledged by the user. Critic
 
 ## 7. Stress Test
 
-### Deep — PR/FAQ (Working Backwards)
+### Deep — Constraint-Focused Validation
 
-- "If this feature launched tomorrow, how would the announcement read in two sentences?"
+- "From everything we explored, what is THE bottleneck — the single constraint that limits the most value?"
 - "What would a skeptical customer's first question be?"
 - "What would engineering's main objection be?"
 - "How would you measure success three months after launch?"
