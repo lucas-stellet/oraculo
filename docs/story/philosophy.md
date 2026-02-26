@@ -64,7 +64,7 @@ These principles extend the core Oraculo principles for this specific phase:
 
 A story can exist in two modes:
 
-- **Standalone:** Work that doesn't need an Epic. The problem is clear, the scope is small, and the Story skill provides enough structure to define it.
+- **Standalone:** Work that doesn't need an Epic. The problem is clear, the scope is small, and the Story skill provides enough structure to define it. Under the hood, the CLI creates a lightweight epic to preserve the hierarchical data model — this is transparent to the user.
 
 - **Derived from Epic:** A specific REC-N from an Epic is being decomposed into an executable story. The Story skill reads the parent Epic and uses it as context for more focused questions.
 
