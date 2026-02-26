@@ -6,6 +6,14 @@ The QA agent is the immune system. It validates code agent output with fresh eye
 
 A QA agent that merely confirms "looks good" is worthless. Effective validation requires an agent that checks functional correctness, enforces standards, probes edge cases, and evaluates test quality — all without access to the code agent's reasoning about why things were done a certain way.
 
+## 1.1 Two Levels of Validation
+
+QA operates at two distinct levels:
+
+**Task-level:** Each completed task is reviewed independently. The QA agent receives the diff, specs, and test results for that specific task. Verdicts are recorded with `task_id` in the `validations` table.
+
+**Story-level:** Once all tasks in a story pass individual QA, a final integrated review checks cross-task coherence, story requirements as a whole, and overall quality. This verdict is recorded with `task_id = NULL` in the `validations` table and serves as the final gate before generating the story's markdown summary and extracting lessons learned into the knowledge table.
+
 ## 2. Clean Context
 
 The QA agent operates with a completely clean context window. It receives exactly three inputs:

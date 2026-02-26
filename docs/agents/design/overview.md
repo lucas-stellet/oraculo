@@ -18,9 +18,9 @@ Both modes share the same agent infrastructure, the same QA pipeline, and the sa
 
 ### 2.1 Discover
 
-**Actors:** Orchestrator + Human
+**Actors:** Orchestrator + Human (+ Research Agents when no prior context exists)
 
-The orchestrator asks questions, not agents. No code agents or QA agents are involved. The output is a validated requirements document stored as markdown in `.oraculo/epics/<name>/requirements.md`.
+The orchestrator asks questions, not code or QA agents. When no prior context exists (no documentation, no defined sources), research agents are dispatched in parallel to analyze the codebase and surface evidence. When prior context exists, the orchestrator conducts a light analysis directly. The output is a validated requirements document stored as markdown in `.oraculo/epics/<name>/requirements.md`.
 
 ### 2.2 Plan
 
@@ -38,7 +38,11 @@ Each code agent receives a specific task with focused context: relevant files, a
 
 **Actors:** QA Agent
 
-A dedicated QA agent reviews the implementation with a clean context window. It receives the diff, the specs, and test results — never the code agent's reasoning. QA never fixes; it reports structured findings. If QA rejects, the orchestrator spawns a new code agent with QA's feedback.
+Validation operates at two levels:
+
+**Task-level validation:** After each code agent completes a task, the QA agent reviews the implementation with a clean context window. It receives the diff, the specs, and test results — never the code agent's reasoning. QA never fixes; it reports structured findings. If QA rejects, the orchestrator spawns a new code agent with QA's feedback.
+
+**Story-level validation:** Once all tasks in a story pass individual QA, the QA agent performs an integrated review — cross-task coherence, story requirements as a whole, and overall quality. The story verdict is the final gate before markdown and knowledge generation.
 
 ## 3. End-to-End Task Lifecycle
 

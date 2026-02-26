@@ -2,7 +2,7 @@
 
 ## 1. Ephemeral SQLite
 
-Each epic gets its own SQLite database at `.oraculo/oraculo.db`. This database is ephemeral — it is listed in `.gitignore` and is not committed to the repository. It serves as infrastructure for tracking execution state, not as a knowledge store.
+A single SQLite database at `.oraculo/oraculo.db` serves the entire project. It is listed in `.gitignore` and is not committed to the repository. The database holds two categories of data: transient operational state (tasks, dependencies, QA verdicts) that can be cleaned after epic completion, and persistent knowledge (lessons learned, codebase patterns) that accumulates across all epics.
 
 The database uses the schema defined in [`docs/cli/design.md`](../../cli/design.md) §4.3:
 
@@ -11,7 +11,7 @@ The database uses the schema defined in [`docs/cli/design.md`](../../cli/design.
 - **`tasks`** — Task status lifecycle (`pending → in_progress → completed | failed`)
 - **`task_dependencies`** — DAG edges (which task depends on which)
 - **`task_results`** — Rich completion data (summary, logs, skills used, files modified)
-- **`validations`** — QA verdicts per story (approved/rejected)
+- **`validations`** — QA verdicts per task and per story (approved/rejected)
 - **`knowledge`** — Codebase knowledge with full-text search
 
 ### What Gets Tracked
@@ -21,14 +21,18 @@ The database uses the schema defined in [`docs/cli/design.md`](../../cli/design.
 | Task status | `tasks` | The orchestrator queries this to determine what to dispatch next |
 | Dependencies | `task_dependencies` | The DAG structure — which tasks block which |
 | Completion data | `task_results` | Summary, logs, files modified — used for QA context and markdown generation |
-| QA verdicts | `validations` | Whether a story passed or failed validation |
+| QA verdicts | `validations` | Whether a task or story passed or failed validation |
 | Codebase knowledge | `knowledge` | Patterns, conventions, constraints discovered during execution |
 
 ### Lifecycle
 
-The database is created automatically by the CLI on the first `oraculo tools` command. It lives for the duration of the epic's active development. Once the epic is complete and the final markdown artifact is generated, the database has served its purpose — it can be deleted without losing any committed knowledge.
+The database is created automatically by the CLI on the first `oraculo tools` command. It persists for the life of the project.
 
-**Why ephemeral?** The database contains operational state (task progress, agent logs, intermediate results) that is valuable during execution but not after. Committing it would pollute the repository with transient data. The meaningful output — requirements, decisions, and summaries — is captured in committed markdown files.
+**Transient data** (tasks, dependencies, QA verdicts, task results) is valuable during execution but not after. Once an epic completes and its markdown artifacts are generated, this operational data can be cleaned.
+
+**Persistent data** (knowledge table) accumulates across all epics. When an epic/story completes, lessons learned are extracted into the knowledge table. This data is never cleaned — it is the project's long-term memory.
+
+The database is not committed (`.gitignore`) because it contains operational state that would pollute the repository. The meaningful output — requirements, decisions, summaries, and knowledge — is captured in committed markdown files and the persistent knowledge table.
 
 ## 2. Single Markdown Artifact
 
@@ -87,7 +91,7 @@ Task status, dependencies, QA verdicts, and operational data live in SQLite for 
 
 ### What This Is Not
 
-There is no three-tier memory architecture (working/episodic/semantic). There is no curation pipeline. There is no semantic knowledge store with scoring and promotion. These are powerful concepts but add complexity that is not justified at this stage. The simple model — CLAUDE.md + markdowns + ephemeral SQLite — covers the essential needs:
+There is no three-tier memory architecture (working/episodic/semantic). There is no curation pipeline or promotion scoring. The knowledge table with full-text search provides a simple, queryable store for codebase findings — not the deferred rich memory system described in future-work.md. The model — CLAUDE.md + markdowns + SQLite (operational state + knowledge) — covers the essential needs:
 
 - Agents know the project's conventions (CLAUDE.md)
 - Agents know the feature's requirements (epic markdowns)
