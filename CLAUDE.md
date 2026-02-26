@@ -17,13 +17,13 @@ Full document: [docs/philosophy.md](docs/philosophy.md)
 
 Two operating modes:
 - **Product Engineering** (with epic): Discover > Plan > Execute > Validate
-- **Software Engineering*** (story only): Plan > Execute > Validate
+- **Software Engineering** (story only): Plan > Execute > Validate
 
 Full document: [docs/design.md](docs/design.md)
 
 ## Epic Phase
 
-Transforms raw ideas into validated problem definitions through Socratic exploration. Uses Double Diamond, JTBD, OST, and Assumption Mapping frameworks.
+Transforms raw ideas into validated problem definitions through Socratic exploration. Uses Double Diamond, JTBD (with Four Forces), TOC, and Assumption Mapping frameworks.
 
 Full document: [docs/epic/philosophy.md](docs/epic/philosophy.md)
 
@@ -41,9 +41,11 @@ Full document: [docs/cli/philosophy.md](docs/cli/philosophy.md)
 
 ## Agents
 
-The agent layer is Oraculo's execution workforce. The orchestrator decomposes work into a DAG and dispatches code agents (with TDD skill) and QA agents (with clean context). All agents work on the same branch — no worktrees. Ephemeral SQLite tracks state; committed markdowns capture outcomes.
+The agent layer is Oraculo's execution workforce. The orchestrator decomposes work into a DAG and dispatches code agents (with TDD skill), research agents (for codebase analysis), and QA agents (with clean context). All agents work on the same branch — no worktrees. SQLite tracks operational state; the knowledge table persists lessons learned; committed markdowns capture outcomes.
 
-Full document: [docs/agents/design.md](docs/agents/design.md)
+Full document: [docs/agents/philosophy.md](docs/agents/philosophy.md)
+
+Design index: [docs/agents/design.md](docs/agents/design.md)
 
 ## Project Structure
 
@@ -60,7 +62,7 @@ claude-kit/
         │   └── references/
         │       ├── question-bank.md           # Question templates by phase/level
         │       ├── frameworks.md              # Framework descriptions
-        │       ├── artifact-templates.md      # Intermediate artifact formats (OST, Codebase Impact)
+        │       ├── artifact-templates.md      # Intermediate artifact formats (Codebase Impact)
         │       └── requirements-template.md   # Primary output: Requirements document template
         └── story/
             ├── SKILL.md                       # /oraculo:story skill
