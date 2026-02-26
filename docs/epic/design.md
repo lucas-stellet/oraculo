@@ -30,7 +30,7 @@ Oraculo separates the problem from any proposed solution before proceeding.
 
 ### 1.2 Divergence — Expanding the Problem Space
 
-Oraculo applies JTBD and Four Forces question templates to explore dimensions the user hasn't considered.
+Oraculo applies JTBD question templates (including Four Forces) to explore dimensions the user hasn't considered.
 
 **JTBD questions:**
 - "In what specific situation does the user encounter this problem?"
@@ -53,7 +53,7 @@ Oraculo applies JTBD and Four Forces question templates to explore dimensions th
 
 ### 1.3 Codebase Analysis (Parallel)
 
-While the dialogue progresses, Oraculo dispatches sub-agents to analyze the existing codebase. This runs in parallel — it does not block the conversation.
+When no prior context exists (no documentation, no defined sources), Oraculo dispatches research agents to analyze the existing codebase. This runs in parallel — it does not block the conversation. When prior context exists (defined sources, existing documentation), the orchestrator conducts a light analysis directly without dispatching agents.
 
 **What sub-agents investigate:**
 - Existing implementations that overlap with the proposed idea
@@ -97,19 +97,7 @@ Each assumption is evaluated on two axes:
 
 **Exit condition:** All assumptions with risk score above threshold are acknowledged by the user. Each critical assumption (high impact, low evidence) has either supporting evidence or is flagged as a known risk for the Plan phase.
 
-### 1.6 Stress Test — Working Backwards
-
-Oraculo runs a simplified PR/FAQ to test whether the idea has sufficient clarity to proceed.
-
-**Stress test questions:**
-- "If this feature launched tomorrow, how would the announcement read in two sentences?"
-- "What would a skeptical customer's first question be?"
-- "What would engineering's main objection be?"
-- "How would you measure success three months after launch?"
-
-**Exit condition:** The user can answer all four questions without significant hesitation or contradiction with earlier answers. If the user struggles, Oraculo identifies which gap exists and loops back to the step that addresses it (typically 1.2 or 1.4).
-
-### 1.7 Exit Gate
+### 1.6 Exit Gate
 
 The final checkpoint before advancing to Plan. Oraculo evaluates four risk dimensions:
 
@@ -127,9 +115,9 @@ The final checkpoint before advancing to Plan. Oraculo evaluates four risk dimen
 
 Only when all four risks are addressed does the session produce its final artifacts and hand off to Plan.
 
-### 1.8 Artifact Generation
+### 1.7 Artifact Generation
 
-Oraculo generates the Requirements Document and saves it to `.oraculo/projects/<project-name>/epic.md`. After presenting the document, it suggests decomposing the epic into stories with `/oraculo:story`.
+Oraculo generates the Requirements Document and saves it to `.oraculo/epics/<epic-name>/requirements.md`. After presenting the document, it suggests decomposing the epic into stories with `/oraculo:story`.
 
 ## 2. Output Artifacts
 
@@ -143,18 +131,7 @@ One or more Job Stories in the format:
 
 Job Stories become the input for story decomposition. Each story must trace back to a Job Story or REC-N.
 
-### 2.2 Opportunity Solution Tree (OST)
-
-A structured tree:
-
-```
-Outcome (business metric / user behavior)
-  └── Opportunity (user need, written in first person)
-        └── Solution (proposed approach)
-              └── Assumption (hypothesis + validation criteria)
-```
-
-### 2.3 Assumption Register
+### 2.2 Assumption Register
 
 A prioritized list of assumptions with:
 - Description of the assumption
@@ -165,16 +142,28 @@ A prioritized list of assumptions with:
 
 Critical assumptions (high risk) become explicit inputs for the Plan phase.
 
-### 2.4 Codebase Impact Summary
+### 2.3 Codebase Impact Summary
 
 Results from sub-agent analysis, recorded as:
 - Existing components that relate to the idea
 - Architectural constraints identified
 - Edge cases from current code that the new feature must handle
 
-### 2.5 Requirements Document
+### 2.4 Requirements Document
 
-The primary output — a 9-section document saved to `.oraculo/projects/<project-name>/epic.md`. Each REC-N requirement is a candidate for decomposition into stories.
+The primary output — saved to `.oraculo/epics/<epic-name>/requirements.md`. The document has 9 sections:
+
+1. Summary
+2. Problem
+3. Context & Motivation
+4. Requirements
+5. User Experience
+6. Scope
+7. Assumptions & Risks
+8. Success Criteria
+9. Open Questions
+
+Each REC-N requirement is a candidate for decomposition into stories.
 
 ## 3. Scaling with Complexity
 
@@ -184,7 +173,7 @@ Oraculo selects the exploration depth based on the idea's characteristics at ent
 
 **When:** The user describes a new feature or a significant change to existing functionality. The problem needs exploration but the domain is understood.
 
-**Flow:** Full sequence — Session Setup → Reframing → Divergence → Codebase Analysis → Convergence → Assumption Mapping → Stress Test → Exit Gate → Artifact Generation.
+**Flow:** Full sequence — Session Setup → Reframing → Divergence → Codebase Analysis → Convergence → Assumption Mapping → Exit Gate → Artifact Generation.
 
 ### 3.2 Deep Epic
 
@@ -214,7 +203,7 @@ The Epic phase operates at two reasoning levels that share the same Socratic dis
 - Exploring idea they identified
 - Has user data, business metrics, strategic vision
 - Focuses on: user behavior, business impact, technical feasibility
-- Uses full framework toolkit (JTBD, Four Forces, PR/FAQ, OST)
+- Uses full framework toolkit (JTBD with Four Forces, TOC, Assumption Mapping)
 - Answers all gate questions autonomously
 
 ### 4.3 Selection Signals
@@ -239,8 +228,8 @@ The Epic phase operates at two reasoning levels that share the same Socratic dis
 
 The Epic phase produces a Requirements Document with REC-N items. To implement:
 
-1. Invoke `/oraculo:story <project-name>`
-2. The Story skill reads `.oraculo/projects/<project-name>/epic.md`
+1. Invoke `/oraculo:story <epic-name>`
+2. The Story skill reads `.oraculo/epics/<epic-name>/requirements.md`
 3. The user selects which REC-N to work on
 4. The Story skill runs a focused session to produce an executable story definition
 
@@ -248,4 +237,4 @@ Each REC-N can generate one or more stories depending on its scope.
 
 ## 6. Output Path
 
-All epic artifacts are saved to `.oraculo/projects/<project-name>/epic.md` inside the target application. The project name is derived from the idea's domain or explicitly asked from the user during artifact generation.
+All epic artifacts are saved to `.oraculo/epics/<epic-name>/requirements.md` inside the target application. The epic name is derived from the idea's domain or explicitly asked from the user during artifact generation.
