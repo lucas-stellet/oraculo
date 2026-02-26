@@ -10,7 +10,7 @@ The user arrives with a work item. Oraculo checks for a parent epic, captures th
 
 **Parent epic workflow:**
 - If project name was passed as argument (`/oraculo:story gastos-app`):
-  - Search for `.oraculo/projects/<project-name>/epic.md`
+  - Search for `.oraculo/epics/<epic-name>/requirements.md`
   - If found: read the epic, ask which REC-N to work on (or if it's something new)
   - If not found: proceed as standalone
 - If no argument: proceed as standalone
@@ -69,7 +69,7 @@ Final checkpoint — evaluate four risk dimensions before generating the artifac
 
 Oraculo generates the Story Document and saves it.
 
-**Output path:** `.oraculo/projects/<project-name>/story-<title-slug>.md`
+**Output path:** `.oraculo/epics/<epic-name>/stories/<story-name>/requirements.md`
 
 If derived from an epic, the story document includes parent references in header comments.
 
@@ -127,7 +127,7 @@ The Story phase operates at two reasoning levels that share the same Socratic di
 
 When a story is derived from an epic:
 
-1. **Reading:** The Story skill reads `.oraculo/projects/<project-name>/epic.md`
+1. **Reading:** The Story skill reads `.oraculo/epics/<epic-name>/requirements.md`
 2. **Selection:** Asks the user which REC-N to work on, or if it's something new
 3. **Context inheritance:** The epic's problem statement, context, and scope inform the story session — the user doesn't repeat what was already captured
 4. **Adapted questions:** Reframing questions reference the specific REC-N context
@@ -158,4 +158,4 @@ If at any point during a Story session the work reveals itself to be epic-sized,
 
 ## 7. Output Path
 
-Story artifacts are saved to `.oraculo/projects/<project-name>/story-<title-slug>.md` inside the target application. The title slug is derived from the story title (lowercase, hyphenated). If no project name was provided, the user is asked during artifact generation.
+Story artifacts are saved to `.oraculo/epics/<epic-name>/stories/<story-name>/requirements.md` inside the target application. The story name is derived from the story title (lowercase, hyphenated). If no epic name was provided and the story is standalone, the CLI creates a lightweight epic automatically.
