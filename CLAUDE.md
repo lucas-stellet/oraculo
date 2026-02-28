@@ -47,6 +47,14 @@ Full document: [docs/agents/philosophy.md](docs/agents/philosophy.md)
 
 Design index: [docs/agents/design.md](docs/agents/design.md)
 
+## UI
+
+The UI is Oraculo's **observation and control surface** — a browser-based dashboard that provides visibility into agents, tasks, DAG, approvals, and accumulated knowledge. It consumes data through the CLI Trust Layer (never bypasses it) and functions as Mission Control: comprehensive situational awareness with strategic intervention at approval gates.
+
+Full document: [docs/ui/philosophy.md](docs/ui/philosophy.md)
+
+Design index: [docs/ui/design.md](docs/ui/design.md)
+
 ## Project Structure
 
 ### `claude-kit/`
