@@ -46,10 +46,22 @@ The server manages one stateful concern: the **approval queue**. Approval reques
 When Claude Code starts a session, it launches `oraculo mcp` as a registered MCP server (configured during `oraculo install`). The startup sequence:
 
 1. `oraculo mcp` starts the MCP server on stdio (standard MCP transport)
-2. The MCP server starts the HTTP server on an available port
-3. The HTTP server begins serving the embedded frontend and REST API
-4. The binary opens the user's default browser to `http://localhost:<port>`
-5. File watchers start monitoring `.oraculo/` for changes
+2. The MCP server reads the project's allocated port from `.oraculo/config` → `dashboard.port`
+3. If no port is configured, it allocates the first available port in the range 3100-3199
+4. The HTTP server attempts to bind the configured port
+5. If the port is occupied, it performs a sequential scan within 3100-3199 for the first free port
+6. The new port is saved back to `.oraculo/config`
+7. If no port is available in the range, the server exits with a clear error: "All ports in range 3100-3199 are in use"
+8. The HTTP server begins serving the embedded frontend and REST API
+9. The binary opens the user's default browser to `http://localhost:<port>`
+10. File watchers start monitoring `.oraculo/` for changes
+
+**Port System:**
+
+- **Range:** 3100-3199 (hardcoded constants in the Go binary)
+- **Configuration:** `.oraculo/config` per project stores `dashboard.port`
+- **Stability:** Each project gets a dedicated, stable port — the dashboard URL is bookmarkable across sessions
+- **No global config:** The port range lives in the binary, port allocation lives in the project
 
 If the HTTP server is already running (from another session), the new MCP server connects to the existing instance instead of starting a duplicate. The human never needs to run a separate command.
 
@@ -98,31 +110,31 @@ All data flows through CLI internals. The HTTP server calls the same Go function
 
 ## 3. Screens
 
-### 3.1 Home/Dashboard
+### 3.1 Landing (Epic Selection)
 
-**Purpose:** Project overview at a glance — what exists, what is in progress, what needs attention.
-
-**Data sources:**
-- `oraculo tools epic list` — Epic count and names
-- `oraculo tools story list --epic <epic>` — Story count per epic
-- `oraculo tools task list --epic <epic> --story <story>` — Task status distribution
-
-**Layout:** Four summary cards across the top (total epics, total stories, task completion percentage, active agents). Below, a table of epics with inline progress bars showing story/task completion. A sidebar panel shows the current phase indicator (Discover/Plan/Execute/Validate) for the most recently active epic.
-
-**Key interactions:** Click any epic row to navigate to Epic Explorer. Click the active agents count to jump to Agent Monitor.
-
-### 3.2 Epic Explorer
-
-**Purpose:** Navigate the Epic > Story > Task hierarchy and read requirements documents.
+**Purpose:** Entry point for the dashboard. The user selects which Epic to work with. All other screens are scoped to the selected Epic.
 
 **Data sources:**
-- `oraculo tools epic list` + `oraculo tools epic get <name>` — Epic metadata and markdown
-- `oraculo tools story list --epic <epic>` + `oraculo tools story get <name> --epic <epic>` — Story metadata and markdown
-- `oraculo tools task list --epic <epic> --story <story>` — Task list with status
+- `oraculo tools epic list` — All epics with phase, story count, task status
 
-**Layout:** Master-detail split. Left panel: collapsible tree showing Epics > Stories > Tasks. Right panel: markdown viewer rendering the selected entity's requirements document or task detail. Phase badges (pending, in_progress, completed, failed) appear next to each tree node.
+**Layout:** A page title "Select an Epic" with subtitle "Choose an Epic to view its stories, tasks, and agent activity." Below, a responsive grid of Epic cards. Each card shows: Epic name (header, semibold), phase badge (Discover / Plan / Execute / Validate), progress bar showing task completion, stats row (story count, task count, completion percentage), status badge (completed / in_progress / pending), and an "Open" button.
 
-**Key interactions:** Select a tree node to load its content in the viewer. Expand/collapse levels. Filter tree by status. Link from any task to its DAG View position.
+**Key interactions:** Click a card or its "Open" button to select the Epic. The sidebar's Epic dropdown updates and the view navigates to Stories for that Epic. The sidebar nav items become active once an Epic is selected.
+
+**When no Epic is selected:** Sidebar Epic dropdown shows "Select Epic...", nav items (Stories through Knowledge Base) are visually muted/disabled, and Settings remains always accessible.
+
+### 3.2 Stories
+
+**Purpose:** Navigate the Story > Task hierarchy within the selected Epic and read requirements documents.
+
+**Data sources:**
+- `oraculo tools story list --epic <epic>` — Stories for the selected Epic
+- `oraculo tools story get <name> --epic <epic>` — Story requirements markdown
+- `oraculo tools task list --epic <epic> --story <story>` — Tasks with status
+
+**Layout:** Master-detail split. Left panel: tree view of Stories within the selected Epic. Each story expands to show its tasks with status badges (pending, in_progress, completed, failed). Right panel: markdown viewer rendering the selected story's requirements or task detail.
+
+**Key interactions:** Select a tree node to load its content in the viewer. Expand/collapse stories. Filter by status. Link from any task to its DAG View position.
 
 ### 3.3 DAG View
 
@@ -189,25 +201,31 @@ All data flows through CLI internals. The HTTP server calls the same Go function
 
 **Purpose:** Project configuration and dashboard preferences.
 
-**Layout:** Tabbed form. Tabs: Project (name, directory path, CLI binary path), Dashboard (refresh interval, theme light/dark, notification preferences), Connected Projects (multi-project list with add/remove).
+**Layout:** Tabbed form. Tabs: Project (name, directory path, CLI binary path), Dashboard (refresh interval, theme light/dark, notification preferences).
 
-**Key interactions:** Save persists to a local config file (`~/.oraculo/dashboard.json`). Connected projects allow the dashboard to serve multiple Oraculo-enabled repositories from a single instance.
+**Key interactions:** Save persists to `.oraculo/config`. The Settings screen is always accessible regardless of Epic selection.
 
 ## 4. Navigation and Layout
 
-**Shell:** Persistent left sidebar with icon + label links for each screen. The sidebar collapses to icon-only on narrow viewports. Top bar shows the current project name and a project switcher dropdown (for multi-project mode).
+**Shell:** Persistent left sidebar with icon + label links for each screen. The sidebar collapses to icon-only on narrow viewports. The sidebar header contains the brand name ("Oraculo") and an Epic dropdown selector.
+
+**Epic dropdown:** Located in the sidebar header, replacing the project subtitle. Shows the currently selected Epic name with a chevron indicator. Clicking opens a dropdown to switch between Epics. When no Epic is selected, displays "Select Epic..." and nav items below are visually muted.
 
 **Sidebar order:**
-1. Home/Dashboard
-2. Epic Explorer
-3. DAG View
-4. Agent Monitor
-5. Approvals (with unread count badge)
-6. QA Dashboard
-7. Knowledge Base
-8. Settings
+1. Stories (icon: folder-tree)
+2. DAG View (icon: git-branch)
+3. Agent Monitor (icon: bot)
+4. Approvals (icon: shield-alert, with unread count badge)
+5. QA Dashboard (icon: shield-check)
+6. Knowledge Base (icon: brain)
+— separator —
+7. Settings (icon: settings)
 
-**Responsive behavior:** The sidebar collapses below 1024px viewport width. Master-detail views (Epic Explorer, Approvals) stack vertically on narrow screens. The DAG View remains full-width with horizontal scroll.
+**When an Epic is selected:** All nav items (1-6) are active, and the default view is Stories. Switching Epics via the dropdown navigates to Stories of the new Epic.
+
+**When no Epic is selected (Landing):** Nav items 1-6 are grayed/disabled. Only Settings is interactive. The main content area shows the Epic selection grid.
+
+**Responsive behavior:** The sidebar collapses below 1024px viewport width. Master-detail views (Stories, Approvals) stack vertically on narrow screens. The DAG View remains full-width with horizontal scroll.
 
 **Theme:** Light and dark modes. Colors follow a neutral base with status-semantic accents: blue for in-progress, green for completed, red for failed, amber for pending approval.
 
@@ -235,8 +253,8 @@ Summary of how each screen obtains its data:
 
 | Screen | Primary source | Update mechanism |
 |---|---|---|
-| Home/Dashboard | CLI: `epic list`, `story list`, `task list` | Polling on mount + WebSocket `task_updated` |
-| Epic Explorer | CLI: `epic get`, `story get`, `task list` | File watcher on `.oraculo/epics/**/*.md` |
+| Landing | CLI: `epic list` | Polling on mount |
+| Stories | CLI: `story list`, `story get`, `task list` | File watcher on `.oraculo/epics/**/*.md` |
 | DAG View | CLI: `task list` (includes `depends_on`) | WebSocket `task_updated` |
 | Agent Monitor | WebSocket: `agent_state` events | Push only (no polling) |
 | Approvals | MCP: `request_approval` | Push only (no polling) |

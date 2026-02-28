@@ -64,7 +64,7 @@ The UI is not a separate application. It lives inside the same binary as the CLI
 
 ### 4.7 Run the Agent, We Do the Rest
 
-The human should never need to start the dashboard manually. When a session begins, the dashboard starts automatically — the server comes up, the browser opens, and the interface is ready before the human asks their first question. The human runs a command, and the dashboard is already there, waiting. This is the Pit of Success applied to the UI: the correct setup is the default setup. No separate terminal tab, no manual server start, no "remember to launch the dashboard first." The system takes care of itself so the human can focus on the work.
+The human should never need to start the dashboard manually. When a session begins, the dashboard starts automatically — the server comes up, the browser opens, and the interface is ready before the human asks their first question. The human runs a command, and the dashboard is already there, waiting. This is the Pit of Success applied to the UI: the correct setup is the default setup. No separate terminal tab, no manual server start, no "remember to launch the dashboard first." The system takes care of itself so the human can focus on the work. Each project gets a dedicated port in the 3100-3199 range, persisted in `.oraculo/config`, so the dashboard URL is stable and bookmarkable across sessions.
 
 ## 5. Relationship to Other Layers
 
