@@ -22,11 +22,41 @@ Both modes share the same agent infrastructure, the same QA pipeline, and the sa
 
 The orchestrator asks questions, not code or QA agents. When no prior context exists (no documentation, no defined sources), research agents are dispatched in parallel to analyze the codebase and surface evidence. When prior context exists, the orchestrator conducts a light analysis directly. The output is a validated requirements document stored as markdown in `.oraculo/epics/<name>/requirements.md`.
 
+### 2.1.5 Discover → Plan: Approval Gate
+
+Before the Plan phase begins, the orchestrator submits the requirements document for mandatory human review:
+
+```
+oraculo tools approval request --type epic-requirements
+```
+
+The dashboard displays the requirements document. The orchestrator enters `awaiting_approval` state and does not begin decomposition until a verdict is received:
+- **`approved`** — Requirements are validated; the orchestrator proceeds to Plan
+- **`rejected`** — Requirements are invalidated; the orchestrator returns to Discover and resumes Socratic exploration
+- **`needs_revision`** — Requirements need targeted changes; the orchestrator updates the document based on comments and resubmits
+
+This gate exists because the Plan phase commits significant resources (DAG construction, agent dispatch). A wrong requirements document means wasted execution. Human validation at this boundary is mandatory.
+
 ### 2.2 Plan
 
 **Actors:** Orchestrator
 
 The orchestrator decomposes requirements into a DAG — tasks as nodes, dependencies as edges. It identifies what is parallel, what is sequential, and where the bottleneck lies. It assigns skills to each task based on the work required. The CLI validates the DAG (acyclicity, dependency integrity) and persists it to SQLite.
+
+### 2.2.5 Plan → Execute: Approval Gate (Optional)
+
+Before the Execute phase begins, the orchestrator may submit the execution plan for human review:
+
+```
+oraculo tools approval request --type execution-plan
+```
+
+The dashboard displays the full DAG — tasks, dependencies, skill assignments, and the rationale for parallelism decisions. The orchestrator enters `awaiting_approval` state. Verdicts:
+- **`approved`** — The plan is validated; the orchestrator begins dispatching
+- **`rejected`** — The plan is invalid; the orchestrator returns to Plan and redesigns the DAG
+- **`needs_revision`** — Specific tasks or assignments need adjustment; the orchestrator mutates the DAG based on comments and resubmits
+
+This gate is **optional** — it is controlled by a project-level configuration flag. Teams that trust the orchestrator's decomposition can skip it. Teams that want visibility into the execution plan before agents touch code can enable it.
 
 ### 2.3 Execute
 
@@ -56,7 +86,7 @@ A task follows this path through the system:
 
 **4. Validation.** The QA agent receives the diff, specs, and test results in a clean context. It checks functional correctness, standards compliance, edge cases, and test quality. The CLI records the verdict in SQLite.
 
-**5. Resolution.** If approved, the task is marked complete. If rejected, the orchestrator spawns a new code agent with QA's feedback — fresh context, no memory of the previous attempt. A circuit breaker limits rejection cycles before escalating to the human.
+**5. Resolution.** If approved, the task is marked complete. If rejected, the orchestrator spawns a new code agent with QA's feedback — fresh context, no memory of the previous attempt. A circuit breaker limits rejection cycles; when it trips, the orchestrator submits a `qa-escalation` approval request to the dashboard and enters `awaiting_approval` state until a human verdict is received.
 
 **6. Integration.** Once all tasks in a story are validated, a single markdown summary is generated and committed. The transient operational data in SQLite has served its purpose. The Deliver/Merge phase (merging to mainline) is future work.
 
@@ -74,4 +104,6 @@ These hold across all phases and all agents:
 
 5. **Skills define agent behavior.** The orchestrator assigns skills to agents based on task needs. The skill is the containment mechanism — it defines the workflow, constraints, and quality gates for the agent.
 
-6. **Single markdown artifact.** When a story completes, the system produces one committed markdown file summarizing what was done. The operational detail stays in SQLite (transient data, cleanable after epic completion).
+6. **Approval gates are mandatory at phase transitions.** No phase advances without a human verdict. The orchestrator enters `awaiting_approval` state at each gate and waits for an explicit `approved`, `rejected`, or `needs_revision` verdict before proceeding. Independent tasks may continue during the wait; dependent tasks do not.
+
+7. **Single markdown artifact.** When a story completes, the system produces one committed markdown file summarizing what was done. The operational detail stays in SQLite (transient data, cleanable after epic completion).

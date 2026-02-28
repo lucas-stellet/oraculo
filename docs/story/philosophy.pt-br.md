@@ -46,6 +46,10 @@ Stories podem ser standalone ou derivadas de um Epic. Quando derivadas, a skill 
 
 Se durante uma sessão de Story o trabalho se revela maior do que o esperado — múltiplas áreas, alta incerteza, escopo vago — o Oraculo sugere escalar para `/oraculo:epic` em vez de tentar forçar trabalho complexo em uma definição do tamanho de uma story.
 
+### 4.4 Pronta para Aprovação
+
+O artefato de Story é produzido com revisão humana em mente. Um revisor que encontra a story pelo dashboard não tem contexto da sessão — não participou do diálogo. O artefato deve ser autocontido: motivação, requisito, escopo e premissas críticas devem ser legíveis para alguém que lê apenas o documento. O Oraculo trata a prontidão para aprovação como critério de qualidade ao lado da completude. Um artefato que um revisor não consegue avaliar de forma independente não está finalizado.
+
 ## 5. Princípios Específicos da Definição de Story
 
 Estes princípios estendem os princípios centrais do Oraculo para esta fase específica:
@@ -56,7 +60,7 @@ Estes princípios estendem os princípios centrais do Oraculo para esta fase esp
 
 - **Premissas são explícitas** — Toda premissa crítica deve ser declarada e reconhecida. Nem todas as premissas precisam de pontuação — mas as perigosas devem ser visíveis.
 
-- **Gate antes de gerar** — A fase Story tem um portão de saída. Se os quatro riscos não forem endereçados, o artefato não é gerado.
+- **Gate antes de gerar** — A fase Story tem dois checkpoints obrigatórios antes que o artefato chegue ao agente. O **exit gate** é uma verificação de qualidade automática e interna: se os quatro riscos não forem endereçados, o artefato não é gerado. O **approval gate** é um verdict humano: uma vez que o artefato é produzido, ele é submetido para revisão pelo dashboard e o fluxo entra em `awaiting_approval`. A story não avança para execução até que um verdict chegue — `approved` para prosseguir, `rejected` para retornar à definição, ou `needs_revision` para retornar com os comentários do revisor. Ambos os gates são obrigatórios. Nenhum pode ser pulado.
 
 - **Escalar, não forçar** — Se o trabalho é grande demais para uma story, sugerir um Epic. Não comprimir trabalho complexo em um formato simples.
 

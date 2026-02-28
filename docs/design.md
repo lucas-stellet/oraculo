@@ -14,11 +14,15 @@ Stories without an associated epic skip Discover — context comes directly from
 
 Oraculo instigates the user with questions. It explores the idea, identifies risks, and surfaces edge cases. The output is a requirements document validated by the user.
 
+The Discover phase ends in an **approval gate** (`epic-requirements`): the agent calls `oraculo tools approval request --type epic-requirements`, the dashboard displays the requirements document for review, and the agent enters `awaiting_approval`. Plan does not start until a verdict is received.
+
 _Mandatory for epics. Skipped when a story is submitted directly with sufficient context._
 
 ### 1.2 Plan
 
 Requirements are decomposed into tasks. Oraculo models the dependencies as a DAG — identifies what is parallel, what is sequential, and where the constraint lies (TOC). The output is an optimized execution plan.
+
+An optional **approval gate** (`execution-plan`) exists between Plan and Execute: the agent may call `oraculo tools approval request --type execution-plan` to present the DAG for human review before agents are dispatched. This gate is recommended for large or high-risk epics.
 
 ### 1.3 Execute
 
@@ -28,7 +32,9 @@ Oraculo assembles a team of agents and delegates. Each agent receives a specific
 
 A dedicated QA agent reviews the implementation. It verifies: tests pass, project standards were followed, edge cases are covered, the implementation meets the documented requirements. The QA agent is independent from the executing agents — fresh eyes, no bias. If QA rejects, Oraculo returns to the appropriate phase — never forces through, never accepts with caveats.
 
-**Golden rule:** Oraculo never skips the core phases (Plan, Execute, Validate). For epics, Discover is mandatory.
+When the QA agent identifies a critical defect that it cannot resolve autonomously, it escalates via `oraculo tools approval request --type qa-escalation`. This triggers an **approval gate** (`qa-escalation`) that surfaces the issue to a human reviewer through the dashboard. The agent enters `awaiting_approval` until the reviewer delivers a verdict directing the next action.
+
+**Golden rule:** Oraculo never skips the core phases (Plan, Execute, Validate). For epics, Discover is mandatory. Approval gates between phases are mandatory — workflow never advances past a gate without an explicit verdict.
 
 ## 2. Documentation as Project Memory
 
@@ -38,7 +44,7 @@ Everything Oraculo produces is recorded. Nothing is lost, but without polluting 
 
 A single SQLite database (`.oraculo/oraculo.db`) within the project serves two purposes:
 
-**Transient operational data** — Task status, dependencies, QA verdicts, and execution state. This data is essential during active development but can be cleaned after an epic completes.
+**Transient operational data** — Task status, dependencies, QA verdicts, approval requests and verdicts, and execution state. This data is essential during active development but can be cleaned after an epic completes.
 
 **Persistent knowledge** — The `knowledge` table accumulates lessons learned, codebase patterns, and conventions discovered across all epics. This data survives epic lifecycle and grows richer over time.
 
@@ -76,6 +82,10 @@ The automatic guardians. Hooks ensure standards are respected without relying on
 
 The persistent context. Project patterns, code conventions, architecture — everything agents need to know to produce code that fits the project. Oraculo feeds its agents with this context before any delegation.
 
+### Dashboard
+
+The observation and control surface. A browser-based dashboard that provides visibility into agents, tasks, the DAG, approval gates, and accumulated knowledge. It consumes data through the CLI Trust Layer (never bypasses it) and functions as Mission Control: comprehensive situational awareness with strategic human intervention at approval gates. When an agent enters `awaiting_approval`, the dashboard surfaces the artifact for review and collects the human verdict (`approved`, `rejected`, or `needs_revision`).
+
 **Principle:** Oraculo does not reinvent tools. It orchestrates what Claude Code already offers, maximizing every native capability.
 
 ## 4. Target Audience and Team Flow
@@ -94,15 +104,18 @@ Oraculo is a team tool, not a solo developer tool.
 
 1. Someone on the team has an idea or identifies a problem
 2. Starts Oraculo with `/oraculo:epic` — questions, refinement, edge cases
-3. Validated requirements become a plan with tasks in a DAG
-4. Agents execute in parallel, following TDD and project standards
-5. QA agent validates independently — if rejected, returns to the appropriate phase
+3. **Approval gate** (`epic-requirements`) — dashboard presents requirements for human review; workflow pauses until verdict
+4. Validated requirements become a plan with tasks in a DAG
+5. Optional **approval gate** (`execution-plan`) — dashboard presents the DAG for review before agents are dispatched
+6. Agents execute in parallel, following TDD and project standards
+7. QA agent validates independently — critical defects trigger **approval gate** (`qa-escalation`) for human direction; if rejected, returns to the appropriate phase
 
 **Story flow (Software Engineering):**
 
 1. A work item is already defined or the user supplies direct context
 2. Starts Oraculo with `/oraculo:story` — skips Discover, goes straight to Plan
-3. Agents execute in parallel, following TDD and project standards
-4. QA agent validates independently — if rejected, returns to the appropriate phase
+3. **Approval gate** (`story-definition`) — dashboard presents the story definition for human review; workflow pauses until verdict
+4. Agents execute in parallel, following TDD and project standards
+5. QA agent validates independently — critical defects trigger **approval gate** (`qa-escalation`) for human direction; if rejected, returns to the appropriate phase
 
 **Oraculo reduces the distance between an idea and quality code.** It does not replace the team — it amplifies the team's ability to think well and execute with rigor.

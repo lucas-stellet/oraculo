@@ -78,10 +78,10 @@ These principles extend the core Oraculo principles for this specific phase:
 
 - **Existing context has a voice** — What already exists — decisions, patterns, history — has a seat at the table during exploration. It constrains, enables, and informs. Ignoring it leads to plans that collide with reality.
 
-- **Gate before advancing** — The Epic phase has an exit gate. If the user cannot articulate the problem clearly, define success criteria, and acknowledge critical assumptions, Oraculo does not advance to Plan. This is not bureaucracy — it is quality.
+- **Gate before advancing** — The Epic phase has two mandatory checkpoints before it can advance. The **exit gate** is an automatic, internal quality check: Oraculo will not produce the Requirements Document if the user cannot articulate the problem clearly, define success criteria, and acknowledge critical assumptions. The **approval gate** is a human verdict: once the artifact is produced, it is submitted for review via the dashboard and the workflow enters `awaiting_approval`. The epic does not advance until a verdict arrives — `approved` to proceed, `rejected` to return to exploration, or `needs_revision` to return with reviewer comments. Both gates are mandatory. Neither can be skipped.
 
 ## 6. Relationship to Stories
 
 The Epic phase produces a Requirements Document with REC-N requirements. Each REC-N is a candidate for decomposition into one or more stories via `/oraculo:story`. The Epic defines the **problem space**; stories define **executable work** within that space.
 
-An epic without stories is a validated problem definition waiting to be decomposed. A story without an epic is a standalone piece of work that doesn't need the full exploration depth.
+An approved epic — one that has passed both the exit gate and the human approval gate — is a prerequisite for decomposition into stories. Decomposition does not begin from a submitted artifact; it begins from a verdict. An epic without stories is a validated, human-confirmed problem definition waiting to be decomposed. A story without an epic is a standalone piece of work that doesn't need the full exploration depth.

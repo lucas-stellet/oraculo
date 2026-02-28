@@ -12,6 +12,7 @@ The database uses the schema defined in [`docs/cli/design.md`](../../cli/design.
 - **`task_dependencies`** — DAG edges (which task depends on which)
 - **`task_results`** — Rich completion data (summary, logs, skills used, files modified)
 - **`validations`** — QA verdicts per task and per story (approved/rejected)
+- **`approvals`** — Approval gate records (type, status, artifact snapshot, verdict, comments) — see [`docs/cli/design.md`](../../cli/design.md) §4.3 for schema
 - **`knowledge`** — Codebase knowledge with full-text search
 
 ### What Gets Tracked
@@ -28,7 +29,7 @@ The database uses the schema defined in [`docs/cli/design.md`](../../cli/design.
 
 The database is created automatically by the CLI on the first `oraculo tools` command. It persists for the life of the project.
 
-**Transient data** (tasks, dependencies, QA verdicts, task results) is valuable during execution but not after. Once an epic completes and its markdown artifacts are generated, this operational data can be cleaned.
+**Transient data** (tasks, dependencies, QA verdicts, task results, approvals) is valuable during execution but not after. Once an epic completes and its markdown artifacts are generated, this operational data can be cleaned. Approval records follow the same lifecycle — they are operational state, not long-term history.
 
 **Persistent data** (knowledge table) accumulates across all epics. When an epic/story completes, lessons learned are extracted into the knowledge table. This data is never cleaned — it is the project's long-term memory.
 

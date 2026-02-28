@@ -88,10 +88,10 @@ Estes princípios estendem os princípios centrais do Oraculo para esta fase esp
 
 - **O contexto existente tem voz** — O que já existe — decisões, padrões, histórico — tem um lugar na mesa durante a exploração. Ele restringe, habilita e informa. Ignorá-lo leva a planos que colidem com a realidade.
 
-- **Gate antes de avançar** — A fase Epic tem um portão de saída. Se o usuário não consegue articular o problema claramente, definir critérios de sucesso e reconhecer premissas críticas, o Oraculo não avança para o Plan. Isso não é burocracia — é qualidade.
+- **Gate antes de avançar** — A fase Epic tem dois checkpoints obrigatórios antes de avançar. O **exit gate** é uma verificação de qualidade automática e interna: o Oraculo não produzirá o Documento de Requisitos se o usuário não conseguir articular o problema claramente, definir critérios de sucesso e reconhecer premissas críticas. O **approval gate** é um verdict humano: uma vez que o artefato é produzido, ele é submetido para revisão pelo dashboard e o fluxo entra em `awaiting_approval`. O epic não avança até que um verdict chegue — `approved` para prosseguir, `rejected` para retornar à exploração, ou `needs_revision` para retornar com os comentários do revisor. Ambos os gates são obrigatórios. Nenhum pode ser pulado.
 
 ## 6. Relacionamento com Stories
 
 A fase Epic produz um Documento de Requisitos com requisitos REC-N. Cada REC-N é um candidato para decomposição em uma ou mais stories via `/oraculo:story`. O Epic define o **espaço do problema**; stories definem **trabalho executável** dentro desse espaço.
 
-Um epic sem stories é uma definição de problema validada esperando ser decomposta. Uma story sem epic é um pedaço de trabalho standalone que não precisa da profundidade completa de exploração.
+Um epic aprovado — que passou tanto pelo exit gate quanto pelo approval gate humano — é um pré-requisito para decomposição em stories. A decomposição não começa a partir de um artefato submetido; começa a partir de um verdict. Um epic sem stories é uma definição de problema validada e confirmada por humano esperando ser decomposta. Uma story sem epic é um pedaço de trabalho standalone que não precisa da profundidade completa de exploração.

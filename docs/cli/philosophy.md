@@ -40,6 +40,8 @@ The Trusted Computing Base is the minimal core that the entire system depends on
 
 **Why it matters:** Skills handle Socratic dialogue. Agents handle codebase investigation. Both depend on the CLI for persistence, validation, and structured operations. If the CLI is trustworthy, skills and agents can focus on their interpretive work without worrying about data integrity. If the CLI is not trustworthy, nothing built on top of it can be trusted either.
 
+Approval verdicts — `approved`, `rejected`, `needs_revision` — flow through the TCB. The CLI is the single, authoritative path through which human judgment enters the system, ensuring that no approval can bypass validation or enter the database in an inconsistent state.
+
 ## 4. Design Principles
 
 ### 4.1 Zero-Dependency Distribution
@@ -93,7 +95,7 @@ The CLI is opinionated and versioned. It knows Oraculo's operating model — the
 
 When the operating model evolves, the CLI evolves with it. Changes to artifact structures, new phases, new validation rules — these become new CLI versions with explicit migration paths.
 
-There is no plugin system or extension mechanism. The CLI grows with Oraculo as a single, cohesive tool. It covers all core phases: Discover, Plan, Execute, and Validate.
+There is no plugin system or extension mechanism. The CLI grows with Oraculo as a single, cohesive tool. It covers all core phases: Discover, Plan, Execute, and Validate — and the approval gates that connect them.
 
 ## 7. What the CLI Is Not
 

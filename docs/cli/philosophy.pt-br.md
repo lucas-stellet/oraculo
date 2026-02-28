@@ -40,6 +40,8 @@ A Trusted Computing Base é o núcleo mínimo do qual todo o sistema depende par
 
 **Por que importa:** Skills cuidam do diálogo socrático. Agentes cuidam da investigação de codebase. Ambos dependem do CLI para persistência, validação e operações estruturadas. Se o CLI é confiável, skills e agentes podem focar no trabalho interpretativo sem se preocupar com integridade de dados. Se o CLI não é confiável, nada construído em cima dele pode ser confiável.
 
+Vereditos de approval — `approved`, `rejected`, `needs_revision` — fluem pela TCB. O CLI é o caminho único e autoritativo pelo qual o julgamento humano entra no sistema, garantindo que nenhuma aprovação possa contornar a validação ou entrar no banco de dados em estado inconsistente.
+
 ## 4. Princípios de Design
 
 ### 4.1 Distribuição Zero-Dependência
@@ -93,7 +95,7 @@ O CLI é opinativo e versionado. Ele conhece o modelo operacional do Oraculo —
 
 Quando o modelo operacional evolui, o CLI evolui com ele. Mudanças em estruturas de artefatos, novas fases, novas regras de validação — estas se tornam novas versões do CLI com caminhos de migração explícitos.
 
-Não há sistema de plugins ou mecanismo de extensão. O CLI cresce com o Oraculo como uma ferramenta única e coesa. Atualmente ele cobre a fase Discover; conforme o Oraculo amadurece, ele cobrirá todas as fases centrais: Discover, Plan, Execute e Validate.
+Não há sistema de plugins ou mecanismo de extensão. O CLI cresce com o Oraculo como uma ferramenta única e coesa. Ele cobre todas as fases centrais: Discover, Plan, Execute e Validate — e os approval gates que as conectam.
 
 ## 7. O Que o CLI Não É
 

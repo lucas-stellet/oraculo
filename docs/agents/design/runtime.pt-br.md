@@ -12,6 +12,7 @@ O banco de dados usa o schema definido em [`docs/cli/design.md`](../../cli/desig
 - **`task_dependencies`** — Arestas do DAG (qual task depende de qual)
 - **`task_results`** — Dados ricos de conclusao (summary, logs, skills usadas, arquivos modificados)
 - **`validations`** — QA verdicts por task e por story (approved/rejected)
+- **`approvals`** — Registros de approval gate (type, status, artifact snapshot, verdict, comments) — veja [`docs/cli/design.md`](../../cli/design.md) §4.3 para o schema
 - **`knowledge`** — Conhecimento do codebase com full-text search
 
 ### O Que e Rastreado
@@ -28,7 +29,7 @@ O banco de dados usa o schema definido em [`docs/cli/design.md`](../../cli/desig
 
 O banco de dados e criado automaticamente pelo CLI no primeiro comando `oraculo tools`. Ele persiste durante toda a vida do projeto.
 
-**Dados transientes** (tasks, dependencias, QA verdicts, task results) sao valiosos durante a execucao, mas nao apos. Uma vez que o epic e concluido e seus artifacts markdown sao gerados, esses dados operacionais podem ser limpos.
+**Dados transientes** (tasks, dependencias, QA verdicts, task results, approvals) sao valiosos durante a execucao, mas nao apos. Uma vez que o epic e concluido e seus artifacts markdown sao gerados, esses dados operacionais podem ser limpos. Os registros de approval seguem o mesmo ciclo de vida — sao estado operacional, nao historico de longo prazo.
 
 **Dados persistentes** (tabela knowledge) se acumulam ao longo de todos os epics. Quando um epic/story e concluido, as licoes aprendidas sao extraidas para a tabela knowledge. Esses dados nunca sao limpos — sao a memoria de longo prazo do projeto.
 

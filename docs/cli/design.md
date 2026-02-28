@@ -27,7 +27,7 @@ oraculo version                       # CLI version
 
 **`update`** — Updates the Oraculo CLI binary itself to the latest version. Distinct from `install` — `install` manages Claude Code configuration (skills, hooks, settings), `update` manages the binary.
 
-**`status`** — Human-readable dashboard showing epics, stories count, task progress (pending/in_progress/completed/failed), percentages.
+**`status`** — Human-readable dashboard showing epics, stories count, task progress (pending/in_progress/completed/failed), percentages, and pending approval count.
 
 **No `init` command.** Self-bootstrapping: the first `tools` command that touches storage creates `.oraculo/` and the database automatically.
 
@@ -98,6 +98,17 @@ oraculo tools memory domains
 
 Categories: `pattern`, `convention`, `constraint`, `dependency`, `test`, `architecture`.
 
+### 3.5 Approval
+
+```bash
+oraculo tools approval request --type <type> --epic <epic> [--story <story>]   # stdin: markdown
+oraculo tools approval status <id>
+oraculo tools approval list [--pending]
+oraculo tools approval verdict <id> --verdict <approved|rejected|needs_revision> [--comment "..."]
+```
+
+`--type` accepts: `epic-requirements`, `story-definition`, `qa-escalation`, `execution-plan`.
+
 ## 4. Data Model
 
 ### 4.1 Responsibility Split
@@ -134,20 +145,24 @@ Rules:
 ```sql
 -- Core entities
 CREATE TABLE epics (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    name        TEXT UNIQUE NOT NULL,
-    description TEXT DEFAULT '',
-    created_at  TEXT DEFAULT (datetime('now')),
-    updated_at  TEXT DEFAULT (datetime('now'))
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT UNIQUE NOT NULL,
+    description     TEXT DEFAULT '',
+    approval_status TEXT DEFAULT 'none'
+                    CHECK (approval_status IN ('none','pending','approved','rejected','needs_revision')),
+    created_at      TEXT DEFAULT (datetime('now')),
+    updated_at      TEXT DEFAULT (datetime('now'))
 );
 
 CREATE TABLE stories (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    epic_id     INTEGER NOT NULL REFERENCES epics(id),
-    name        TEXT NOT NULL,
-    description TEXT DEFAULT '',
-    created_at  TEXT DEFAULT (datetime('now')),
-    updated_at  TEXT DEFAULT (datetime('now')),
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    epic_id         INTEGER NOT NULL REFERENCES epics(id),
+    name            TEXT NOT NULL,
+    description     TEXT DEFAULT '',
+    approval_status TEXT DEFAULT 'none'
+                    CHECK (approval_status IN ('none','pending','approved','rejected','needs_revision')),
+    created_at      TEXT DEFAULT (datetime('now')),
+    updated_at      TEXT DEFAULT (datetime('now')),
     UNIQUE(epic_id, name)
 );
 
@@ -222,6 +237,22 @@ CREATE TRIGGER knowledge_del AFTER DELETE ON knowledge BEGIN
     INSERT INTO knowledge_fts(knowledge_fts, rowid, domain, category, finding, source_files)
     VALUES ('delete', old.id, old.domain, old.category, old.finding, old.source_files);
 END;
+
+-- HITL approval gates
+CREATE TABLE approvals (
+    id               TEXT PRIMARY KEY,
+    type             TEXT NOT NULL CHECK (type IN ('epic-requirements','story-definition',
+                                                   'qa-escalation','execution-plan')),
+    epic_id          INTEGER REFERENCES epics(id),
+    story_id         INTEGER REFERENCES stories(id),
+    content          TEXT NOT NULL,
+    previous_version TEXT DEFAULT '',
+    status           TEXT DEFAULT 'pending'
+                     CHECK (status IN ('pending','approved','rejected','needs_revision')),
+    verdict_comment  TEXT DEFAULT '',
+    requested_at     TEXT DEFAULT (datetime('now')),
+    decided_at       TEXT
+);
 ```
 
 Design decisions:
@@ -232,6 +263,8 @@ Design decisions:
 - `validations` stores structural verdicts at two levels: per-task (`task_id` filled) during execution and per-story (`task_id` NULL) as the final gate. QA analysis lives in Markdown.
 - `knowledge` uses FTS5 for full-text search. Sync triggers keep index consistent.
 - JSON arrays (`skills_used`, `files_modified`) stored as TEXT — simple, queryable with `json_each()`.
+- `approvals` uses a TEXT primary key (UUID) so IDs are stable and shareable across agent boundaries. `epic_id` and `story_id` may both be NULL for cross-cutting types like `execution-plan`. `previous_version` stores the prior content when a revision is requested, enabling diff display in the UI.
+- `approval_status` on `epics` and `stories` mirrors the latest approval gate result for that entity, avoiding joins in the common status-check path.
 
 **Knowledge persistence:** Unlike operational tables (`tasks`, `task_dependencies`, `task_results`, `validations`), the `knowledge` table is persistent — it accumulates lessons learned across all epics and survives epic completion. Operational data can be cleaned after an epic completes; knowledge data is retained.
 
@@ -277,7 +310,8 @@ cmd/oraculo/
 │       ├── epic.go             # tools epic init|save|get|list|update|delete
 │       ├── story.go            # tools story init|save|get|list|update|delete
 │       ├── task.go             # tools task init|start|complete|fail|get|list|delete
-│       └── memory.go           # tools memory store|search|domains
+│       ├── memory.go           # tools memory store|search|domains
+│       └── approval.go         # tools approval request|status|list|verdict
 ├── internal/
 │   ├── db/
 │   │   ├── db.go               # Open, auto-create .oraculo/, migrate
@@ -290,6 +324,8 @@ cmd/oraculo/
 │   │   └── task.go             # Task business logic + DAG validation
 │   ├── memory/
 │   │   └── memory.go           # Knowledge store/search
+│   ├── approval/
+│   │   └── approval.go         # Approval request/verdict/query logic
 │   ├── installer/
 │   │   └── installer.go        # Install logic (copy skills, hooks, settings)
 │   └── output/

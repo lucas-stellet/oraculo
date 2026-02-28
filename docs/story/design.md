@@ -11,13 +11,13 @@ The user arrives with a work item. Oraculo checks for a parent epic, captures th
 **Parent epic workflow:**
 - If project name was passed as argument (`/oraculo:story gastos-app`):
   - Search for `.oraculo/epics/<epic-name>/requirements.md`
-  - If found: read the epic, ask which REC-N to work on (or if it's something new)
+  - If found: verify `approval_status = approved` — if not approved, block decomposition and inform the user that the parent epic is still pending human review; if approved, read the epic and ask which REC-N to work on (or if it's something new)
   - If not found: proceed as standalone
 - If no argument: proceed as standalone
 
 **Escalation check:** If the work is too large (multiple areas, high uncertainty, vague scope), suggest `/oraculo:epic` instead.
 
-**Exit condition:** Work item captured, reasoning level determined internally, parent epic loaded (if applicable), story-sized scope confirmed.
+**Exit condition:** Work item captured, reasoning level determined internally, parent epic loaded and approval verified (if applicable), story-sized scope confirmed.
 
 ### 1.1 Reframing
 
@@ -67,11 +67,15 @@ Final checkpoint — evaluate four risk dimensions before generating the artifac
 
 ### 1.4 Artifact Generation
 
-Oraculo generates the Story Document and saves it.
+Oraculo generates the Story Document and saves it via CLI, then submits it for human review. The workflow has four steps:
 
-**Output path:** `.oraculo/epics/<epic-name>/stories/<story-name>/requirements.md`
-
-If derived from an epic, the story document includes parent references in header comments.
+1. **Generate and save** — Oraculo generates the Story Document and saves it to `.oraculo/epics/<epic-name>/stories/<story-name>/requirements.md` via `oraculo story save`. If derived from an epic, the document includes parent references in header comments.
+2. **Submit for approval** — Oraculo calls `oraculo tools approval request --type story-definition`, which registers the artifact in the approval queue and displays it on the dashboard for human review.
+3. **Await verdict** — The agent enters `awaiting_approval` state. Workflow does not advance until a human issues a verdict from the dashboard.
+4. **Handle verdict:**
+   - `approved` — Story definition is finalized. The story is ready for execution.
+   - `rejected` — Return to §1.1 (Reframing) to reopen the problem space based on reviewer feedback.
+   - `needs_revision` — Return to §1.2 (Assumption Check) or §1.3 (Exit Gate) with the reviewer's comments to refine the artifact.
 
 ## 2. Saturation
 
@@ -159,3 +163,5 @@ If at any point during a Story session the work reveals itself to be epic-sized,
 ## 7. Output Path
 
 Story artifacts are saved to `.oraculo/epics/<epic-name>/stories/<story-name>/requirements.md` inside the target application. The story name is derived from the story title (lowercase, hyphenated). If no epic name was provided and the story is standalone, the CLI creates a lightweight epic automatically.
+
+The artifact is not considered final until `approval_status = approved`. A saved story document that has not yet received a human verdict (or that received `rejected` or `needs_revision`) must not be used as input for execution planning.

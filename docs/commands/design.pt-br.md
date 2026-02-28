@@ -218,7 +218,7 @@ Regra: Sempre inclui `max` e a ação de escalação. Escalação nunca é "desi
 <critical>
   The command does NOT generate requirements without user validation at each phase.
   Verbal confirmation is process, not approval.
-  Approval is a validated artifact persisted through the CLI.
+  Approval is a human verdict issued through the dashboard approval gate after the artifact is submitted via `oraculo tools approval request`.
 </critical>
 ```
 
@@ -390,6 +390,8 @@ O SKILL.md inclui uma instrução de bootstrap que verifica uma sessão ativa an
 ```xml
 <phase-gate phase="bootstrap">
   1. Call: oraculo session status --type=epic
+  1.5 Call: oraculo tools approval list --pending
+      If any approvals pending: display warning, do NOT proceed
   2. If active session found:
      - Read phase file for current phase
      - Display to user: "Active session found. Resuming from [phase name]."
@@ -419,9 +421,9 @@ Cada comando mapeia para uma fase do modelo operacional definido em `docs/design
 
 | Comando | Fase do Modelo Operacional | Input | Output |
 |---------|---------------------------|-------|--------|
-| `/oraculo:epic` | Discover | Ideia crua ou problema | `requirements.md` validado via CLI |
-| `/oraculo:story` | Discover (light) | Item de trabalho ou REC-N do epic | `requirements.md` de story via CLI |
-| `/oraculo:plan` | Plan | Requisitos validados | DAG de tarefas em SQLite via CLI |
+| `/oraculo:epic` | Discover | Ideia crua ou problema | `requirements.md` aprovado (veredicto humano via dashboard) |
+| `/oraculo:story` | Discover (light) | Item de trabalho ou REC-N do epic | `requirements.md` de story aprovado (veredicto humano via dashboard) |
+| `/oraculo:plan` | Plan | Requisitos aprovados | DAG de tarefas em SQLite via CLI |
 | `/oraculo:execute` | Execute | DAG pronto | Agentes executam, código commitado |
 | `/oraculo:validate` | Validate | Implementação completa | Veredicto de QA via CLI |
 
@@ -441,13 +443,14 @@ skills/oraculo/epic/
     05-assumptions.md        # Map and score assumptions
     06-exit-gate.md          # Four risks validation + self-check
     07-artifact.md           # Generate requirements via CLI
+    08-approval.md           # Submit requirements for human approval via dashboard
   references/
     question-bank.md         # Questions by phase and reasoning level
     frameworks.md            # JTBD, Four Forces, TOC, Assumption Mapping
     artifact-templates.md    # Requirements document template
 ```
 
-8 fases. Sessão longa. Todas as tags XML são utilizadas.
+9 fases. Sessão longa. Todas as tags XML são utilizadas.
 
 ### `/oraculo:story`
 
@@ -462,12 +465,13 @@ skills/oraculo/story/
     02-assumptions.md        # Quick assumption check (2-3 critical)
     03-exit-gate.md          # Four risks (light version)
     04-artifact.md           # Generate story document via CLI
+    05-approval.md           # Submit story definition for human approval via dashboard
   references/
     question-bank.md         # Story-specific questions
     artifact-templates.md    # Story document template
 ```
 
-5 fases. Sessão mais curta. Herda contexto do epic quando derivado. O `00-setup.md` lê o epic da CLI quando passado como argumento.
+6 fases. Sessão mais curta. Herda contexto do epic quando derivado. O `00-setup.md` lê o epic da CLI quando passado como argumento.
 
 ### `/oraculo:plan`
 
@@ -486,7 +490,7 @@ skills/oraculo/plan/
     decomposition-patterns.md  # How to break requirements into tasks
 ```
 
-5 fases. Input: requisitos validados. Output: DAG em SQLite. O Oraculo pode despachar agentes de pesquisa para analisar a codebase durante a decomposição.
+5 fases. Input: requisitos aprovados (veredicto humano via dashboard). Output: DAG em SQLite. O Oraculo pode despachar agentes de pesquisa para analisar a codebase durante a decomposição. Um approval gate opcional para o plano de execução pode ser inserido após `04-artifact.md` quando o time exige aprovação humana antes que os agentes comecem o trabalho.
 
 ### `/oraculo:execute`
 
@@ -568,13 +572,26 @@ Cada comando termina sugerindo o próximo, mas nunca o invoca automaticamente. O
 <phase-gate phase="artifact">
   ...
   On success:
-    Display: "Requirements document saved. To decompose into stories, run /oraculo:story <epic-name>"
+    Call: oraculo tools approval request --type=epic-requirements --session=$SESSION_ID
+    Display: "Requirements document submitted for approval. Awaiting human verdict via dashboard."
+    Enter awaiting_approval — do NOT advance until verdict is received.
+
+  On verdict=approved:
+    Display: "Requirements approved. To decompose into stories, run /oraculo:story <epic-name>"
     Do NOT invoke /oraculo:story automatically.
     The user decides when to proceed.
+
+  On verdict=rejected:
+    Display the rejection reason.
+    Return to phases/06-exit-gate.md for re-validation.
+
+  On verdict=needs_revision:
+    Display the reviewer's comments.
+    Return to the appropriate phase to address comments, then re-generate the artifact.
 </phase-gate>
 ```
 
-Cada transição é um ponto de decisão do usuário. O usuário pode querer revisar os requisitos com o time, aguardar ou ajustar. O Oraculo sugere, nunca decide.
+Cada transição é um ponto de decisão do usuário controlado por um veredicto humano. O usuário pode querer revisar os requisitos com o time, aguardar ou ajustar — mas o fluxo não avança sem um veredicto `approved` explícito do dashboard. O Oraculo sugere os próximos passos; o humano e o approval gate decidem.
 
 ### Interação com Agentes
 
@@ -589,6 +606,8 @@ Os comandos `plan`, `execute` e `validate` interagem com o sistema de agentes de
 | `validate` | Agente de QA | Fase 01 | Task tool, contexto limpo |
 
 O comando nunca configura o agente diretamente. Declara a intenção e o despacho segue as regras em `docs/agents/design.md`.
+
+Entre comandos nos approval gates, o agente orquestrador entra em `awaiting_approval` — um estado distinto ao lado de `active`, `idle`, `completed` e `failed`. Nenhum comando downstream é invocado e nenhum agente é despachado enquanto em `awaiting_approval`. O estado se resolve apenas quando o dashboard entrega um veredicto.
 
 ### Rejeição e Retorno
 

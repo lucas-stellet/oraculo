@@ -10,14 +10,14 @@ O usuário chega com um item de trabalho. O Oraculo verifica se há um epic pai,
 
 **Workflow do epic pai:**
 - Se um nome de projeto foi passado como argumento (`/oraculo:story gastos-app`):
-  - Busca `.oraculo/projects/<nome-projeto>/epic.md`
-  - Se encontra: lê o epic, pergunta qual REC-N trabalhar (ou se é algo novo)
+  - Busca `.oraculo/epics/<nome-epic>/requirements.md`
+  - Se encontra: verificar `approval_status = approved` — se não aprovado, bloquear a decomposição e informar o usuário que o epic pai ainda está pendente de revisão humana; se aprovado, ler o epic e perguntar qual REC-N trabalhar (ou se é algo novo)
   - Se não encontra: segue como standalone
 - Se nenhum argumento: segue como standalone
 
 **Verificação de escalação:** Se o trabalho é grande demais (múltiplas áreas, alta incerteza, escopo vago), sugere `/oraculo:epic` no lugar.
 
-**Condição de saída:** Item de trabalho capturado, nível de reasoning determinado internamente, epic pai carregado (se aplicável), escopo de story confirmado.
+**Condição de saída:** Item de trabalho capturado, nível de reasoning determinado internamente, epic pai carregado e aprovação verificada (se aplicável), escopo de story confirmado.
 
 ### 1.1 Reenquadramento
 
@@ -67,11 +67,15 @@ Checkpoint final — avaliar quatro dimensões de risco antes de gerar o artefat
 
 ### 1.4 Geração de Artefatos
 
-O Oraculo gera o Documento de Story e salva.
+O Oraculo gera o Documento de Story e o salva via CLI, depois o submete para revisão humana. O fluxo tem quatro etapas:
 
-**Caminho de saída:** `.oraculo/projects/<nome-projeto>/story-<titulo-slug>.md`
-
-Se derivada de um epic, o documento da story inclui referências ao pai nos comentários do cabeçalho.
+1. **Gerar e salvar** — O Oraculo gera o Documento de Story e o salva em `.oraculo/epics/<nome-epic>/stories/<nome-story>/requirements.md` via `oraculo story save`. Se derivada de um epic, o documento inclui referências ao pai nos comentários do cabeçalho.
+2. **Submeter para aprovação** — O Oraculo chama `oraculo tools approval request --type story-definition`, que registra o artefato na fila de aprovação e o exibe no dashboard para revisão humana.
+3. **Aguardar verdict** — O agente entra em estado `awaiting_approval`. O fluxo não avança até que um humano emita um verdict pelo dashboard.
+4. **Tratar o verdict:**
+   - `approved` — A definição da story é finalizada. A story está pronta para execução.
+   - `rejected` — Voltar a §1.1 (Reenquadramento) para reabrir o espaço do problema com base no feedback do revisor.
+   - `needs_revision` — Voltar a §1.2 (Verificação de Premissas) ou §1.3 (Portão de Saída) com os comentários do revisor para refinar o artefato.
 
 ## 2. Saturação
 
@@ -127,7 +131,7 @@ A fase Story opera em dois níveis de reasoning que compartilham a mesma discipl
 
 Quando uma story é derivada de um epic:
 
-1. **Leitura:** A skill Story lê `.oraculo/projects/<nome-projeto>/epic.md`
+1. **Leitura:** A skill Story lê `.oraculo/epics/<nome-epic>/requirements.md`
 2. **Seleção:** Pergunta ao usuário qual REC-N trabalhar, ou se é algo novo
 3. **Herança de contexto:** A declaração de problema, contexto e escopo do epic informam a sessão da story — o usuário não repete o que já foi capturado
 4. **Perguntas adaptadas:** Perguntas de reenquadramento referenciam o contexto do REC-N específico
@@ -158,4 +162,6 @@ Se em qualquer momento durante uma sessão de Story o trabalho se revela do tama
 
 ## 7. Caminho de Saída
 
-Artefatos de story são salvos em `.oraculo/projects/<nome-projeto>/story-<titulo-slug>.md` dentro da aplicação-alvo. O slug do título é derivado do título da story (minúsculas, hifenizado). Se nenhum nome de projeto foi fornecido, o usuário é perguntado durante a geração do artefato.
+Artefatos de story são salvos em `.oraculo/epics/<nome-epic>/stories/<nome-story>/requirements.md` dentro da aplicação-alvo. O nome da story é derivado do título da story (minúsculas, hifenizado). Se nenhum nome de epic foi fornecido e a story é standalone, a CLI cria um epic leve automaticamente.
+
+O artefato não é considerado final até que `approval_status = approved`. Um documento de story salvo que ainda não recebeu um verdict humano (ou que recebeu `rejected` ou `needs_revision`) não deve ser usado como input para planejamento de execução.

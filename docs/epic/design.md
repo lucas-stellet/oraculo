@@ -99,7 +99,7 @@ Each assumption is evaluated on two axes:
 
 ### 1.6 Exit Gate
 
-The final checkpoint before advancing to Plan. Oraculo evaluates four risk dimensions:
+The final checkpoint before advancing to the Approval Gate (§1.7). Oraculo evaluates four risk dimensions:
 
 **Exit checklist (Four Risks):**
 1. **Value** — Is the user value clear and the need validated (or explicitly marked as assumption)?
@@ -113,11 +113,19 @@ The final checkpoint before advancing to Plan. Oraculo evaluates four risk dimen
 - Technical feasibility gap → return to 1.3 (Codebase Analysis)
 - Business viability gap → return to 1.4 (Convergence)
 
-Only when all four risks are addressed does the session produce its final artifacts and hand off to Plan.
+Only when all four risks are addressed does the session produce its final artifacts and hand off to the Approval Gate (§1.7).
 
 ### 1.7 Artifact Generation
 
-Oraculo generates the Requirements Document and saves it to `.oraculo/epics/<epic-name>/requirements.md`. After presenting the document, it suggests decomposing the epic into stories with `/oraculo:story`.
+Oraculo generates the Requirements Document and saves it via CLI, then submits it for human review. The workflow has four steps:
+
+1. **Generate and save** — Oraculo generates the Requirements Document and saves it to `.oraculo/epics/<epic-name>/requirements.md` via `oraculo epic save`.
+2. **Submit for approval** — Oraculo calls `oraculo tools approval request --type epic-requirements`, which registers the artifact in the approval queue and displays it on the dashboard for human review.
+3. **Await verdict** — The agent enters `awaiting_approval` state. Workflow does not advance until a human issues a verdict from the dashboard.
+4. **Handle verdict:**
+   - `approved` — Requirements are finalized. Oraculo suggests decomposing the epic into stories with `/oraculo:story`.
+   - `rejected` — Return to §1.2 (Divergence) to reopen the problem space based on reviewer feedback.
+   - `needs_revision` — Return to §1.5 (Assumption Mapping) or §1.4 (Convergence) with the reviewer's comments to refine the artifact.
 
 ## 2. Output Artifacts
 
@@ -173,7 +181,7 @@ Oraculo selects the exploration depth based on the idea's characteristics at ent
 
 **When:** The user describes a new feature or a significant change to existing functionality. The problem needs exploration but the domain is understood.
 
-**Flow:** Full sequence — Session Setup → Reframing → Divergence → Codebase Analysis → Convergence → Assumption Mapping → Exit Gate → Artifact Generation.
+**Flow:** Full sequence — Session Setup → Reframing → Divergence → Codebase Analysis → Convergence → Assumption Mapping → Exit Gate → Artifact Generation → Approval Gate.
 
 ### 3.2 Deep Epic
 
@@ -185,6 +193,8 @@ Oraculo selects the exploration depth based on the idea's characteristics at ent
 - Agent reviewing related past patterns and conventions
 
 Results are consolidated and fed back into the dialogue, enabling richer questioning grounded in evidence.
+
+**Flow:** Full sequence with parallel sub-agents — Session Setup → Reframing → Divergence (+ parallel agents) → Codebase Analysis → Convergence → Assumption Mapping → Exit Gate → Artifact Generation → Approval Gate.
 
 ## 4. Reasoning Levels
 
@@ -227,6 +237,8 @@ The Epic phase operates at two reasoning levels that share the same Socratic dis
 ## 5. Integration with Stories
 
 The Epic phase produces a Requirements Document with REC-N items. To implement:
+
+**Precondition:** Before decomposing into stories, verify that the epic's `approval_status = approved`. An epic whose requirements have not been approved by a human reviewer must not be decomposed — the artifact may still change based on the pending verdict.
 
 1. Invoke `/oraculo:story <epic-name>`
 2. The Story skill reads `.oraculo/epics/<epic-name>/requirements.md`

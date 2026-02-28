@@ -97,21 +97,9 @@ Cada premissa é avaliada em dois eixos:
 
 **Condição de saída:** Todas as premissas com score de risco acima do limiar foram reconhecidas pelo usuário. Cada premissa crítica (alto impacto, baixa evidência) tem evidência de suporte ou está sinalizada como risco conhecido para a fase de Plan.
 
-### 1.6 Stress Test — Working Backwards
+### 1.6 Portão de Saída
 
-O Oraculo roda um PR/FAQ simplificado para testar se a ideia tem clareza suficiente para avançar.
-
-**Perguntas de stress test:**
-- "Se essa feature fosse lançada amanhã, como seria o anúncio em duas frases?"
-- "Qual seria a primeira pergunta de um cliente cético?"
-- "Qual seria a principal objeção da engenharia?"
-- "Como você mediria sucesso três meses após o lançamento?"
-
-**Condição de saída:** O usuário consegue responder todas as quatro perguntas sem hesitação significativa ou contradição com respostas anteriores.
-
-### 1.7 Portão de Saída
-
-O checkpoint final antes de avançar para o Plan. O Oraculo avalia quatro dimensões de risco:
+O checkpoint final antes de avançar para o Approval Gate (§1.7). O Oraculo avalia quatro dimensões de risco:
 
 **Checklist de saída (Quatro Riscos):**
 1. **Valor** — O valor para o usuário está claro e a necessidade validada (ou explicitamente marcada como premissa)?
@@ -119,11 +107,25 @@ O checkpoint final antes de avançar para o Plan. O Oraculo avalia quatro dimens
 3. **Viabilidade técnica** — A análise da codebase confirmou viabilidade (ou sinalizou riscos conhecidos)?
 4. **Viabilidade de negócio** — As métricas de sucesso estão definidas e o impacto no negócio é compreendido?
 
-**Comportamento do portão:** O Oraculo avalia cada risco e apresenta a avaliação ao usuário. Se qualquer risco estiver sem resposta, o Oraculo identifica a lacuna específica e redireciona para a etapa apropriada.
+**Comportamento do portão:** O Oraculo avalia cada risco e apresenta a avaliação ao usuário. Se qualquer risco estiver sem resposta, o Oraculo identifica a lacuna específica e redireciona para a etapa apropriada:
+- Lacuna de valor → voltar a 1.2 (Divergência)
+- Lacuna de usabilidade → voltar a 1.2 (Exploração de edge cases)
+- Lacuna de viabilidade técnica → voltar a 1.3 (Análise da Codebase)
+- Lacuna de viabilidade de negócio → voltar a 1.4 (Convergência)
 
-### 1.8 Geração de Artefatos
+Apenas quando os quatro riscos estão endereçados a sessão produz seus artefatos finais e passa para o Approval Gate (§1.7).
 
-O Oraculo gera o Documento de Requisitos e salva em `.oraculo/projects/<nome-projeto>/epic.md`. Após apresentar o documento, sugere decompor o epic em stories com `/oraculo:story`.
+### 1.7 Geração de Artefatos
+
+O Oraculo gera o Documento de Requisitos e o salva via CLI, depois o submete para revisão humana. O fluxo tem quatro etapas:
+
+1. **Gerar e salvar** — O Oraculo gera o Documento de Requisitos e o salva em `.oraculo/epics/<nome-epic>/requirements.md` via `oraculo epic save`.
+2. **Submeter para aprovação** — O Oraculo chama `oraculo tools approval request --type epic-requirements`, que registra o artefato na fila de aprovação e o exibe no dashboard para revisão humana.
+3. **Aguardar verdict** — O agente entra em estado `awaiting_approval`. O fluxo não avança até que um humano emita um verdict pelo dashboard.
+4. **Tratar o verdict:**
+   - `approved` — Requisitos são finalizados. O Oraculo sugere decompor o epic em stories com `/oraculo:story`.
+   - `rejected` — Voltar a §1.2 (Divergência) para reabrir o espaço do problema com base no feedback do revisor.
+   - `needs_revision` — Voltar a §1.5 (Mapeamento de Premissas) ou §1.4 (Convergência) com os comentários do revisor para refinar o artefato.
 
 ## 2. Artefatos de Saída
 
@@ -166,13 +168,20 @@ O Oraculo seleciona a profundidade da exploração com base nas características
 
 **Quando:** O usuário descreve uma nova feature ou uma mudança significativa em funcionalidade existente. O problema precisa de exploração mas o domínio é compreendido.
 
-**Fluxo:** Sequência completa — Setup → Reenquadramento → Divergência → Análise da Codebase → Convergência → Mapeamento de Premissas → Stress Test → Portão de Saída → Geração de Artefatos.
+**Fluxo:** Sequência completa — Setup → Reenquadramento → Divergência → Análise da Codebase → Convergência → Mapeamento de Premissas → Portão de Saída → Geração de Artefatos → Approval Gate.
 
 ### 3.2 Epic Profundo
 
 **Quando:** A ideia é vaga, ambiciosa, transversal, ou o usuário não consegue articular o problema claramente mesmo após o reenquadramento inicial.
 
-**Fluxo:** Sequência completa com sub-agentes paralelos explorando múltiplos ângulos simultaneamente.
+**Fluxo:** Sequência completa com sub-agentes paralelos explorando múltiplos ângulos simultaneamente:
+- Agente analisando impacto na codebase em múltiplos domínios
+- Agente explorando viabilidade técnica de diferentes abordagens
+- Agente revisando padrões e convenções passadas relacionadas
+
+Resultados são consolidados e realimentados no diálogo, possibilitando questionamentos mais ricos com base em evidências.
+
+**Fluxo:** Sequência completa com sub-agentes paralelos — Setup → Reenquadramento → Divergência (+ agentes paralelos) → Análise da Codebase → Convergência → Mapeamento de Premissas → Portão de Saída → Geração de Artefatos → Approval Gate.
 
 ## 4. Níveis de Reasoning
 
@@ -216,8 +225,10 @@ A fase Epic opera em dois níveis de reasoning que compartilham a mesma discipli
 
 A fase Epic produz um Documento de Requisitos com itens REC-N. Para implementar:
 
-1. Invocar `/oraculo:story <nome-projeto>`
-2. A skill Story lê `.oraculo/projects/<nome-projeto>/epic.md`
+**Pré-condição:** Antes de decompor em stories, verificar que o `approval_status = approved` do epic. Um epic cujos requisitos ainda não foram aprovados por um revisor humano não deve ser decomposto — o artefato ainda pode mudar com base no verdict pendente.
+
+1. Invocar `/oraculo:story <nome-epic>`
+2. A skill Story lê `.oraculo/epics/<nome-epic>/requirements.md`
 3. O usuário seleciona qual REC-N trabalhar
 4. A skill Story roda uma sessão focada para produzir uma definição de story executável
 
@@ -225,4 +236,4 @@ Cada REC-N pode gerar uma ou mais stories dependendo do escopo.
 
 ## 6. Caminho de Saída
 
-Todos os artefatos do epic são salvos em `.oraculo/projects/<nome-projeto>/epic.md` dentro da aplicação-alvo.
+Todos os artefatos do epic são salvos em `.oraculo/epics/<nome-epic>/requirements.md` dentro da aplicação-alvo. O nome do epic é derivado do domínio da ideia ou explicitamente solicitado ao usuário durante a geração do artefato.

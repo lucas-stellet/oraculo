@@ -218,7 +218,7 @@ Rule: Always includes `max` and the escalation action. Escalation is never "give
 <critical>
   The command does NOT generate requirements without user validation at each phase.
   Verbal confirmation is process, not approval.
-  Approval is a validated artifact persisted through the CLI.
+  Approval is a human verdict issued through the dashboard approval gate after the artifact is submitted via `oraculo tools approval request`.
 </critical>
 ```
 
@@ -390,6 +390,8 @@ SKILL.md includes a bootstrap instruction that checks for an active session befo
 ```xml
 <phase-gate phase="bootstrap">
   1. Call: oraculo session status --type=epic
+  1.5 Call: oraculo tools approval list --pending
+      If any approvals pending: display warning, do NOT proceed
   2. If active session found:
      - Read phase file for current phase
      - Display to user: "Active session found. Resuming from [phase name]."
@@ -419,9 +421,9 @@ Each command maps to a phase of the operating model defined in `docs/design.md`.
 
 | Command | Operating Model Phase | Input | Output |
 |---------|----------------------|-------|--------|
-| `/oraculo:epic` | Discover | Raw idea or problem | Validated `requirements.md` via CLI |
-| `/oraculo:story` | Discover (light) | Work item or REC-N from epic | Story `requirements.md` via CLI |
-| `/oraculo:plan` | Plan | Validated requirements | Task DAG in SQLite via CLI |
+| `/oraculo:epic` | Discover | Raw idea or problem | Approved `requirements.md` (human verdict via dashboard) |
+| `/oraculo:story` | Discover (light) | Work item or REC-N from epic | Approved story `requirements.md` (human verdict via dashboard) |
+| `/oraculo:plan` | Plan | Approved requirements | Task DAG in SQLite via CLI |
 | `/oraculo:execute` | Execute | Ready DAG | Agents execute, code committed |
 | `/oraculo:validate` | Validate | Complete implementation | QA verdict via CLI |
 
@@ -441,13 +443,14 @@ skills/oraculo/epic/
     05-assumptions.md        # Map and score assumptions
     06-exit-gate.md          # Four risks validation + self-check
     07-artifact.md           # Generate requirements via CLI
+    08-approval.md           # Submit requirements for human approval via dashboard
   references/
     question-bank.md         # Questions by phase and reasoning level
     frameworks.md            # JTBD, Four Forces, TOC, Assumption Mapping
     artifact-templates.md    # Requirements document template
 ```
 
-8 phases. Long session. All XML tags are used.
+9 phases. Long session. All XML tags are used.
 
 ### `/oraculo:story`
 
@@ -462,12 +465,13 @@ skills/oraculo/story/
     02-assumptions.md        # Quick assumption check (2-3 critical)
     03-exit-gate.md          # Four risks (light version)
     04-artifact.md           # Generate story document via CLI
+    05-approval.md           # Submit story definition for human approval via dashboard
   references/
     question-bank.md         # Story-specific questions
     artifact-templates.md    # Story document template
 ```
 
-5 phases. Shorter session. Inherits epic context when derived. The `00-setup.md` reads the epic from CLI when passed as argument.
+6 phases. Shorter session. Inherits epic context when derived. The `00-setup.md` reads the epic from CLI when passed as argument.
 
 ### `/oraculo:plan`
 
@@ -486,7 +490,7 @@ skills/oraculo/plan/
     decomposition-patterns.md  # How to break requirements into tasks
 ```
 
-5 phases. Input: validated requirements. Output: DAG in SQLite. Oraculo may dispatch research agents to analyze the codebase during decomposition.
+5 phases. Input: approved requirements (human verdict via dashboard). Output: DAG in SQLite. Oraculo may dispatch research agents to analyze the codebase during decomposition. An optional approval gate for the execution plan can be inserted after `04-artifact.md` when the team requires human sign-off before agents begin work.
 
 ### `/oraculo:execute`
 
@@ -568,13 +572,26 @@ Each command ends by suggesting the next, but never invokes it automatically. Th
 <phase-gate phase="artifact">
   ...
   On success:
-    Display: "Requirements document saved. To decompose into stories, run /oraculo:story <epic-name>"
+    Call: oraculo tools approval request --type=epic-requirements --session=$SESSION_ID
+    Display: "Requirements document submitted for approval. Awaiting human verdict via dashboard."
+    Enter awaiting_approval — do NOT advance until verdict is received.
+
+  On verdict=approved:
+    Display: "Requirements approved. To decompose into stories, run /oraculo:story <epic-name>"
     Do NOT invoke /oraculo:story automatically.
     The user decides when to proceed.
+
+  On verdict=rejected:
+    Display the rejection reason.
+    Return to phases/06-exit-gate.md for re-validation.
+
+  On verdict=needs_revision:
+    Display the reviewer's comments.
+    Return to the appropriate phase to address comments, then re-generate the artifact.
 </phase-gate>
 ```
 
-Each transition is a user decision point. The user may want to review requirements with the team, wait, or adjust. Oraculo suggests, never decides.
+Each transition is a user decision point gated by a human verdict. The user may want to review requirements with the team, wait, or adjust — but the workflow does not advance without an explicit `approved` verdict from the dashboard. Oraculo suggests next steps; the human and the approval gate decide.
 
 ### Agent Interaction
 
@@ -589,6 +606,8 @@ The commands `plan`, `execute`, and `validate` interact with the agent system de
 | `validate` | QA agent | Phase 01 | Task tool, clean context |
 
 The command never configures the agent directly. It declares intent and the dispatch follows the rules in `docs/agents/design.md`.
+
+Between commands at approval gates, the orchestrating agent enters `awaiting_approval` — a distinct state alongside `active`, `idle`, `completed`, and `failed`. No downstream command is invoked and no agents are dispatched while `awaiting_approval`. The state resolves only when the dashboard delivers a verdict.
 
 ### Rejection and Return
 

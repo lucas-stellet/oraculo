@@ -21,7 +21,7 @@ Durante a fase Plan, o orquestrador decompoe os requisitos em um DAG — tarefas
 
 O orquestrador atribui skills a cada agent com base nas necessidades da tarefa. TDD para tarefas de codigo, playwright para validacao E2E, frontend-design para trabalho de UI. A skill e o mecanismo de contencao — ela define o workflow do agent, suas restricoes e os quality gates.
 
-O despacho segue o DAG: todas as tarefas desbloqueadas rodam em paralelo quando possivel, de forma sequencial quando a coordenacao no nivel de arquivo exige. O throughput do QA governa o ritmo — o orquestrador limita o despacho para que codigo seja produzido apenas na velocidade em que o QA consegue validar, evitando um backlog de trabalho nao revisado.
+O despacho segue o DAG: todas as tarefas desbloqueadas rodam em paralelo quando possivel, de forma sequencial quando a coordenacao no nivel de arquivo exige. O throughput do QA governa o ritmo — o orquestrador limita o despacho para que codigo seja produzido apenas na velocidade em que o QA consegue validar, evitando um backlog de trabalho nao revisado. Quando uma tarefa entra em `awaiting_approval`, o orquestrador rastreia esse estado e suspende todos os despachos dependentes ate que um verdict humano seja recebido.
 
 Detalhes completos: [`design/orchestrator.md`](design/orchestrator.md)
 
@@ -43,7 +43,7 @@ O QA agent valida todo o output de codigo com uma context window completamente l
 
 O QA verifica corretude funcional, conformidade com os padroes, casos de borda, qualidade dos testes e escopo. Ele **nunca corrige codigo** — produz achados estruturados que o orquestrador encaminha para um novo code agent. Essa separacao garante que o QA nunca possa comprometer seus proprios veredictos.
 
-Um circuit breaker limita os ciclos de rejeicao do QA (padrao: 3) antes de escalar para o humano. Todos os achados do QA e resumos de tentativas sao preservados para revisao humana.
+Um circuit breaker limita os ciclos de rejeicao do QA (padrao: 3) antes de o QA agent submeter uma approval request `qa-escalation` ao dashboard. O agent entra em `awaiting_approval` e interrompe o despacho naquela tarefa ate que o humano emita um verdict (`approved`, `rejected` ou `needs_revision`). Todos os achados do QA e resumos de tentativas sao preservados para revisao humana.
 
 Detalhes completos: [`design/qa-agent.md`](design/qa-agent.md)
 

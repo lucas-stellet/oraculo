@@ -95,9 +95,9 @@ Cada iteracao usa um **novo** code agent com contexto limpo. Isso evita comporta
 Um circuit breaker previne loops infinitos de rejeicao:
 
 - **Limite:** N ciclos de QA com falha na mesma tarefa (configuravel, padrao 3)
-- **Ao ser acionado:** O orquestrador para de instanciar novos code agents e escala para o humano
-- **Contexto preservado:** Todos os achados de QA e resumos das tentativas ficam disponiveis para o humano revisar
-- **Resolucao:** O humano pode fornecer orientacao, ajustar a tarefa ou assumir a implementacao
+- **Ao ser acionado:** O orquestrador para de instanciar novos code agents e submete uma approval request `qa-escalation` ao dashboard via `oraculo tools approval request --type qa-escalation`. O orquestrador entra no estado `awaiting_approval`.
+- **Contexto preservado:** Todos os achados de QA e resumos das tentativas ficam disponiveis no dashboard para revisao humana
+- **Resolucao:** O humano emite um veredicto — `approved` (aceitar como esta), `rejected` (abortar a story) ou `needs_revision` (tentar novamente com a orientacao do humano)
 
 O circuit breaker existe porque algumas tarefas podem estar genuinamente alem da capacidade dos agents — requisitos ambiguos, restricoes conflitantes ou problemas que exigem julgamento humano. Escalar cedo e melhor do que queimar tokens em retries infinitos.
 

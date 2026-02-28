@@ -36,7 +36,7 @@ Essa é uma restrição deliberada. Um prompt monolítico de centenas de linhas 
 
 **Repetição de regras críticas é intencional, não descuidada.** LLMs perdem aderência a instruções em conversas longas. Regras que governam segurança, qualidade ou integridade do fluxo de trabalho aparecem no ponto de uso — não apenas em um preâmbulo que o modelo já esqueceu há muito tempo. Isso não é redundância; é reforço no momento de maior risco de deriva.
 
-**Aprovação é estrutural, não verbal.** Quando um command requer validação do usuário — aprovar requisitos, confirmar escopo, aceitar um plano — a aprovação produz um artefato persistido pelo CLI. "Parece bom" em conversa não é aprovação. Um documento de requisitos validado e commitado pelo Trust Layer é aprovação. Commands nunca prosseguem com confirmação verbal para transições irreversíveis.
+**Aprovação é um veredicto humano, não um sinal verbal.** Quando um command chega a um approval gate — requisitos prontos para revisão, um plano pronto para execução — ele chama `oraculo tools approval request` para submeter o artefato e entra no estado `awaiting_approval`. O dashboard apresenta o artefato a um revisor humano, que emite um veredicto: `approved` (avançar), `rejected` (retornar à fase geradora) ou `needs_revision` (retornar com comentários). "Parece bom" em conversa não é aprovação. Um veredicto entregue pelo approval gate do dashboard é aprovação. Commands nunca avançam com confirmação verbal para transições irreversíveis. O fluxo não avança até que o veredicto seja recebido.
 
 ## 5. Contexto como Recurso Finito
 
@@ -58,7 +58,7 @@ Commands operam dentro de uma hierarquia estrita. Cada camada tem uma única res
 
 **Agents** são a força de trabalho de execução. Quando a saída de um command (requisitos, stories, planos) está pronta para implementação, o orchestrator despacha agentes. Commands não executam código, rodam testes ou modificam a codebase. Eles produzem os artefatos que os agentes consomem.
 
-O fluxo é sempre: **Command descobre e define -> CLI persiste e valida -> Agents executam e entregam.** Nenhuma camada faz o trabalho de outra.
+O fluxo é sempre: **Command descobre e define -> CLI persiste e valida -> Agents executam e entregam.** Nos approval gates, o fluxo pausa: o Dashboard apresenta o artefato e aguarda um veredicto humano antes de o workflow avançar. Nenhuma camada faz o trabalho de outra.
 
 Essa separação não é conveniência organizacional — é uma garantia de confiabilidade. Quando cada camada faz exatamente uma coisa, falhas são locais, depuráveis e recuperáveis. Um command que também persiste dados é impossível de testar. Um agente que também faz descoberta é incontrolável. As camadas existem porque misturar responsabilidades produz sistemas que são frágeis de formas invisíveis até que quebrem.
 
@@ -68,7 +68,7 @@ Essa separação não é conveniência organizacional — é uma garantia de con
 
 **A saída do command é um artefato, não um log de conversa.** O diálogo socrático é o processo; o artefato é o produto. Um epic command produz um documento de requisitos. Um story command produz uma definição de story. Esses artefatos são estruturados, validados e persistidos pelo CLI. A conversa que os produziu é efêmera — o artefato é o que sobrevive.
 
-**Handoffs são explícitos.** Quando um command completa sua fase e o fluxo de trabalho faz transição — da descoberta para o planejamento, do planejamento para a execução — o handoff é um artefato concreto passado pelo CLI, não uma continuação implícita da conversa. A próxima fase começa com um contexto limpo e uma entrada validada. Isso previne context bleed e garante que cada fase opere sobre fatos acordados, não deriva conversacional.
+**Handoffs são explícitos e controlados por approval gate.** Quando um command completa sua fase e o fluxo de trabalho faz transição — da descoberta para o planejamento, do planejamento para a execução — o handoff requer um veredicto de aprovação antes de se completar. O command submete o artefato ao Approval Gate via `oraculo tools approval request`, entra em `awaiting_approval` e não avança até que o dashboard entregue um veredicto. Apenas um veredicto `approved` permite que a próxima fase comece com contexto limpo e uma entrada validada. Isso previne context bleed e garante que cada fase opere sobre fatos acordados, não artefatos não revisados ou deriva conversacional.
 
 ## 8. Portabilidade
 

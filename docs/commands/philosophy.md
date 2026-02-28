@@ -36,7 +36,7 @@ This is a deliberate constraint. A monolithic prompt of hundreds of lines degrad
 
 **Repetition of critical rules is intentional, not sloppy.** LLMs lose instruction adherence over long conversations. Rules that govern safety, quality, or workflow integrity appear at the point of use — not only in a preamble that the model has long forgotten. This is not redundancy; it is reinforcement at the moment of maximum drift risk.
 
-**Approval is structural, not verbal.** When a command requires user validation — approving requirements, confirming scope, accepting a plan — the approval produces a persisted artifact through the CLI. "Looks good" in conversation is not approval. A validated requirements document committed through the Trust Layer is approval. Commands never proceed on verbal confirmation alone for irreversible transitions.
+**Approval is a human verdict, not a verbal signal.** When a command reaches an approval gate — requirements ready for review, a plan ready for execution — it calls `oraculo tools approval request` to submit the artifact and enters `awaiting_approval` state. The dashboard presents the artifact to a human reviewer, who issues a verdict: `approved` (advance), `rejected` (return to generator phase), or `needs_revision` (return with comments). "Looks good" in conversation is not approval. A verdict delivered through the dashboard's approval gate is approval. Commands never proceed on verbal confirmation alone for irreversible transitions. The workflow does not advance until the verdict is received.
 
 ## 5. Context as a Finite Resource
 
@@ -58,7 +58,7 @@ Commands operate within a strict hierarchy. Each layer has a single responsibili
 
 **Agents** are the execution workforce. When a command's output (requirements, stories, plans) is ready for implementation, the orchestrator dispatches agents. Commands do not execute code, run tests, or modify the codebase. They produce the artifacts that agents consume.
 
-The flow is always: **Command discovers and defines -> CLI persists and validates -> Agents execute and deliver.** No layer does another layer's job.
+The flow is always: **Command discovers and defines -> CLI persists and validates -> Agents execute and deliver.** At approval gates, the flow pauses: the Dashboard presents the artifact and awaits a human verdict before the workflow advances. No layer does another layer's job.
 
 This separation is not organizational convenience — it is a reliability guarantee. When each layer does exactly one thing, failures are local, debuggable, and recoverable. A command that also persists data is untestable. An agent that also does discovery is uncontainable. The layers exist because mixing responsibilities produces systems that are fragile in ways that are invisible until they break.
 
@@ -68,7 +68,7 @@ This separation is not organizational convenience — it is a reliability guaran
 
 **Command output is an artifact, not a conversation log.** The Socratic dialogue is the process; the artifact is the product. An epic command produces a requirements document. A story command produces a story definition. These artifacts are structured, validated, and persisted through the CLI. The conversation that produced them is ephemeral — the artifact is what survives.
 
-**Handoffs are explicit.** When a command completes its phase and the workflow transitions — from discovery to planning, from planning to execution — the handoff is a concrete artifact passed through the CLI, not an implicit continuation of the conversation. The next phase starts with a clean context and a validated input. This prevents context bleed and ensures each phase operates on agreed-upon facts, not conversational drift.
+**Handoffs are explicit and gated.** When a command completes its phase and the workflow transitions — from discovery to planning, from planning to execution — the handoff requires an approval verdict before completing. The command submits the artifact to the Approval Gate via `oraculo tools approval request`, enters `awaiting_approval`, and does not advance until the dashboard delivers a verdict. Only an `approved` verdict allows the next phase to begin with a clean context and a validated input. This prevents context bleed and ensures each phase operates on agreed-upon facts, not conversational drift or unreviewed artifacts.
 
 ## 8. Portability
 

@@ -67,6 +67,30 @@ When a code agent fails or QA rejects a task:
 
 2. **Agent failure:** If an agent fails to complete its task (error, timeout, impossible task), the orchestrator marks the task as failed with a reason and evaluates whether to retry with adjusted context or escalate.
 
-3. **Circuit breaker:** After N failed QA cycles on the same task (configurable, default 3), the orchestrator stops retrying and escalates to the human. The diagnostic context (all QA findings, all attempt summaries) is preserved for the human to review.
+3. **Circuit breaker:** After N failed QA cycles on the same task (configurable, default 3), the orchestrator stops retrying and submits a `qa-escalation` approval request to the dashboard:
+
+   ```
+   oraculo tools approval request --type qa-escalation
+   ```
+
+   The orchestrator transitions to `awaiting_approval` state. The dashboard displays the full diagnostic context (all QA findings, all attempt summaries) for human review. The human's verdict drives the next step:
+   - **`approved`** — Accept the current implementation as-is and advance the task
+   - **`rejected`** — Abort the story; mark the task as permanently failed
+   - **`needs_revision`** — Spawn a new code agent with the human's comments as additional context and reset the circuit breaker
 
 4. **DAG mutation:** When a failure invalidates downstream tasks, the orchestrator prunes the affected branch and may add new tasks to take a different approach. The CLI validates every mutation.
+
+## 7. Awaiting Approval State
+
+When an approval gate is open, the orchestrator enters `awaiting_approval` state. This state has specific behavioral rules to keep the system productive without advancing a blocked phase:
+
+**What the orchestrator does not do:**
+- Does not dispatch any tasks that depend — directly or transitively — on the pending approval
+- Does not advance the phase that the approval gate is guarding
+
+**What the orchestrator continues to do:**
+- Dispatches independent tasks whose dependencies are already satisfied and that do not depend on the approval outcome
+- Monitors approval status by polling: `oraculo tools approval status`
+
+**Returning to active state:**
+Once a verdict is received via `oraculo tools approval status`, the orchestrator reads the verdict, applies the appropriate outcome (advance, abort, or retry with comments), and transitions back to active state. Dependent tasks are re-evaluated against the updated DAG.

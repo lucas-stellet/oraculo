@@ -21,7 +21,7 @@ During the Plan phase, the orchestrator decomposes requirements into a DAG — t
 
 The orchestrator assigns skills to each agent based on task needs. TDD for code tasks, playwright for E2E validation, frontend-design for UI work. The skill is the containment mechanism — it defines the agent's workflow, constraints, and quality gates.
 
-Dispatch follows the DAG: all unblocked tasks run in parallel when possible, sequential when file-level coordination requires it. QA throughput governs the pace — the orchestrator limits dispatch so code is produced only as fast as QA can validate it, preventing a backlog of unreviewed work.
+Dispatch follows the DAG: all unblocked tasks run in parallel when possible, sequential when file-level coordination requires it. QA throughput governs the pace — the orchestrator limits dispatch so code is produced only as fast as QA can validate it, preventing a backlog of unreviewed work. When a task enters `awaiting_approval`, the orchestrator tracks that state and suspends all dependent dispatches until a human verdict is received.
 
 Full details: [`design/orchestrator.md`](design/orchestrator.md)
 
@@ -43,7 +43,7 @@ The QA agent validates all code output with a completely clean context window �
 
 QA checks functional correctness, standards compliance, edge cases, test quality, and scope. It **never fixes code** — it produces structured findings that the orchestrator routes to a new code agent. This separation ensures QA can never compromise its own verdicts.
 
-A circuit breaker limits QA rejection cycles (default 3) before escalating to the human. All QA findings and attempt summaries are preserved for human review.
+A circuit breaker limits QA rejection cycles (default 3) before the QA agent submits a `qa-escalation` approval request to the dashboard. The agent enters `awaiting_approval` and halts dispatch on that task until the human issues a verdict (`approved`, `rejected`, or `needs_revision`). All QA findings and attempt summaries are preserved for human review.
 
 Full details: [`design/qa-agent.md`](design/qa-agent.md)
 

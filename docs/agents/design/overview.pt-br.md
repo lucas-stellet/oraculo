@@ -22,11 +22,41 @@ Ambos os modos compartilham a mesma infraestrutura de agents, o mesmo pipeline d
 
 O orquestrador faz perguntas, nao code agents ou QA agents. Quando nao existe contexto previo (sem documentacao, sem fontes definidas), research agents sao despachados em paralelo para analisar o codebase e trazer evidencias. Quando existe contexto previo, o orquestrador conduz uma analise leve diretamente. O output e um documento de requisitos validado armazenado como markdown em `.oraculo/epics/<name>/requirements.md`.
 
+### 2.1.5 Discover → Plan: Approval Gate
+
+Antes de a fase Plan comecar, o orquestrador submete o documento de requisitos para revisao humana obrigatoria:
+
+```
+oraculo tools approval request --type epic-requirements
+```
+
+O dashboard exibe o documento de requisitos. O orquestrador entra no estado `awaiting_approval` e nao inicia a decomposicao ate receber um veredicto:
+- **`approved`** — Requisitos validados; o orquestrador avanca para o Plan
+- **`rejected`** — Requisitos invalidados; o orquestrador retorna ao Discover e retoma a exploracao Socratica
+- **`needs_revision`** — Requisitos precisam de mudancas pontuais; o orquestrador atualiza o documento com base nos comentarios e resubmete
+
+Esse gate existe porque a fase Plan compromete recursos significativos (construcao do DAG, despacho de agents). Um documento de requisitos errado significa execucao desperdicada. A validacao humana nessa fronteira e obrigatoria.
+
 ### 2.2 Plan
 
 **Atores:** Orquestrador
 
 O orquestrador decompoe os requisitos em um DAG — tarefas como nos, dependencias como arestas. Ele identifica o que e paralelo, o que e sequencial e onde esta o gargalo. Ele atribui skills a cada tarefa com base no trabalho exigido. O CLI valida o DAG (aciclicidade, integridade das dependencias) e o persiste no SQLite.
+
+### 2.2.5 Plan → Execute: Approval Gate (Opcional)
+
+Antes de a fase Execute comecar, o orquestrador pode submeter o plano de execucao para revisao humana:
+
+```
+oraculo tools approval request --type execution-plan
+```
+
+O dashboard exibe o DAG completo — tarefas, dependencias, atribuicoes de skills e a justificativa para as decisoes de paralelismo. O orquestrador entra no estado `awaiting_approval`. Veredictos:
+- **`approved`** — O plano esta validado; o orquestrador inicia o despacho
+- **`rejected`** — O plano e invalido; o orquestrador retorna ao Plan e redesenha o DAG
+- **`needs_revision`** — Tarefas ou atribuicoes especificas precisam de ajuste; o orquestrador muta o DAG com base nos comentarios e resubmete
+
+Esse gate e **opcional** — controlado por uma flag de configuracao em nivel de projeto. Times que confiam na decomposicao do orquestrador podem pula-lo. Times que querem visibilidade sobre o plano de execucao antes de os agents tocar no codigo podem habilita-lo.
 
 ### 2.3 Execute
 
@@ -56,7 +86,7 @@ Uma tarefa percorre este caminho pelo sistema:
 
 **4. Validacao.** O QA agent recebe o diff, as specs e os resultados dos testes em um contexto limpo. Ele verifica corretude funcional, conformidade com os padroes, casos de borda e qualidade dos testes. O CLI registra o veredicto no SQLite.
 
-**5. Resolucao.** Se aprovada, a tarefa e marcada como completa. Se rejeitada, o orquestrador instancia um novo code agent com o feedback do QA — contexto limpo, sem memoria da tentativa anterior. Um circuit breaker limita os ciclos de rejeicao antes de escalar para o humano.
+**5. Resolucao.** Se aprovada, a tarefa e marcada como completa. Se rejeitada, o orquestrador instancia um novo code agent com o feedback do QA — contexto limpo, sem memoria da tentativa anterior. Um circuit breaker limita os ciclos de rejeicao; quando acionado, o orquestrador submete uma approval request `qa-escalation` ao dashboard e entra no estado `awaiting_approval` ate receber um veredicto humano.
 
 **6. Integracao.** Assim que todas as tarefas de uma story sao validadas, um unico sumario em markdown e gerado e commitado. Os dados operacionais transientes no SQLite cumpriram seu proposito. A fase Deliver/Merge (merge para a linha principal) e trabalho futuro.
 
@@ -74,4 +104,6 @@ Estes valem em todas as fases e todos os agents:
 
 5. **Skills definem o comportamento dos agents.** O orquestrador atribui skills a agents com base nas necessidades da tarefa. A skill e o mecanismo de contencao — ela define o workflow, as restricoes e os quality gates do agent.
 
-6. **Artifact markdown unico.** Quando uma story e concluida, o sistema produz um unico arquivo markdown commitado resumindo o que foi feito. Os detalhes operacionais ficam no SQLite (dados transientes, limpaveis apos a conclusao do epic).
+6. **Approval gates sao obrigatorios nas transicoes de fase.** Nenhuma fase avanca sem um veredicto humano. O orquestrador entra no estado `awaiting_approval` em cada gate e aguarda um veredicto explicito — `approved`, `rejected` ou `needs_revision` — antes de prosseguir. Tarefas independentes podem continuar durante a espera; tarefas dependentes nao.
+
+7. **Artifact markdown unico.** Quando uma story e concluida, o sistema produz um unico arquivo markdown commitado resumindo o que foi feito. Os detalhes operacionais ficam no SQLite (dados transientes, limpaveis apos a conclusao do epic).

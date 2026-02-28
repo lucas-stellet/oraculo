@@ -80,4 +80,4 @@ This document lists capabilities that were explored during research but deferred
 
 **Why deferred:** The current system relies on the orchestrator to assign appropriate tasks and context to agents. Formal RBAC adds database-level enforcement but is unnecessary when the orchestrator is the sole dispatcher and the CLI is the sole write gateway.
 
-**Research findings:** Synthesis 06 designed a three-layer governance model: policy storage in SQLite (`security_policies` table), database enforcement via `BEFORE INSERT/UPDATE/DELETE` triggers with `RAISE(FAIL)`, and CLI middleware for tool permission isolation per role.
+**Research findings:** Synthesis 06 designed a three-layer governance model: policy storage in SQLite (`security_policies` table), database enforcement via `BEFORE INSERT/UPDATE/DELETE` triggers with `RAISE(FAIL)`, and CLI middleware for tool permission isolation per role. Approval authority — who can issue verdicts at each approval gate — is a natural extension of RBAC, enabling fine-grained control over which team members can approve epic requirements, story definitions, or QA escalations.

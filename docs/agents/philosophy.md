@@ -12,7 +12,7 @@ This document defines the beliefs that govern how agents work together. It is th
 
 **Agents are powerful reasoners but unreliable operators. Every agent must be contained by deterministic boundaries.**
 
-An agent left unconstrained will hallucinate paths, weaken its own test assertions, drift from project conventions, and confidently produce broken output. The system does not prevent this by hoping for better prompts — it prevents this by design. The CLI Trust Layer enforces contracts. Skills enforce discipline (TDD, code standards). The DAG enforces ordering. Same-branch execution with skill-based containment replaces the need for physical isolation — agents receive precise instructions about what files to touch, what tests to run, and what conventions to follow. Every agent operates inside a cage of deterministic constraints that makes the right behavior the only possible behavior.
+An agent left unconstrained will hallucinate paths, weaken its own test assertions, drift from project conventions, and confidently produce broken output. The system does not prevent this by hoping for better prompts — it prevents this by design. The CLI Trust Layer enforces contracts. Skills enforce discipline (TDD, code standards). The DAG enforces ordering. Approval gates enforce human oversight at critical junctures — mandatory pauses where no work proceeds without an explicit verdict. Same-branch execution with skill-based containment replaces the need for physical isolation — agents receive precise instructions about what files to touch, what tests to run, and what conventions to follow. Every agent operates inside a cage of deterministic constraints that makes the right behavior the only possible behavior.
 
 ## 3. The Orchestrator
 
@@ -47,6 +47,8 @@ QA agents are the immune system. They validate all output with fresh eyes, no sh
 **QA never fixes — it only reports.** When the QA agent finds issues, it produces a structured finding. It never modifies code. The orchestrator spawns a new code agent with QA's feedback to address the issues. This separation prevents QA from compromising its own verdicts.
 
 **The Trust Layer is the final arbiter, not the QA agent.** The recursive problem of "who watches the watchmen" is not solved by adding more watchers. It is solved by deterministic reality. Compilation, test execution, and contract assertions do not have opinions. The QA agent produces findings and evidence; the CLI verifies them. If the output violates the contract, it is rejected — no debate.
+
+**A circuit breaker triggers a dashboard approval gate.** When QA rejection cycles exceed the configured threshold, the system does not silently fail or spawn more agents. The QA agent submits a `qa-escalation` approval request to the dashboard, enters `awaiting_approval`, and halts further dispatch on that task. The human reviews the accumulated findings and issues a verdict — `approved`, `rejected`, or `needs_revision` — before work resumes.
 
 ## 6. Memory
 

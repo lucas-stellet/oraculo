@@ -14,6 +14,7 @@ Quando chega a hora de agir, o Oráculo se torna um **Orquestrador de Time** —
 - **Orquestre, nunca execute** — O agente principal só delega
 - **Maximize paralelismo** — Tarefas independentes rodam simultaneamente
 - **Qualidade acima de velocidade** — Cada linha de código segue os padrões do projeto
+- **Human in the loop** — Em transições críticas de fase, a execução pausa para julgamento humano entregue pelos approval gates do dashboard
 
 ## 2. Fundamentos Teóricos
 
@@ -29,4 +30,8 @@ O Oráculo se apoia em metodologias consolidadas tanto de produto quanto de enge
 - **TDD (Test-Driven Development)** — Testes primeiro, implementação depois. Todo código produzido pelos agentes segue o ciclo red-green-refactor.
 - **DAG (Directed Acyclic Graph)** — Tarefas são modeladas como um grafo de dependências. Tudo que pode rodar em paralelo, roda em paralelo. Dependências explícitas garantem ordem correta.
 
-**Princípio unificador:** Essas não são técnicas opcionais — são o modo de operação padrão do Oráculo. Cada tarefa passa por descoberta, é decomposta em um DAG, e executada com TDD por agentes paralelos.
+### Interação Humano-Computador
+
+- **Human-in-the-Loop (HITL)** — A automação acelera a execução, mas certas decisões exigem julgamento humano. Em transições críticas de fase, o Oráculo pausa e apresenta artefatos a um revisor humano pelos approval gates do dashboard. O agente chama `oraculo tools approval request`, o dashboard exibe o artefato para revisão, e o agente entra em `awaiting_approval`. O fluxo não avança até que um verdict seja entregue. Os verdicts são: `approved` (avançar para a próxima fase), `rejected` (retornar à fase geradora) ou `needs_revision` (retornar com comentários do revisor). Os quatro approval gates são: `epic-requirements`, `story-definition`, `qa-escalation` e `execution-plan`.
+
+**Princípio unificador:** Essas não são técnicas opcionais — são o modo de operação padrão do Oráculo. Cada tarefa passa por descoberta, é decomposta em um DAG, e executada com TDD por agentes paralelos. Em cada transição crítica, um humano revisa e aprova antes de o fluxo avançar.

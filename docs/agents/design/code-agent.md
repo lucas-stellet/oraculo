@@ -63,7 +63,7 @@ When QA rejects a task, the orchestrator does **not** send the rejection back to
 
 This pattern continues until:
 - The task passes QA, or
-- The circuit breaker trips after N failures and escalates to the human
+- The circuit breaker trips after N failures — at which point the orchestrator initiates HITL via the dashboard using `oraculo tools approval request --type qa-escalation` and enters `awaiting_approval` state until a human verdict is received
 
 ## 6. What the Code Agent Does Not Do
 

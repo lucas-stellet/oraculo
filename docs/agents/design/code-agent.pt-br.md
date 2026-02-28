@@ -63,7 +63,7 @@ Quando o QA rejeita uma tarefa, o orquestrador **nao** envia a rejeicao de volta
 
 Esse padrao continua ate que:
 - A tarefa passe no QA, ou
-- O circuit breaker seja acionado apos N falhas e o caso seja escalado para o humano
+- O circuit breaker seja acionado apos N falhas — momento em que o orquestrador inicia o HITL via dashboard usando `oraculo tools approval request --type qa-escalation` e entra no estado `awaiting_approval` ate receber um veredicto humano
 
 ## 6. O que o Code Agent Nao Faz
 

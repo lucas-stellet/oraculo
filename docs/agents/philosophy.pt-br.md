@@ -12,7 +12,7 @@ Este documento define as crencas que governam como agentes trabalham juntos. E a
 
 **Agentes sao raciocinadores poderosos mas operadores nao confiaveis. Todo agente deve ser contido por fronteiras deterministicas.**
 
-Um agente sem restricoes vai alucinar caminhos, enfraquecer suas proprias assercoes de teste, desviar de convencoes do projeto e produzir output quebrado com confianca. O sistema nao previne isso esperando prompts melhores — previne por design. O CLI Trust Layer impoe contratos. Skills impoem disciplina (TDD, padroes de codigo). O DAG impoe ordenacao. Execucao no mesmo branch com contencao baseada em skills substitui a necessidade de isolamento fisico — agentes recebem instrucoes precisas sobre quais arquivos tocar, quais testes rodar e quais convencoes seguir. Todo agente opera dentro de uma jaula de restricoes deterministicas que torna o comportamento correto o unico comportamento possivel.
+Um agente sem restricoes vai alucinar caminhos, enfraquecer suas proprias assercoes de teste, desviar de convencoes do projeto e produzir output quebrado com confianca. O sistema nao previne isso esperando prompts melhores — previne por design. O CLI Trust Layer impoe contratos. Skills impoem disciplina (TDD, padroes de codigo). O DAG impoe ordenacao. Approval gates impõem supervisao humana em junções criticas — pausas obrigatorias onde nenhum trabalho avanca sem um verdict explicito. Execucao no mesmo branch com contencao baseada em skills substitui a necessidade de isolamento fisico — agentes recebem instrucoes precisas sobre quais arquivos tocar, quais testes rodar e quais convencoes seguir. Todo agente opera dentro de uma jaula de restricoes deterministicas que torna o comportamento correto o unico comportamento possivel.
 
 ## 3. O Orquestrador
 
@@ -48,6 +48,8 @@ QA agents sao o sistema imunologico. Validam todo output com olhos frescos, sem 
 
 **O Trust Layer e o arbitro final, nao o QA agent.** O problema recursivo de "who watches the watchmen" nao e resolvido adicionando mais vigias. E resolvido pela realidade deterministica. Compilacao, execucao de testes e assercoes de contrato nao tem opinioes. O QA agent produz findings e evidencias; a CLI os verifica. Se o output viola o contrato, e rejeitado — sem debate.
 
+**Um circuit breaker aciona um approval gate no dashboard.** Quando os ciclos de rejeicao do QA excedem o threshold configurado, o sistema nao falha silenciosamente nem instancia mais agentes. O QA agent submete uma approval request `qa-escalation` ao dashboard, entra em `awaiting_approval` e interrompe o despacho naquela tarefa. O humano revisa os achados acumulados e emite um verdict — `approved`, `rejected` ou `needs_revision` — antes de o trabalho ser retomado.
+
 ## 6. Memoria
 
 Memoria e simples e pratica. Serve os agentes sem sobrecarregar o sistema.
@@ -56,9 +58,9 @@ Memoria e simples e pratica. Serve os agentes sem sobrecarregar o sistema.
 
 **Markdowns de epic sao a inteligencia acumulada.** Documentos de requisitos, definicoes de story e sumarios de tarefas capturam as decisoes e raciocinio de cada feature. Sao commitados no repositorio e servem como registro historico.
 
-**SQLite efemero rastreia estado de execucao.** Status de tarefas, dependencias, vereditos de QA e dados operacionais vivem em SQLite — por epic, nao commitado, descartavel apos o epic completar. Isso e infraestrutura, nao conhecimento.
+**SQLite rastreia estado operacional e conhecimento acumulado.** Um unico banco de dados por projeto (`.oraculo/oraculo.db`) armazena duas categorias de dados. Dados operacionais transientes — status de tarefas, dependencias, vereditos de QA — sao essenciais durante a execucao e podem ser limpos apos a conclusao do epic. Conhecimento persistente — licoes aprendidas, padroes de codebase, convencoes — acumula em todos os epics e sobrevive ao seu ciclo de vida. O banco de dados nao e commitado (`.gitignore`), mas o conhecimento que ele contem e a memoria de longo prazo do projeto.
 
-**Sem sistema de memoria complexo.** Nao ha arquitetura de tres camadas, nao ha pipeline de curadoria, nao ha knowledge store semantico. O sistema mantem o que precisa na forma mais simples que funciona: markdown para humanos, SQLite para maquinas, CLAUDE.md para agentes.
+**Knowledge store simples, nao um sistema de memoria complexo.** A tabela `knowledge` com full-text search fornece um unico store consultavel para achados sobre o codebase. Nao ha arquitetura de tres camadas, nao ha pipeline de curadoria, nao ha pontuacao de promocao. Isso e um knowledge store pratico — nao o sistema de memoria rico descrito em future-work.md.
 
 ## 7. O Que Este Documento Nao E
 

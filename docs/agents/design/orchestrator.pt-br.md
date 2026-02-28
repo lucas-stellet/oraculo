@@ -67,6 +67,30 @@ Quando um code agent falha ou o QA rejeita uma tarefa:
 
 2. **Falha do agent:** Se um agent falha em concluir sua tarefa (erro, timeout, tarefa impossivel), o orquestrador marca a tarefa como falha com uma razao e avalia se deve tentar novamente com contexto ajustado ou escalar.
 
-3. **Circuit breaker:** Apos N ciclos de QA com falha na mesma tarefa (configuravel, padrao 3), o orquestrador para de tentar e escala para o humano. O contexto de diagnostico (todos os achados do QA, todos os sumarios de tentativas) e preservado para o humano revisar.
+3. **Circuit breaker:** Apos N ciclos de QA com falha na mesma tarefa (configuravel, padrao 3), o orquestrador para de tentar e submete uma approval request `qa-escalation` ao dashboard:
+
+   ```
+   oraculo tools approval request --type qa-escalation
+   ```
+
+   O orquestrador transiciona para o estado `awaiting_approval`. O dashboard exibe o contexto de diagnostico completo (todos os achados do QA, todos os sumarios de tentativas) para revisao humana. O veredicto do humano define o proximo passo:
+   - **`approved`** — Aceitar a implementacao atual como esta e avançar a tarefa
+   - **`rejected`** — Abortar a story; marcar a tarefa como permanentemente falha
+   - **`needs_revision`** — Instanciar um novo code agent com os comentarios do humano como contexto adicional e resetar o circuit breaker
 
 4. **Mutacao do DAG:** Quando uma falha invalida tarefas downstream, o orquestrador poda o ramo afetado e pode adicionar novas tarefas para seguir uma abordagem diferente. O CLI valida toda mutacao.
+
+## 7. Estado Awaiting Approval
+
+Quando um approval gate esta aberto, o orquestrador entra no estado `awaiting_approval`. Esse estado tem regras comportamentais especificas para manter o sistema produtivo sem avançar uma fase bloqueada:
+
+**O que o orquestrador nao faz:**
+- Nao despacha tarefas que dependam — direta ou transitivamente — da aprovacao pendente
+- Nao avanca a fase que o approval gate esta protegendo
+
+**O que o orquestrador continua fazendo:**
+- Despacha tarefas independentes cujas dependencias ja estao satisfeitas e que nao dependem do resultado da aprovacao
+- Monitora o status da aprovacao por polling: `oraculo tools approval status`
+
+**Retorno ao estado ativo:**
+Uma vez recebido um veredicto via `oraculo tools approval status`, o orquestrador le o veredicto, aplica o resultado adequado (avancar, abortar ou tentar novamente com comentarios) e transiciona de volta ao estado ativo. As tarefas dependentes sao reavaliadas em relacao ao DAG atualizado.

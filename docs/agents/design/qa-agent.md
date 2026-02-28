@@ -95,9 +95,9 @@ Each iteration uses a **new** code agent with fresh context. This prevents defen
 A circuit breaker prevents infinite rejection loops:
 
 - **Threshold:** N failed QA cycles on the same task (configurable, default 3)
-- **On trip:** The orchestrator stops spawning new code agents and escalates to the human
-- **Context preserved:** All QA findings and attempt summaries are available for the human to review
-- **Resolution:** The human can provide guidance, adjust the task, or take over implementation
+- **On trip:** The orchestrator stops spawning new code agents and submits a `qa-escalation` approval request to the dashboard via `oraculo tools approval request --type qa-escalation`. The orchestrator enters `awaiting_approval` state.
+- **Context preserved:** All QA findings and attempt summaries are available in the dashboard for human review
+- **Resolution:** The human issues a verdict — `approved` (accept as-is), `rejected` (abort the story), or `needs_revision` (retry with the human's guidance)
 
 The circuit breaker exists because some tasks may be genuinely beyond the agents' capability — ambiguous requirements, conflicting constraints, or problems that require human judgment. Escalating early is better than burning tokens on endless retries.
 

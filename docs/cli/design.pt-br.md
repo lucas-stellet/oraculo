@@ -27,7 +27,7 @@ oraculo version                       # Versão do CLI
 
 **`update`** — Atualiza o binário do CLI do Oraculo para a última versão. Distinto de `install` — `install` gerencia a configuração do Claude Code (skills, hooks, settings), `update` gerencia o binário.
 
-**`status`** — Dashboard legível mostrando epics, contagem de stories, progresso de tasks (pending/in_progress/completed/failed), percentuais.
+**`status`** — Dashboard legível mostrando epics, contagem de stories, progresso de tasks (pending/in_progress/completed/failed), percentuais e contagem de aprovações pendentes.
 
 **Sem comando `init`.** Auto-bootstrapping: o primeiro comando `tools` que toca o armazenamento cria `.oraculo/` e o banco de dados automaticamente.
 
@@ -98,6 +98,17 @@ oraculo tools memory domains
 
 Categorias: `pattern`, `convention`, `constraint`, `dependency`, `test`, `architecture`.
 
+### 3.5 Approval
+
+```bash
+oraculo tools approval request --type <type> --epic <epic> [--story <story>]   # stdin: markdown
+oraculo tools approval status <id>
+oraculo tools approval list [--pending]
+oraculo tools approval verdict <id> --verdict <approved|rejected|needs_revision> [--comment "..."]
+```
+
+`--type` aceita: `epic-requirements`, `story-definition`, `qa-escalation`, `execution-plan`.
+
 ## 4. Modelo de Dados
 
 ### 4.1 Divisão de Responsabilidade
@@ -124,7 +135,7 @@ Categorias: `pattern`, `convention`, `constraint`, `dependency`, `test`, `archit
 
 Regras:
 
-- Stories sempre pertencem a um epic. O CLI aplica isso; stories independentes usam um epic leve.
+- Stories sempre pertencem a um epic. O CLI aplica isso. Quando uma story é criada sem um epic explícito, o CLI auto-cria um **epic leve** — um epic mínimo com o nome derivado da story e sem markdown de requisitos. Isso preserva o modelo de dados hierárquico enquanto mantém a UX de story standalone sem atrito.
 - O `requirements.md` de cada nível é a definição de produto — O QUE e POR QUE, nunca COMO.
 - O banco de dados SQLite é infraestrutura — `.gitignore`.
 - Arquivos Markdown são versionáveis no git.
@@ -134,20 +145,24 @@ Regras:
 ```sql
 -- Entidades centrais
 CREATE TABLE epics (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    name        TEXT UNIQUE NOT NULL,
-    description TEXT DEFAULT '',
-    created_at  TEXT DEFAULT (datetime('now')),
-    updated_at  TEXT DEFAULT (datetime('now'))
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT UNIQUE NOT NULL,
+    description     TEXT DEFAULT '',
+    approval_status TEXT DEFAULT 'none'
+                    CHECK (approval_status IN ('none','pending','approved','rejected','needs_revision')),
+    created_at      TEXT DEFAULT (datetime('now')),
+    updated_at      TEXT DEFAULT (datetime('now'))
 );
 
 CREATE TABLE stories (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    epic_id     INTEGER NOT NULL REFERENCES epics(id),
-    name        TEXT NOT NULL,
-    description TEXT DEFAULT '',
-    created_at  TEXT DEFAULT (datetime('now')),
-    updated_at  TEXT DEFAULT (datetime('now')),
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    epic_id         INTEGER NOT NULL REFERENCES epics(id),
+    name            TEXT NOT NULL,
+    description     TEXT DEFAULT '',
+    approval_status TEXT DEFAULT 'none'
+                    CHECK (approval_status IN ('none','pending','approved','rejected','needs_revision')),
+    created_at      TEXT DEFAULT (datetime('now')),
+    updated_at      TEXT DEFAULT (datetime('now')),
     UNIQUE(epic_id, name)
 );
 
@@ -189,6 +204,7 @@ CREATE TABLE task_results (
 CREATE TABLE validations (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     story_id    INTEGER NOT NULL REFERENCES stories(id),
+    task_id     INTEGER REFERENCES tasks(id),              -- NULL = validação em nível de story
     verdict     TEXT NOT NULL CHECK (verdict IN ('approved','rejected')),
     created_at  TEXT DEFAULT (datetime('now'))
 );
@@ -221,6 +237,22 @@ CREATE TRIGGER knowledge_del AFTER DELETE ON knowledge BEGIN
     INSERT INTO knowledge_fts(knowledge_fts, rowid, domain, category, finding, source_files)
     VALUES ('delete', old.id, old.domain, old.category, old.finding, old.source_files);
 END;
+
+-- Approval gates HITL
+CREATE TABLE approvals (
+    id               TEXT PRIMARY KEY,
+    type             TEXT NOT NULL CHECK (type IN ('epic-requirements','story-definition',
+                                                   'qa-escalation','execution-plan')),
+    epic_id          INTEGER REFERENCES epics(id),
+    story_id         INTEGER REFERENCES stories(id),
+    content          TEXT NOT NULL,
+    previous_version TEXT DEFAULT '',
+    status           TEXT DEFAULT 'pending'
+                     CHECK (status IN ('pending','approved','rejected','needs_revision')),
+    verdict_comment  TEXT DEFAULT '',
+    requested_at     TEXT DEFAULT (datetime('now')),
+    decided_at       TEXT
+);
 ```
 
 Decisões de design:
@@ -228,9 +260,11 @@ Decisões de design:
 - `epics` e `stories` rastreiam apenas metadados. O conteúdo vive em arquivos Markdown.
 - `tasks` rastreiam ciclo de vida de status e metadados. Dados ricos de conclusão em `task_results`.
 - `task_dependencies` modela o DAG. O CLI pode validar que não existem ciclos.
-- `validations` armazena apenas o veredito estrutural. A análise de QA vive em Markdown.
+- `validations` armazena vereditos estruturais em dois níveis: por task (`task_id` preenchido) durante a execução e por story (`task_id` NULL) como gate final. A análise de QA vive em Markdown.
 - `knowledge` usa FTS5 para busca full-text. Triggers de sincronização mantêm o índice consistente.
 - Arrays JSON (`skills_used`, `files_modified`) armazenados como TEXT — simples, consultável com `json_each()`.
+- `approvals` usa uma chave primária TEXT (UUID) para que os IDs sejam estáveis e compartilháveis entre fronteiras de agentes. `epic_id` e `story_id` podem ser NULL para tipos transversais como `execution-plan`. `previous_version` armazena o conteúdo anterior quando uma revisão é solicitada, permitindo exibição de diff na UI.
+- `approval_status` em `epics` e `stories` espelha o resultado mais recente do approval gate para aquela entidade, evitando joins no caminho comum de verificação de status.
 
 ## 5. Formato de Saída
 
@@ -274,7 +308,8 @@ cmd/oraculo/
 │       ├── epic.go             # tools epic init|save|get|list|update|delete
 │       ├── story.go            # tools story init|save|get|list|update|delete
 │       ├── task.go             # tools task init|start|complete|fail|get|list|delete
-│       └── memory.go           # tools memory store|search|domains
+│       ├── memory.go           # tools memory store|search|domains
+│       └── approval.go         # tools approval request|status|list|verdict
 ├── internal/
 │   ├── db/
 │   │   ├── db.go               # Open, auto-criar .oraculo/, migrar
@@ -287,6 +322,8 @@ cmd/oraculo/
 │   │   └── task.go             # Lógica de negócio de task + validação de DAG
 │   ├── memory/
 │   │   └── memory.go           # Knowledge store/search
+│   ├── approval/
+│   │   └── approval.go         # Lógica de request/verdict/query de approval
 │   ├── installer/
 │   │   └── installer.go        # Lógica de install (copiar skills, hooks, settings)
 │   └── output/
