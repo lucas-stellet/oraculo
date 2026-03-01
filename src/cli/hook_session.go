@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lucas/oraculo/src/config"
 	"github.com/lucas/oraculo/src/db"
 	"github.com/spf13/cobra"
 )
@@ -58,7 +59,8 @@ func hookSessionStart(cmd *cobra.Command) error {
 	}
 
 	// Health check if config exists
-	port := readConfigPort()
+	cfg, _ := config.Read()
+	port := cfg.Port
 	if port > 0 {
 		healthURL := fmt.Sprintf("http://localhost:%d/health", port)
 		client := &http.Client{Timeout: 2 * time.Second}
@@ -82,18 +84,3 @@ func gitBranch() string {
 	return strings.TrimSpace(string(out))
 }
 
-type configFile struct {
-	Port int `json:"port"`
-}
-
-func readConfigPort() int {
-	data, err := os.ReadFile(".oraculo/config.json")
-	if err != nil {
-		return 0
-	}
-	var cfg configFile
-	if err := json.Unmarshal(data, &cfg); err != nil {
-		return 0
-	}
-	return cfg.Port
-}
