@@ -63,6 +63,12 @@ Full details: [`design/research-agent.md`](design/research-agent.md)
 
 A single SQLite database at `.oraculo/oraculo.db` tracks two categories of data. Operational state (tasks, dependencies, QA verdicts) is transient — essential during execution, cleanable after epic completion. The `knowledge` table is persistent — it accumulates lessons learned across all epics. The database uses the schema from [`docs/cli/design.md`](../cli/design.md) §4.3. It is listed in `.gitignore` and not committed, but its knowledge data is the project's long-term memory.
 
+In addition to the existing schema, three tables support HTTP hook telemetry:
+
+- **`sessions`** — One row per Claude Code session observed. Records the session ID, model, working directory, start time, and end time. Written by the `SessionStart` command hook and the `SessionEnd` HTTP hook.
+- **`agents`** — One row per agent lifecycle event. Written by `SubagentStart` and `SubagentStop` HTTP hooks. Tracks agent name, inferred type (code, qa, research, orchestrator), status, and start/stop timestamps.
+- **`tool_events`** — One row per mutation tool invocation (Bash, Edit, Write, NotebookEdit). Written by the `PostToolUse` HTTP hook. Stores only metadata: session ID, tool name, file path, and timestamp. No content, no diffs, no command text.
+
 ### Single Markdown Artifact
 
 When a story completes, the system generates one committed markdown file summarizing the implementation: what was built, key decisions, files modified, QA outcome. One file per story — task-level detail is too granular for human reading.
@@ -77,6 +83,58 @@ Three sources, three purposes:
 No three-tier memory architecture, no curation pipeline. A simple knowledge table with full-text search — not a promotion scoring system.
 
 Full details: [`design/runtime.md`](design/runtime.md)
+
+## 7. HTTP Hooks Integration
+
+### Overview
+
+Agents are tracked through Claude Code's native HTTP hook system rather than explicit MCP tool calls. This is automatic — the hooks fire on every qualifying event without any agent-side instrumentation. No agent needs to announce itself; the infrastructure observes it.
+
+The previous `notify_agent_state` MCP tool is **removed**. It required agents to call MCP explicitly to report their own status — a form of instrumentation that added noise to agent context and could be forgotten or skipped. `SubagentStart` and `SubagentStop` hooks replace it entirely.
+
+### Hook-to-Agent Mapping
+
+| Claude Code Hook | Agent Event | SQLite Write | WebSocket Broadcast |
+|---|---|---|---|
+| `SubagentStart` | Agent spawned by orchestrator | INSERT into `agents` (status = active) | `{ "type": "agent_started" }` |
+| `SubagentStop` | Agent completed or failed | UPDATE `agents` (status, stopped_at) | `{ "type": "agent_stopped" }` |
+| `PostToolUse` (Bash\|Edit\|Write\|NotebookEdit) | Agent mutated a file or ran a command | INSERT into `tool_events` | `{ "type": "tool_used" }` |
+| `TaskCompleted` | Agent marked a task complete | (read by existing task system) | `{ "type": "task_completed" }` |
+| `SessionStart` (command) | Session begins | INSERT into `sessions` | — |
+| `SessionEnd` | Session ends | UPDATE `sessions` (ended_at) | `{ "type": "session_ended" }` |
+
+### Agent Lifecycle via Hooks
+
+When the orchestrator spawns a subagent, Claude Code fires `SubagentStart`. The HTTP server receives the event and inserts a row into the `agents` table with `status = 'active'`. The dashboard's Agent Monitor receives an immediate WebSocket push — no polling required.
+
+When the subagent finishes (successfully or not), Claude Code fires `SubagentStop`. The HTTP server updates the `agents` row with the final status and `stopped_at` timestamp. The dashboard reflects the change in real time.
+
+The orchestrator does not call any MCP tool to report agent state changes. The infrastructure observes them automatically.
+
+### Tool Event Tracking
+
+Every time an agent uses a mutation tool (Bash, Edit, Write, NotebookEdit), the `PostToolUse` hook fires after the tool completes. Only metadata is persisted — **no content, no diffs, no command text**. This is a deliberate privacy and storage decision: the dashboard shows *what was touched*, not *what was written*.
+
+Read-only tools (Read, Glob, Grep, WebFetch) do not fire the hook. The matcher `Bash|Edit|Write|NotebookEdit` restricts tracking to operations that change state.
+
+### Non-Blocking Telemetry
+
+All HTTP hooks use a 5-second timeout and return `200` with an empty body. If the Oraculo server is offline, Claude Code logs a non-blocking warning and the agent continues unaffected. Telemetry is best-effort — agents are never blocked by observation infrastructure.
+
+This is a hard architectural constraint: the observation layer cannot degrade agent throughput. If it can block agents, it will eventually do so at the worst possible moment.
+
+### MCP Tools — Reduced Scope
+
+With HTTP hooks handling telemetry, the MCP server's tool set is reduced to the approval gate workflow only:
+
+| MCP Tool | Status | Purpose |
+|---|---|---|
+| `request_approval` | Kept | Interactive approval gate — blocks until human verdict |
+| `approval_status` | Kept | Polling fallback for crash recovery |
+| `notify_agent_state` | Removed | Replaced by SubagentStart/Stop HTTP hooks |
+| `register_project` | Removed | Handled by `oraculo install` |
+
+Agents only call MCP tools when they need a human decision. All other communication with the dashboard is automatic.
 
 ## 6. Future Work
 

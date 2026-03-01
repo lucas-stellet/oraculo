@@ -54,6 +54,12 @@ The primary purpose of the UI is to make human review comfortable, informed, and
 
 Live connections provide updates as agents progress, tasks complete, and QA verdicts arrive. But live updates are a convenience, not a contract. The system produces correct results regardless of whether anyone is watching. The UI can reconnect, refresh, and reconstruct its state entirely from the CLI at any time. No information exists only in the live stream.
 
+This principle is made structurally true by the **two-channel architecture**. Telemetry flows through HTTP hooks — fire-and-forget POST requests that Claude Code sends automatically on every qualifying system event (session start, agent spawn, tool use, task completion). These hooks are non-blocking by design: if the dashboard server is offline or slow, the hook times out silently and the agent continues without interruption. The observation layer cannot interfere with execution even if the server crashes entirely.
+
+Approval gates use a separate channel — MCP tools over stdio — which intentionally *does* block the agent. This is the one moment where the human's response is required before the system proceeds. The two channels are not interchangeable: telemetry is automatic and non-blocking (HTTP hooks); approvals are explicit and blocking (MCP). Each channel does what it does best, and neither leaks into the other's domain.
+
+The result: the dashboard is a passive observer by default and an active gatekeeper only at approval moments — never accidentally, never by coupling.
+
 ### 4.5 Mission Control, Not a Cockpit
 
 The metaphor is NASA Mission Control, not an airplane cockpit. The human observes comprehensive telemetry, makes strategic decisions, and intervenes when escalation demands it. The human does not steer individual agents, edit code through the dashboard, or micromanage task execution. The orchestrator flies the plane. The UI provides the situational awareness that makes strategic oversight possible.
@@ -66,7 +72,64 @@ The UI is not a separate application. It lives inside the same binary as the CLI
 
 The human should never need to start the dashboard manually. When a session begins, the dashboard starts automatically — the server comes up, the browser opens, and the interface is ready before the human asks their first question. The human runs a command, and the dashboard is already there, waiting. This is the Pit of Success applied to the UI: the correct setup is the default setup. No separate terminal tab, no manual server start, no "remember to launch the dashboard first." The system takes care of itself so the human can focus on the work. Each project gets a dedicated port in the 3100-3199 range, persisted in `.oraculo/config`, so the dashboard URL is stable and bookmarkable across sessions.
 
-## 5. Relationship to Other Layers
+## 5. Hook-Based Observability
+
+### 5.1 Automatic Telemetry via HTTP Hooks
+
+The dashboard's real-time data arrives through Claude Code's native hook system. When `oraculo install` configures a project, it registers HTTP hooks in `.claude/settings.json` that fire automatically on every qualifying event — no agent instrumentation required. Agents do not call special tools or emit structured logs to feed the dashboard. Claude Code fires the hooks; the dashboard receives them.
+
+The hooks covered by the HTTP channel:
+
+| Hook | Event |
+|---|---|
+| `SubagentStart` | An agent was spawned by the orchestrator |
+| `SubagentStop` | An agent completed or failed |
+| `PostToolUse` (mutation tools only) | A file was edited, written, or a shell command ran |
+| `TaskCompleted` | A task was marked as completed |
+| `Stop` | An agent is stopping |
+| `TeammateIdle` | A teammate agent became idle |
+| `SessionEnd` | The Claude Code session ended |
+
+`SessionStart` is handled by a command hook (`oraculo hook session-start`) rather than an HTTP hook. This is because session start requires a health check and must be able to print a warning to the user if the server is offline — HTTP hooks cannot produce output visible to the user.
+
+### 5.2 Graceful Degradation
+
+Every HTTP hook operates under a graceful degradation policy. When the server is online, it persists the event to SQLite and broadcasts to connected WebSocket clients. When the server is offline, Claude Code logs a non-blocking warning and the agent continues. Hooks use a 5-second timeout; if the server does not respond in time, the hook is abandoned and the agent proceeds.
+
+This means the dashboard can go offline, restart, or fall behind at any time without affecting the system's operation. When the server comes back up, future events resume. Historical events that occurred while the server was offline are not replayed — the dashboard shows what it observed, not a complete reconstruction of the session. For authoritative state, the CLI remains the source of truth.
+
+### 5.3 What the Dashboard Observes
+
+HTTP hooks deliver metadata, not content. The `PostToolUse` hook records *which* tool ran and *which file* was affected — not what was written, not the diff, not the command text. This is a deliberate privacy and storage decision: the dashboard shows the shape of agent activity without becoming a surveillance system for code content.
+
+The three new SQLite tables that support hook-based observability:
+
+- **`sessions`** — One row per Claude Code session, tracking model, working directory, and lifetime
+- **`agents`** — One row per agent start event, tracking name, type, status, and duration
+- **`tool_events`** — One row per mutation tool use, tracking which tool and which file (metadata only)
+
+These tables are populated exclusively by HTTP hooks and read exclusively by the dashboard's REST API. They are append-only telemetry — the CLI does not write to them, and the dashboard does not expose them as editable state.
+
+### 5.4 Two-Channel Architecture Summary
+
+```
+Channel 1: HTTP Hooks (automatic telemetry)
+═══════════════════════════════════════════
+Claude Code ──POST──> HTTP server ──> SQLite + WebSocket broadcast
+                      (fire-and-forget, 200 empty body)
+
+Channel 2: MCP (interactive approval gates)
+═══════════════════════════════════════════
+Claude Code ──stdio──> MCP server ──> SQLite + Go channel (blocks)
+                                          │
+Dashboard ──POST /api/approvals/:id/verdict──> UPDATE SQLite + unblock
+                                          │
+                       MCP server <── Go channel ──> Claude Code (resumes)
+```
+
+Both channels write to the same SQLite database and share the same WebSocket broadcast mechanism. Both run inside the same Go binary. The distinction is behavioral: HTTP hooks are non-blocking telemetry; MCP calls are blocking workflow gates. The dashboard consumes both — observing through the hook stream, acting through the approval API.
+
+## 6. Relationship to Other Layers
 
 The UI sits at the outermost layer of Oraculo's architecture. It depends on every layer below it but nothing depends on it.
 
@@ -78,7 +141,7 @@ The UI sits at the outermost layer of Oraculo's architecture. It depends on ever
 
 **Both humans and agents go through the same CLI.** The UI makes the CLI's data visual and interactive. It is a different lens on the same source of truth, not a parallel data path.
 
-## 6. What the UI Is Not
+## 7. What the UI Is Not
 
 The UI is **not a project management tool**. It does not replace Jira, Linear, or any external tracker. It shows Oraculo's internal state — epics, stories, tasks, agent activity — for the humans who are actively working with the system.
 

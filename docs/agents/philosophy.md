@@ -62,7 +62,21 @@ Memory is simple and practical. It serves agents without burdening the system.
 
 **Simple knowledge store, not a complex memory system.** The `knowledge` table with full-text search provides a single, queryable store for codebase findings. There is no three-tier architecture, no curation pipeline, no promotion scoring. This is a practical knowledge store — not the deferred rich memory system described in future-work.md.
 
-## 7. What This Document Is Not
+## 7. Communication Model
+
+Agents communicate with the outside world through two dedicated channels — one automatic, one interactive. These channels are designed around a fundamental constraint: telemetry must never block execution, but approvals must.
+
+**Channel 1 — HTTP Hooks (automatic telemetry).** Claude Code fires hooks automatically on system events: session start and end, agent spawn and completion, tool use. These hooks POST to the Oraculo HTTP server with no agent-side instrumentation required. The agent never calls anything. The hook fires, the server persists metadata to SQLite, and connected dashboard clients receive a WebSocket broadcast. If the server is offline, the hook fails silently — the agent continues unaffected. Telemetry is best-effort by design. The observation layer cannot interfere with execution under any failure mode.
+
+**Channel 2 — MCP (interactive approval gates).** When a workflow reaches a mandatory pause, the orchestrator calls the `request_approval` MCP tool. This is a blocking call — the agent suspends and waits. The dashboard displays the artifact, a human reviews it, and a verdict (`approved`, `rejected`, or `needs_revision`) flows back through the MCP tool response to unblock the agent. Approvals are the only blocking operations in the system. Everything else is fire-and-forget.
+
+**Why two channels.** HTTP hooks are automatic — they require no agent code — but they cannot block or return data. MCP tools are interactive — they can block and return responses — but they require explicit agent calls. Telemetry needs automatic and non-blocking (HTTP hooks). Approvals need explicit and blocking (MCP). Each channel does exactly what it does best, and neither channel is asked to do what the other does better.
+
+**Agents are not instrumented for observability.** Earlier designs required agents to call `notify_agent_state` to report their status. This was fragile — a crashed or stuck agent would stop reporting, silently degrading the dashboard. Under the hook-based model, Claude Code itself fires `SubagentStart` and `SubagentStop` events regardless of what the agent is doing. The observation layer is decoupled from agent logic entirely. An agent that crashes is still reported as stopped.
+
+**The dashboard cannot interfere with agents through telemetry.** A slow dashboard, an overloaded WebSocket broadcast, or a full SQLite disk cannot delay agent work. The only path from the dashboard to an agent is through an approval gate — an explicit, intentional blocking point the orchestrator created on purpose. Outside of approval gates, agents and the dashboard are causally independent.
+
+## 8. What This Document Is Not
 
 This document defines beliefs, not implementation. It does not specify CLI commands, database schemas, DAG formats, or agent prompt templates. Those belong in the design document.
 

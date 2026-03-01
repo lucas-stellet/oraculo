@@ -78,6 +78,35 @@ The execution engine. Oraculo uses Claude Code's team functionality to assemble 
 
 The automatic guardians. Hooks ensure standards are respected without relying on goodwill — pre-commit validations, quality checks, formatting. They act as gates that code must pass through.
 
+#### Two-Channel Architecture
+
+Oraculo uses Claude Code's hook system as one of two complementary communication channels:
+
+**Channel 1 — HTTP Hooks (automatic telemetry):** Claude Code fires HTTP hooks on system events (session start/end, agent start/stop, tool use). The Oraculo HTTP server receives each event, persists metadata to SQLite, and broadcasts to connected WebSocket clients. These are fire-and-forget: the hook returns `200` with an empty body. If the server is unreachable, the hook fails silently — agents are never blocked by telemetry.
+
+**Channel 2 — MCP (interactive approval gates):** When an agent needs human approval, it calls the `request_approval` MCP tool. This blocks the agent until a verdict is received from the dashboard. The MCP channel is explicit and blocking by design — it is reserved exclusively for moments that require human judgment.
+
+The two channels are complementary: HTTP hooks are automatic and non-blocking (ideal for telemetry); MCP tools are explicit and blocking (ideal for approvals). Each channel does what it does best.
+
+#### HTTP Hook Endpoints
+
+The following hooks are registered by `oraculo install` and configured automatically in `.claude/settings.json`:
+
+| Endpoint | Claude Code Hook | Purpose |
+|---|---|---|
+| `POST /hooks/session-start` | `SessionStart` (command hook) | Register new session with health check |
+| `POST /hooks/agent-start` | `SubagentStart` | Agent spawned |
+| `POST /hooks/agent-stop` | `SubagentStop` | Agent completed or failed |
+| `POST /hooks/tool-used` | `PostToolUse` (`Bash\|Edit\|Write\|NotebookEdit`) | Mutation event (metadata only, no content) |
+| `POST /hooks/task-completed` | `TaskCompleted` | Task finished |
+| `POST /hooks/stop` | `Stop` | Agent stopping |
+| `POST /hooks/teammate-idle` | `TeammateIdle` | Teammate idle |
+| `POST /hooks/session-end` | `SessionEnd` | Session ended |
+
+All HTTP hooks use `timeout: 5` (5 seconds) and follow a graceful degradation policy — if the server is offline, the hook fails silently and the agent continues unaffected.
+
+The `SessionStart` hook is the only command hook (not HTTP). It runs `oraculo hook session-start`, which performs a health check and prints a warning to the user if the dashboard is offline — HTTP hooks cannot output to the user. It always exits with code `0` and never blocks the session.
+
 ### CLAUDE.md / Memory
 
 The persistent context. Project patterns, code conventions, architecture — everything agents need to know to produce code that fits the project. Oraculo feeds its agents with this context before any delegation.
@@ -85,6 +114,8 @@ The persistent context. Project patterns, code conventions, architecture — eve
 ### Dashboard
 
 The observation and control surface. A browser-based dashboard that provides visibility into agents, tasks, the DAG, approval gates, and accumulated knowledge. It consumes data through the CLI Trust Layer (never bypasses it) and functions as Mission Control: comprehensive situational awareness with strategic human intervention at approval gates. When an agent enters `awaiting_approval`, the dashboard surfaces the artifact for review and collects the human verdict (`approved`, `rejected`, or `needs_revision`).
+
+Real-time updates flow through two sources: **HTTP hooks** push telemetry events (agent lifecycle, tool mutations, task completions, session tracking) via WebSocket as they happen; **MCP** delivers approval gate notifications when an agent blocks waiting for a human verdict. The dashboard never reads files directly or watches the database — all data arrives through the CLI Trust Layer or WebSocket push from the HTTP server.
 
 **Principle:** Oraculo does not reinvent tools. It orchestrates what Claude Code already offers, maximizing every native capability.
 

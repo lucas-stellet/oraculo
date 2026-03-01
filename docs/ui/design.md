@@ -16,7 +16,10 @@ oraculo (single Go binary)
 
 Human (Browser) ←→ HTTP/WS ←→ Go HTTP server ←→ CLI internals ←→ SQLite + Markdown
 Claude Code     ←→ stdio   ←→ Go MCP server  ←→ CLI internals ←→ SQLite + Markdown
+Claude Code     ──POST──>  HTTP server ──> SQLite + broadcast WebSocket (HTTP hooks)
 ```
+
+**Two-channel architecture:** The binary operates two communication channels. Channel 1 — HTTP Hooks — handles automatic telemetry: Claude Code fires hooks on system events (session start/end, agent start/stop, tool use), the HTTP server persists metadata to SQLite and broadcasts to WebSocket clients. These are fire-and-forget; hooks never block agents. Channel 2 — MCP — handles interactive approval gates: agents call `request_approval`, which blocks until a human responds through the dashboard. Each channel does what it does best: telemetry needs automatic and non-blocking (HTTP hooks), approvals need explicit and blocking (MCP).
 
 The entire system — CLI, HTTP server, MCP server, and embedded frontend — lives in a single Go binary. The frontend is built at compile time (Next.js + shadcn/ui generates static assets) and embedded via Go's `embed.FS`. At runtime, there is no Node.js, no npm, no external dependencies.
 
@@ -37,9 +40,14 @@ The Go binary includes an HTTP server that serves both the REST API and the embe
 | `GET /api/knowledge` | `oraculo tools memory search <query>` | Knowledge search |
 | `GET /api/knowledge/domains` | `oraculo tools memory domains` | Available domains |
 | `GET /api/status` | `oraculo status` (parsed) | Aggregate project statistics |
+| `GET /api/sessions` | `sessions` table (SQLite) | Session history |
+| `GET /api/sessions/:id/agents` | `agents` table (SQLite) | Agents for a session |
+| `GET /api/sessions/:id/tool-events` | `tool_events` table (SQLite) | Tool events for a session |
 | `POST /api/approvals/:id/verdict` | (internal state) | Submit approval decision |
 
 The server manages one stateful concern: the **approval queue**. Approval requests arrive via MCP tool calls from agents and are held in memory until the human responds through the dashboard. The verdict is then relayed back to the requesting agent.
+
+For telemetry data (sessions, agents, tool events), the server queries SQLite tables directly — these records are inserted by HTTP hooks, not by CLI commands.
 
 ### 2.2 Startup Flow
 
@@ -54,7 +62,8 @@ When Claude Code starts a session, it launches `oraculo mcp` as a registered MCP
 7. If no port is available in the range, the server exits with a clear error: "All ports in range 3100-3199 are in use"
 8. The HTTP server begins serving the embedded frontend and REST API
 9. The binary opens the user's default browser to `http://localhost:<port>`
-10. File watchers start monitoring `.oraculo/` for changes
+
+The `SessionStart` command hook (`oraculo hook session-start`) fires after the server is ready. It sends a health check to confirm the server is online, then sends session metadata to `/hooks/session-start`. If the server is offline, it prints a warning to stderr and exits with code 0 — the session is never blocked.
 
 **Port System:**
 
@@ -72,39 +81,56 @@ The MCP server exposes tools that AI agents call during orchestration. It runs i
 | MCP Tool | Direction | Purpose |
 |---|---|---|
 | `request_approval` | Agent -> Dashboard | Submit a document for human review (requirements, story, QA escalation) |
-| `notify_agent_state` | Agent -> Dashboard | Report agent start, completion, failure, or QA verdict |
-| `register_project` | Agent -> Dashboard | Register a project directory for dashboard discovery |
+| `approval_status` | Agent -> Dashboard | Poll for verdict (non-blocking reconnection fallback) |
 
-`request_approval` accepts a payload with: document type, markdown content, optional previous version (for diff), and a callback mechanism. The dashboard holds the request until the human acts.
+`request_approval` accepts a payload with: document type, markdown content, epic, optional story. The dashboard holds the request until the human acts. This is the only blocking operation in the system — the agent waits until a verdict is received.
 
-`notify_agent_state` pushes real-time updates that the Agent Monitor screen consumes. Payload includes: agent ID, agent type (orchestrator/code/qa/research), task reference, event type (started/completed/failed), and optional metadata.
+`approval_status` is a non-blocking polling fallback for crash recovery. If an agent disconnects and reconnects, it can check whether a pending approval has already been decided.
+
+**Removed tools:** `notify_agent_state` and `register_project` are no longer part of the MCP server. Agent state telemetry is now handled automatically by HTTP hooks (`SubagentStart`/`SubagentStop`) — agents do not need to make explicit MCP calls for telemetry. Project registration is handled by `oraculo install`.
 
 ### 2.4 Real-time Communication
 
-WebSocket provides push updates from server to browser. Two event sources feed the WebSocket channel:
+WebSocket provides push updates from server to browser. Two channels feed the WebSocket:
 
-1. **File watcher** — Monitors `.oraculo/epics/**/*.md` for markdown changes and `.oraculo/oraculo.db-wal` for SQLite write-ahead log activity. On change, the server re-queries the relevant CLI commands and pushes deltas.
+1. **HTTP Hooks** — Claude Code fires hooks on system events. The HTTP server persists metadata to SQLite and broadcasts to all connected WebSocket clients. Hooks are fire-and-forget: `200` empty body, non-blocking. Event types:
 
-2. **MCP notifications** — Agent state changes and approval requests are broadcast immediately upon receipt.
+   | WebSocket event | Hook endpoint | Claude Code hook | Trigger |
+   |---|---|---|---|
+   | `session_started` | `POST /hooks/session-start` | `SessionStart` (command) | Session begins |
+   | `agent_started` | `POST /hooks/agent-start` | `SubagentStart` | Agent spawned |
+   | `agent_stopped` | `POST /hooks/agent-stop` | `SubagentStop` | Agent completed/failed |
+   | `tool_used` | `POST /hooks/tool-used` | `PostToolUse` | Mutation tool used (Bash\|Edit\|Write\|NotebookEdit) |
+   | `task_completed` | `POST /hooks/task-completed` | `TaskCompleted` | Task marked complete |
+   | `agent_stopping` | `POST /hooks/stop` | `Stop` | Agent stopping |
+   | `teammate_idle` | `POST /hooks/teammate-idle` | `TeammateIdle` | Teammate idle |
+   | `session_ended` | `POST /hooks/session-end` | `SessionEnd` | Session ended |
+
+2. **MCP** — Approval requests are broadcast immediately when `request_approval` is called.
+
+   | WebSocket event | Origin |
+   |---|---|
+   | `approval_requested` | MCP `request_approval` tool |
 
 WebSocket message format:
 
 ```json
 {
-  "type": "task_updated" | "approval_requested" | "agent_state" | "knowledge_added" | "file_changed",
+  "type": "agent_started" | "agent_stopped" | "tool_used" | "task_completed" | "session_started" | "session_ended" | "approval_requested" | "teammate_idle" | "agent_stopping",
   "payload": { ... }
 }
 ```
 
-The frontend subscribes to event types per screen. The DAG View subscribes to `task_updated`. The Agent Monitor subscribes to `agent_state`. The Approvals screen subscribes to `approval_requested`.
+The frontend subscribes to event types per screen. The DAG View subscribes to `task_completed`. The Agent Monitor subscribes to `agent_started` and `agent_stopped`. The Approvals screen subscribes to `approval_requested`. The Activity Feed subscribes to `tool_used`. The Sessions screen subscribes to `session_started` and `session_ended`.
 
 ### 2.5 Data Flow
 
-All data flows through CLI internals. The HTTP server calls the same Go functions that the CLI commands use — validated, contracted operations with strict preconditions. The server never opens SQLite directly and never writes to the filesystem outside CLI functions. This preserves the CLI as the single Trust Layer — all validation, lifecycle enforcement, and schema migration remain in one place.
+Most data flows through CLI internals. The HTTP server calls the same Go functions that the CLI commands use — validated, contracted operations with strict preconditions. For telemetry data (sessions, agents, tool events), the server queries SQLite tables directly — these records are inserted by HTTP hooks, not by CLI commands. This preserves the CLI as the single Trust Layer for all business logic while allowing the HTTP server to read hook-persisted telemetry directly.
 
 ```
 [Browser] --HTTP--> [Go HTTP server] --in-process--> [CLI internals] --SQLite--> [.oraculo/oraculo.db]
-[Browser] <--WS---- [Go HTTP server] <--file watch-- [.oraculo/epics/**/*.md]
+[Browser] --HTTP--> [Go HTTP server] --SQLite query-> [sessions, agents, tool_events tables]
+[Browser] <--WS---- [Go HTTP server] <--HTTP hooks--- [Claude Code automatic hooks]
 [Agent]   --stdio-> [Go MCP server]  --WS broadcast-> [Browser]
 ```
 
@@ -143,6 +169,8 @@ All data flows through CLI internals. The HTTP server calls the same Go function
 **Data sources:**
 - `oraculo tools task list --epic <epic> --story <story>` — Returns tasks with `depends_on` references
 
+**Update mechanism:** WebSocket push from `task_completed` event (fired by `TaskCompleted` hook). More reliable than WAL file watching — the event fires exactly when a task is marked complete, not on every database write.
+
 **Layout:** Full-width directed graph. Nodes represent tasks, edges represent dependencies. Layout uses a left-to-right topological sort. Node colors encode status: gray (pending), blue (in_progress), green (completed), red (failed). A critical path highlight traces the longest dependency chain. Agent assignment labels appear below each node.
 
 **Key interactions:** Hover a node for task detail tooltip. Click a node to open its detail in a side drawer. Toggle critical path highlighting. Filter by status. Zoom and pan.
@@ -154,13 +182,30 @@ All data flows through CLI internals. The HTTP server calls the same Go function
 **Purpose:** Real-time visibility into what agents are doing right now.
 
 **Data sources:**
-- WebSocket `agent_state` events from MCP `notify_agent_state` calls
+- `agents` table (SQLite) — Current state and history of agents, populated by HTTP hooks
+- WebSocket `agent_started` and `agent_stopped` events — Push from `SubagentStart`/`SubagentStop` hooks
+
+**Update mechanism:** Push only via WebSocket (no polling). Agents do not need to make explicit MCP calls — Claude Code fires the hooks automatically on every agent lifecycle event.
 
 **Layout:** Grid of agent cards, one per active agent. Each card shows: agent type icon (orchestrator/code/qa/research), current task name, elapsed time, status indicator. Below the grid, a scrollable activity feed showing timestamped events (agent started, task completed, QA verdict issued, escalation triggered).
 
 **Key interactions:** Click an agent card to see its full history for the current session. Click a task reference in the feed to navigate to the DAG View. Filter feed by agent type or event type.
 
-### 3.5 Approvals
+### 3.5 Activity Feed
+
+**Purpose:** Real-time visibility into tool mutations performed by agents — which files were edited and which commands were executed.
+
+**Data sources:**
+- `tool_events` table (SQLite) — History of mutation tool events, populated by the `PostToolUse` hook
+- WebSocket `tool_used` events — Push from the `PostToolUse` hook (Bash|Edit|Write|NotebookEdit only)
+
+**Update mechanism:** Push only via WebSocket. Only mutation tools are tracked; read-only tools (Read, Glob, Grep, WebFetch) are excluded to reduce noise. Only metadata is stored — no content, no diffs, no command text.
+
+**Layout:** Reverse-chronological feed of tool events. Each event shows: timestamp, agent name, tool name (with icon), file path (for Edit/Write/NotebookEdit) or Bash indicator. Filters by tool type and by agent.
+
+**Key interactions:** Click a file path to open the associated task detail. Filter by tool type (Bash, Edit, Write, NotebookEdit) or by agent. Export activity log.
+
+### 3.6 Approvals
 
 **Purpose:** Human review and approval gate for requirements documents, story definitions, and QA escalations.
 
@@ -172,20 +217,22 @@ All data flows through CLI internals. The HTTP server calls the same Go function
 
 **Key interactions:** Select a queue item to load its content. Toggle diff mode. Add comments (attached to the verdict). Submit verdict — the server relays it back to the requesting agent via MCP callback.
 
-### 3.6 QA Dashboard
+### 3.7 QA Dashboard
 
 **Purpose:** Track validation outcomes across the project.
 
 **Data sources:**
 - `oraculo tools task list --epic <epic> --story <story>` — Task status (completed/failed implies QA cycle)
 - `oraculo tools task get <name> --epic <epic> --story <story>` — Task result with summary and logs
-- WebSocket `agent_state` events with QA verdict payloads
+- WebSocket `agent_stopped` events with QA verdict payloads
+
+**Update mechanism:** Hybrid — initial load via CLI, updates via WebSocket push from `SubagentStop` hooks.
 
 **Layout:** Top row: summary cards (total validations, approval rate, average rejection cycles, active escalations). Below: a table of recent verdicts showing task name, verdict (approved/rejected), attempt number, and timestamp. Rejection count badges highlight tasks approaching the circuit breaker threshold (default 3). An escalation indicator marks tasks that have breached the threshold and require human intervention.
 
 **Key interactions:** Click a verdict row to see the full QA findings. Sort/filter by verdict, story, or date. Link to the related task in DAG View.
 
-### 3.7 Knowledge Base
+### 3.8 Knowledge Base
 
 **Purpose:** Browse and search accumulated project wisdom from the knowledge table.
 
@@ -193,11 +240,62 @@ All data flows through CLI internals. The HTTP server calls the same Go function
 - `oraculo tools memory search <query>` — Full-text search across findings
 - `oraculo tools memory domains` — List available domains for filtering
 
+**Update mechanism:** On-demand (user triggers search). No real-time push needed.
+
 **Layout:** Search bar at top with domain and category dropdown filters. Results appear as cards showing: domain badge, category tag, finding text (truncated), confidence indicator, source files, and timestamp. Click a card to expand the full finding.
 
 **Key interactions:** Type-ahead search triggers `memory search` with debounce. Filter by domain (from `memory domains` response) and category (`pattern`, `convention`, `constraint`, `dependency`, `test`, `architecture`). Sort by confidence or recency.
 
-### 3.8 Settings
+### 3.9 Sessions
+
+**Purpose:** History and observability of Claude Code sessions. Shows which sessions were tracked, which models were used, and the associated agent and tool activity.
+
+**Data sources:**
+- `sessions` table (SQLite) — Sessions registered via `session-start`/`session-end` hooks
+- `agents` table (SQLite) — Agents associated with each session
+- `tool_events` table (SQLite) — Tool events per session
+
+**Update mechanism:** REST API + WebSocket push on `session_started` and `session_ended` events.
+
+**SQLite schema:**
+
+```sql
+-- sessions: tracks Claude Code sessions observed via hooks
+CREATE TABLE sessions (
+    id          TEXT PRIMARY KEY,   -- Session identifier from Claude Code
+    model       TEXT,               -- Model in use (e.g. claude-opus-4-6)
+    cwd         TEXT,               -- Working directory
+    started_at  TEXT NOT NULL,      -- ISO 8601 timestamp
+    ended_at    TEXT,               -- ISO 8601 timestamp (null while active)
+    end_reason  TEXT                -- Why the session ended
+);
+
+-- agents: tracks agent lifecycle events from SubagentStart/Stop hooks
+CREATE TABLE agents (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id  TEXT NOT NULL REFERENCES sessions(id),
+    name        TEXT NOT NULL,      -- Agent name/identifier
+    type        TEXT NOT NULL,      -- code, qa, research, orchestrator
+    status      TEXT NOT NULL DEFAULT 'active',  -- active, completed, failed
+    started_at  TEXT NOT NULL,      -- ISO 8601 timestamp
+    stopped_at  TEXT               -- ISO 8601 timestamp (null while active)
+);
+
+-- tool_events: tracks mutation tool usage (metadata only — no content, no diffs)
+CREATE TABLE tool_events (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id  TEXT NOT NULL REFERENCES sessions(id),
+    tool_name   TEXT NOT NULL,      -- Bash, Edit, Write, NotebookEdit
+    file_path   TEXT,              -- File path (null for Bash)
+    timestamp   TEXT NOT NULL      -- ISO 8601 timestamp
+);
+```
+
+**Layout:** List of sessions with status indicator (active/ended), model used, working directory, and duration. Clicking a session expands the associated agents and tool events.
+
+**Key interactions:** Filter by status (active/ended), model, or date. View agent and tool details per session.
+
+### 3.10 Settings
 
 **Purpose:** Project configuration and dashboard preferences.
 
@@ -215,15 +313,17 @@ All data flows through CLI internals. The HTTP server calls the same Go function
 1. Stories (icon: folder-tree)
 2. DAG View (icon: git-branch)
 3. Agent Monitor (icon: bot)
-4. Approvals (icon: shield-alert, with unread count badge)
-5. QA Dashboard (icon: shield-check)
-6. Knowledge Base (icon: brain)
+4. Activity Feed (icon: activity)
+5. Approvals (icon: shield-alert, with unread count badge)
+6. QA Dashboard (icon: shield-check)
+7. Knowledge Base (icon: brain)
+8. Sessions (icon: layers)
 — separator —
-7. Settings (icon: settings)
+9. Settings (icon: settings)
 
-**When an Epic is selected:** All nav items (1-6) are active, and the default view is Stories. Switching Epics via the dropdown navigates to Stories of the new Epic.
+**When an Epic is selected:** All nav items (1-7) are active, and the default view is Stories. Switching Epics via the dropdown navigates to Stories of the new Epic. Agent Monitor, Activity Feed, and Sessions show data from the current session regardless of the selected Epic.
 
-**When no Epic is selected (Landing):** Nav items 1-6 are grayed/disabled. Only Settings is interactive. The main content area shows the Epic selection grid.
+**When no Epic is selected (Landing):** Nav items 1-7 are grayed/disabled. Only Settings is interactive. The main content area shows the Epic selection grid.
 
 **Responsive behavior:** The sidebar collapses below 1024px viewport width. Master-detail views (Stories, Approvals) stack vertically on narrow screens. The DAG View remains full-width with horizontal scroll.
 
@@ -242,27 +342,64 @@ All data flows through CLI internals. The HTTP server calls the same Go function
 | **Backend (runtime)** | | |
 | HTTP server | Go `net/http` | Standard library, no external dependency, production-grade |
 | WebSocket | `gorilla/websocket` or `nhooyr.io/websocket` | Mature Go WebSocket implementations |
-| File watching | `fsnotify/fsnotify` | Cross-platform filesystem watching for `.oraculo/` changes |
+| Hook endpoints | Go `net/http` (same server) | Receive fire-and-forget POST requests from Claude Code hooks |
 | Static embedding | Go `embed.FS` | Frontend assets compiled into the binary at build time |
 | MCP server | Go MCP SDK or custom stdio handler | MCP protocol over stdin/stdout for Claude Code integration |
 | CLI integration | In-process function calls | HTTP handlers call the same Go functions as CLI commands — no subprocess overhead |
 
+**Removed dependency:** `fsnotify/fsnotify` — File watcher is no longer needed. Real-time data arrives via HTTP hooks instead of filesystem monitoring.
+
 ## 6. Data Sources
 
-Summary of how each screen obtains its data:
+Summary of how each screen obtains its data under the two-channel architecture:
 
 | Screen | Primary source | Update mechanism |
 |---|---|---|
-| Landing | CLI: `epic list` | Polling on mount |
-| Stories | CLI: `story list`, `story get`, `task list` | File watcher on `.oraculo/epics/**/*.md` |
-| DAG View | CLI: `task list` (includes `depends_on`) | WebSocket `task_updated` |
-| Agent Monitor | WebSocket: `agent_state` events | Push only (no polling) |
-| Approvals | MCP: `request_approval` | Push only (no polling) |
-| QA Dashboard | CLI: `task list`, `task get` + WebSocket `agent_state` | Hybrid: initial load via CLI, updates via WebSocket |
+| Landing | CLI: `epic list` | Polling on mount (unchanged) |
+| Stories | CLI: `story list`, `story get`, `task list` | Polling + WebSocket `task_completed` |
+| DAG View | CLI: `task list` (includes `depends_on`) | WebSocket push from `TaskCompleted` hook |
+| Agent Monitor | `agents` table (SQLite) + WebSocket | WebSocket push from `SubagentStart`/`SubagentStop` hooks |
+| Activity Feed | `tool_events` table (SQLite) + WebSocket | WebSocket push from `PostToolUse` hook |
+| Approvals | `approvals` table (SQLite) + WebSocket | WebSocket push from MCP `request_approval` |
+| QA Dashboard | CLI: `task list`, `task get` + WebSocket | Hybrid: initial load via CLI, updates via WebSocket |
 | Knowledge Base | CLI: `memory search`, `memory domains` | On-demand (user triggers search) |
+| Sessions | `sessions` table (SQLite) | REST API + WebSocket push on session start/end |
 | Settings | Local config file | Read on mount, write on save |
 
-## 7. Future Work
+**What changed from the previous design:**
+
+| Aspect | Before | After |
+|---|---|---|
+| Agent Monitor | MCP `notify_agent_state` events (required agent instrumentation) | Automatic HTTP hooks `SubagentStart`/`SubagentStop` |
+| DAG View | File watcher on `.oraculo/oraculo.db-wal` | `TaskCompleted` hook via WebSocket push |
+| Activity Feed | Did not exist | New — `PostToolUse` hook (mutation metadata only) |
+| Sessions | Did not exist | New — `sessions` table via `session-start`/`session-end` hooks |
+| Approvals | MCP `request_approval` | Unchanged — MCP remains for blocking gates |
+
+## 7. Hook Endpoint Reference
+
+This section documents the HTTP hook endpoints that feed real-time data into the dashboard. Each endpoint is invoked by Claude Code automatically — no agent instrumentation required. The server persists metadata to SQLite and broadcasts a WebSocket event to all connected dashboard clients.
+
+All endpoints accept POST requests with `timeout: 5` (5 seconds) and return `200` with an empty body. If the server is unreachable, Claude Code logs a non-blocking warning and the agent continues unaffected.
+
+| Endpoint | Claude Code hook | WebSocket event | Persists to |
+|---|---|---|---|
+| `POST /hooks/session-start` | `SessionStart` (command hook) | `session_started` | `sessions` table |
+| `POST /hooks/agent-start` | `SubagentStart` | `agent_started` | `agents` table |
+| `POST /hooks/agent-stop` | `SubagentStop` | `agent_stopped` | `agents` table |
+| `POST /hooks/tool-used` | `PostToolUse` (Bash\|Edit\|Write\|NotebookEdit) | `tool_used` | `tool_events` table |
+| `POST /hooks/task-completed` | `TaskCompleted` | `task_completed` | (event metadata) |
+| `POST /hooks/stop` | `Stop` | `agent_stopping` | (event metadata) |
+| `POST /hooks/teammate-idle` | `TeammateIdle` | `teammate_idle` | (event metadata) |
+| `POST /hooks/session-end` | `SessionEnd` | `session_ended` | `sessions` table |
+
+**Note on `session-start`:** The `SessionStart` hook is the only command hook (not a direct HTTP hook). It runs `oraculo hook session-start`, which performs a health check, prints a warning to stderr if the server is offline, and sends session metadata via HTTP if the server is online. It always exits with code 0 — the session is never blocked.
+
+**Note on `tool-used`:** Only mutation tools are tracked (Bash, Edit, Write, NotebookEdit). Read-only tools (Read, Glob, Grep, WebFetch) are excluded to reduce noise. Only metadata is stored — no content, no diffs, no command text.
+
+**Error handling:** All HTTP hook endpoints follow graceful degradation. If the server is offline, Claude Code logs a non-blocking warning and the agent continues. Hooks never block agents — telemetry is best-effort.
+
+## 8. Future Work
 
 Deferred capabilities for later iterations:
 
@@ -273,3 +410,4 @@ Deferred capabilities for later iterations:
 - **Role-based access** — Restrict approval authority and settings access by user role when Oraculo is used in team settings.
 - **Embedded terminal** — Launch `oraculo` CLI commands directly from the dashboard interface.
 - **Dashboard API for CI** — Expose read-only REST endpoints for CI/CD pipelines to query project status.
+- **PreToolUse policy enforcement** — Use the `PreToolUse` hook to block dangerous operations based on rules defined in the dashboard (deferred until the two-channel architecture is validated in production).
