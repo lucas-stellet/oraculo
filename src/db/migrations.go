@@ -8,6 +8,7 @@ import (
 var migrations = []func(*sql.Tx) error{
 	migrateV1,
 	migrateV2,
+	migrateV3,
 }
 
 // migrateV1 creates all core tables, knowledge with FTS5, approvals, and validations.
@@ -145,6 +146,37 @@ func migrateV2(tx *sql.Tx) error {
 	for _, stmt := range stmts {
 		if _, err := tx.Exec(stmt); err != nil {
 			return fmt.Errorf("migration v2: %w\nSQL: %s", err, stmt)
+		}
+	}
+	return nil
+}
+
+func migrateV3(tx *sql.Tx) error {
+	stmts := []string{
+		`CREATE TABLE agents (
+			id          INTEGER PRIMARY KEY AUTOINCREMENT,
+			session_id  TEXT NOT NULL,
+			name        TEXT NOT NULL,
+			type        TEXT NOT NULL DEFAULT 'unknown',
+			status      TEXT NOT NULL DEFAULT 'active'
+			            CHECK (status IN ('active', 'completed', 'failed')),
+			started_at  TEXT NOT NULL,
+			stopped_at  TEXT
+		)`,
+		`CREATE INDEX idx_agents_session_id ON agents(session_id)`,
+		`CREATE TABLE tool_events (
+			id          INTEGER PRIMARY KEY AUTOINCREMENT,
+			session_id  TEXT NOT NULL,
+			tool_name   TEXT NOT NULL,
+			file_path   TEXT,
+			timestamp   TEXT NOT NULL
+		)`,
+		`CREATE INDEX idx_tool_events_session_id ON tool_events(session_id)`,
+		`CREATE INDEX idx_tool_events_timestamp ON tool_events(timestamp)`,
+	}
+	for _, stmt := range stmts {
+		if _, err := tx.Exec(stmt); err != nil {
+			return fmt.Errorf("migration v3: %w\nSQL: %s", err, stmt)
 		}
 	}
 	return nil
