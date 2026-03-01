@@ -18,6 +18,7 @@ func NewRoot(version string) *cobra.Command {
 	root.AddCommand(
 		newVersionCmd(version),
 		newInstallCmd(),
+		newStatusCmd(),
 		tools.NewToolsCmd(),
 	)
 	return root
