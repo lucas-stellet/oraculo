@@ -1,11 +1,19 @@
+// cmd/oraculo/main.go
 package main
 
 import (
 	"fmt"
 	"os"
+
+	"github.com/lucas/oraculo/src/cli"
 )
 
+var version = "dev"
+
 func main() {
-	fmt.Fprintln(os.Stderr, "oraculo: not yet wired")
-	os.Exit(1)
+	cmd := cli.NewRoot(version)
+	if err := cmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
