@@ -8,6 +8,7 @@ import (
 var migrations = []func(*sql.Tx) error{
 	migrateV1,
 	migrateV2,
+	migrateV3,
 }
 
 // migrateV1 creates all core tables, knowledge with FTS5, approvals, and validations.
@@ -145,6 +146,34 @@ func migrateV2(tx *sql.Tx) error {
 	for _, stmt := range stmts {
 		if _, err := tx.Exec(stmt); err != nil {
 			return fmt.Errorf("migration v2: %w\nSQL: %s", err, stmt)
+		}
+	}
+	return nil
+}
+
+func migrateV3(tx *sql.Tx) error {
+	stmts := []string{
+		`CREATE TABLE agents (
+			id         INTEGER PRIMARY KEY AUTOINCREMENT,
+			session_id TEXT NOT NULL,
+			name       TEXT NOT NULL,
+			type       TEXT NOT NULL,
+			status     TEXT DEFAULT 'active'
+			           CHECK (status IN ('active','completed','failed','stopped')),
+			started_at TEXT DEFAULT (datetime('now')),
+			stopped_at TEXT
+		)`,
+		`CREATE TABLE tool_events (
+			id         INTEGER PRIMARY KEY AUTOINCREMENT,
+			session_id TEXT NOT NULL,
+			tool_name  TEXT NOT NULL,
+			file_path  TEXT DEFAULT '',
+			timestamp  TEXT DEFAULT (datetime('now'))
+		)`,
+	}
+	for _, stmt := range stmts {
+		if _, err := tx.Exec(stmt); err != nil {
+			return fmt.Errorf("migration v3: %w\nSQL: %s", err, stmt)
 		}
 	}
 	return nil
