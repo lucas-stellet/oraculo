@@ -15,7 +15,7 @@ import (
 // stubBroadcaster is a no-op Broadcaster for tests.
 type stubBroadcaster struct{}
 
-func (s *stubBroadcaster) Broadcast(_ string, _ any) {}
+func (s *stubBroadcaster) Broadcast(_ []byte) {}
 
 // setup creates a test database, an ApprovalStore, and a Bridge.
 // It also creates a test epic so that approvals with epicID references work.
@@ -125,7 +125,7 @@ func TestBridge_RequestAndDecide(t *testing.T) {
 		t.Fatalf("expected 1 pending approval, got %d", len(pending))
 	}
 
-	_, err = bridge.Decide(pending[0].ID, domain.VerdictApproved, "looks good")
+	err = bridge.Decide(pending[0].ID, domain.VerdictApproved, "looks good")
 	if err != nil {
 		t.Fatalf("Decide: %v", err)
 	}
@@ -135,11 +135,11 @@ func TestBridge_RequestAndDecide(t *testing.T) {
 		if res.err != nil {
 			t.Fatalf("Request: %v", res.err)
 		}
-		if res.v.Approval.Status != domain.ApprovalApproved {
-			t.Errorf("Status = %q, want %q", res.v.Approval.Status, domain.ApprovalApproved)
+		if res.v.Verdict != domain.VerdictApproved {
+			t.Errorf("Verdict = %q, want %q", res.v.Verdict, domain.VerdictApproved)
 		}
-		if res.v.Approval.VerdictComment != "looks good" {
-			t.Errorf("VerdictComment = %q, want %q", res.v.Approval.VerdictComment, "looks good")
+		if res.v.Comment != "looks good" {
+			t.Errorf("Comment = %q, want %q", res.v.Comment, "looks good")
 		}
 	case <-ctx.Done():
 		t.Fatal("timed out waiting for Request to return after Decide")
@@ -155,7 +155,7 @@ func TestBridge_DecideInvalidVerdict(t *testing.T) {
 		t.Fatalf("Request: %v", err)
 	}
 
-	_, err = bridge.Decide(a.ID, domain.Verdict("invalid"), "")
+	err = bridge.Decide(a.ID, domain.Verdict("invalid"), "")
 	if err == nil {
 		t.Fatal("expected error for invalid verdict")
 	}

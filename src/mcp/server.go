@@ -122,8 +122,6 @@ func (s *Server) handleRequestApproval(
 
 	req := approval.ApprovalRequest{
 		Type:    at,
-		EpicID:  in.EpicID,
-		StoryID: in.StoryID,
 		Content: in.Content,
 	}
 
@@ -133,9 +131,9 @@ func (s *Server) handleRequestApproval(
 	}
 
 	out := requestApprovalOutput{
-		ID:      result.Approval.ID,
-		Status:  string(result.Approval.Status),
-		Comment: result.Approval.VerdictComment,
+		ID:      result.ID,
+		Verdict: string(result.Verdict),
+		Comment: result.Comment,
 	}
 	return nil, out, nil
 }
