@@ -32,6 +32,8 @@ func WriteError(w io.Writer, err error) {
 		code = "missing_required"
 	case errors.Is(err, domain.ErrInvalidPhase):
 		code = "invalid_phase"
+	case errors.Is(err, domain.ErrApprovalDecided):
+		code = "approval_decided"
 	}
 	WriteJSON(w, map[string]string{
 		"error":   code,
