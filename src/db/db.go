@@ -24,6 +24,12 @@ func Open() (*DB, error) {
 	return openPath(filepath.Join(dir, "oraculo.db"))
 }
 
+// OpenMemory opens an in-memory SQLite database with all migrations applied.
+// Intended for use in tests outside the db package (e.g. dbtest, integration tests).
+func OpenMemory() (*DB, error) {
+	return openPath(":memory:")
+}
+
 // openPath opens (or creates) a database at the given path and runs migrations.
 func openPath(dsn string) (*DB, error) {
 	conn, err := sql.Open("sqlite", dsn)
