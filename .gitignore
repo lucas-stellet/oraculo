@@ -5,3 +5,5 @@ _plans
 .claude/skills/ui-ux-pro-max/scripts
 .playwright-cli
 .worktrees
+.oraculo/
+/oraculo
