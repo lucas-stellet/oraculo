@@ -7,6 +7,7 @@ import (
 
 var migrations = []func(*sql.Tx) error{
 	migrateV1,
+	migrateV2,
 }
 
 // migrateV1 creates all core tables, knowledge with FTS5, approvals, and validations.
@@ -109,6 +110,41 @@ func migrateV1(tx *sql.Tx) error {
 	for _, stmt := range stmts {
 		if _, err := tx.Exec(stmt); err != nil {
 			return fmt.Errorf("migration v1: %w\nSQL: %s", err, stmt)
+		}
+	}
+	return nil
+}
+
+func migrateV2(tx *sql.Tx) error {
+	stmts := []string{
+		`CREATE TABLE sessions (
+			id         TEXT PRIMARY KEY,
+			type       TEXT NOT NULL
+			           CHECK (type IN ('epic','story','plan','execute','validate')),
+			epic_id    INTEGER REFERENCES epics(id),
+			status     TEXT DEFAULT 'active'
+			           CHECK (status IN ('active','completed','abandoned')),
+			created_at TEXT DEFAULT (datetime('now')),
+			closed_at  TEXT
+		)`,
+		`CREATE UNIQUE INDEX idx_sessions_active
+			ON sessions(epic_id, type) WHERE status = 'active'`,
+		`CREATE TABLE session_phases (
+			session_id   TEXT NOT NULL REFERENCES sessions(id),
+			phase        TEXT NOT NULL,
+			data         TEXT DEFAULT '{}',
+			completed_at TEXT DEFAULT (datetime('now')),
+			PRIMARY KEY (session_id, phase)
+		)`,
+		`CREATE TABLE claude_sessions (
+			id         TEXT PRIMARY KEY,
+			started_at TEXT DEFAULT (datetime('now')),
+			metadata   TEXT DEFAULT '{}'
+		)`,
+	}
+	for _, stmt := range stmts {
+		if _, err := tx.Exec(stmt); err != nil {
+			return fmt.Errorf("migration v2: %w\nSQL: %s", err, stmt)
 		}
 	}
 	return nil

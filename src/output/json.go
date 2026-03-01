@@ -30,6 +30,8 @@ func WriteError(w io.Writer, err error) {
 		code = "cyclic_dependency"
 	case errors.Is(err, domain.ErrMissingRequired):
 		code = "missing_required"
+	case errors.Is(err, domain.ErrInvalidPhase):
+		code = "invalid_phase"
 	}
 	WriteJSON(w, map[string]string{
 		"error":   code,

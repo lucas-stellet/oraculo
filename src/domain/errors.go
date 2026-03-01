@@ -9,4 +9,5 @@ var (
 	ErrInvalidTransition = errors.New("invalid status transition")
 	ErrCyclicDependency  = errors.New("cyclic dependency in task graph")
 	ErrMissingRequired   = errors.New("missing required field")
+	ErrInvalidPhase      = errors.New("invalid phase")
 )

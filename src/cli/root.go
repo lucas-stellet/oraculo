@@ -15,11 +15,14 @@ func NewRoot(version string) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
+	hookCmd := newHookCmd()
+	hookCmd.AddCommand(newHookSessionStartCmd())
 	root.AddCommand(
 		newVersionCmd(version),
 		newInstallCmd(),
 		newStatusCmd(),
 		tools.NewToolsCmd(),
+		hookCmd,
 	)
 	return root
 }
