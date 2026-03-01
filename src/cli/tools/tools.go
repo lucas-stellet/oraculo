@@ -20,6 +20,6 @@ func NewToolsCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.AddCommand(newEpicCmd(), newStoryCmd())
+	cmd.AddCommand(newEpicCmd(), newStoryCmd(), newTaskCmd())
 	return cmd
 }
