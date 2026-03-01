@@ -46,6 +46,12 @@ func openPath(dsn string) (*DB, error) {
 	return d, nil
 }
 
+// OpenMemory opens an in-memory SQLite database with all migrations applied.
+// Intended for testing.
+func OpenMemory() (*DB, error) {
+	return openPath(":memory:")
+}
+
 // Close closes the underlying database connection.
 func (d *DB) Close() error {
 	return d.conn.Close()
