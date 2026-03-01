@@ -14,19 +14,24 @@ The CLI Trust Layer (28+ commands) is complete. This design covers what gets bui
 
 | Command | Purpose | Audience |
 |---|---|---|
-| `oraculo all-in` | MCP stdio + HTTP + WebSocket in one process | Claude Code (configured in settings.json) |
-| `oraculo serve` | HTTP + WebSocket only (dashboard without Claude Code) | Humans |
-| `oraculo mcp` | MCP stdio only (debug/testing) | Developers |
+| `oraculo start` | MCP stdio + HTTP + WebSocket in one process | Claude Code (configured in settings.json) |
 | `oraculo install [--global\|--local]` | Configure hooks, MCP, copy skills | Humans |
 | `oraculo uninstall [--purge]` | Remove configuration (preserve DB by default) | Humans |
 
-### Command Relationship
+### Single Entry Point
+
+There is exactly **one way** to start Oraculo: `oraculo start`. This command starts everything — MCP server on stdio, HTTP server on the configured port, WebSocket for real-time dashboard updates — in a single process.
 
 ```
-oraculo all-in = oraculo mcp + oraculo serve (in one process)
+Claude Code launches "oraculo start" (configured as MCP server in settings.json)
+       │
+       ▼
+  Single process: MCP (stdio) + HTTP (port) + WebSocket (port)
 ```
 
-Claude Code launches `oraculo all-in` as its MCP server. This is the primary path — one binary, one process, everything runs together. The separate `mcp` and `serve` commands exist for when a user needs a single piece: `serve` for viewing the dashboard without an active Claude Code session, `mcp` for debugging or testing MCP tools in isolation.
+This is an MVP simplification. Future versions may introduce separate `serve` (HTTP-only) and `mcp` (MCP-only) commands for advanced use cases, but for now a single command eliminates edge cases around cross-process coordination.
+
+**Consequence:** Approvals always use Go channels in-process. No SQLite polling fallback needed. No cross-process bridge. No port-occupied detection for connecting to another Oraculo instance.
 
 ---
 
@@ -38,16 +43,19 @@ Claude Code launches `oraculo all-in` as its MCP server. This is the primary pat
 src/
 ├── server/
 │   ├── server.go          # HTTP server setup, router, lifecycle
-│   ├── hooks.go           # POST /hooks/* handlers (fire-and-forget telemetry)
-│   ├── api.go             # REST API handlers for dashboard
-│   └── ws.go              # WebSocket hub (broadcast, connection management)
+│   ├── hooks.go           # HookHandler struct with POST /hooks/* methods
+│   ├── api.go             # APIHandler struct with REST API methods
+│   └── errors.go          # HTTP error response helper (writeAPIError)
+├── ws/
+│   └── hub.go             # WebSocket hub: broadcast, connection pool, Run(ctx)
 ├── mcp/
-│   ├── mcp.go             # MCP server setup (go-sdk wiring)
-│   └── tools.go           # request_approval + approval_status tool handlers
+│   └── server.go          # MCP server struct, tool handlers, ServeStdio(ctx)
 ├── approval/
-│   └── bridge.go          # Approval coordination (Go channels + SQLite polling)
-└── config/
-    └── config.go          # Config read/write (.oraculo/config.json)
+│   └── bridge.go          # Bridge struct, Broadcaster interface, Go channels
+├── config/
+│   └── config.go          # Config struct, Read, Write (atomic), FindPort
+└── dbtest/
+    └── dbtest.go          # Shared test helper: Open(t) *db.DB (in-memory)
 ```
 
 ### Modified Packages
@@ -55,26 +63,29 @@ src/
 ```
 src/
 ├── cli/
-│   ├── root.go            # Add all-in, serve, mcp, uninstall commands
-│   ├── allin.go           # oraculo all-in command handler
-│   ├── serve.go           # oraculo serve command handler
-│   ├── mcp_cmd.go         # oraculo mcp command handler
+│   ├── root.go            # Add start, uninstall commands
+│   ├── start.go           # oraculo start command handler (errgroup wiring)
 │   ├── install.go         # Replace stub with full implementation
 │   ├── uninstall.go       # oraculo uninstall command handler
-│   └── hook_session.go    # Extract configFile to config/ package
+│   └── hook_session.go    # Replace inline configFile with config.Read()
 ├── db/
-│   └── migrations.go      # Add migration v3 (agents, tool_events tables)
+│   ├── db.go              # Export OpenMemory() for dbtest package
+│   ├── migrations.go      # Add migration v3 (agents, tool_events tables)
+│   ├── agent_store.go     # AgentStore: Start, Stop, ListBySession
+│   └── tool_event_store.go # ToolEventStore: Record, ListBySession
 └── domain/
-    └── (add agent, tool_event types if needed)
+    └── errors.go          # Add ErrApprovalDecided sentinel error
 ```
 
 ### Dependency Rules
 
-- `server/` depends on `db/`, `domain/`, `approval/`, `config/`
+- `server/` depends on `db/`, `domain/`, `approval/`, `ws/`, `config/`
 - `mcp/` depends on `db/`, `domain/`, `approval/`
-- `approval/` is pure — Go channels + interface. No HTTP or MCP dependency.
+- `ws/` is standalone — no dependency on server, mcp, or approval
+- `approval/` defines a `Broadcaster` interface; depends on `db/` only. `ws.Hub` satisfies the interface but is not imported.
 - `config/` is pure — reads/writes `.oraculo/config.json`. No other dependency.
-- `cli/` commands are thin wiring: parse flags → create dependencies → start servers.
+- `dbtest/` depends on `db/` only — test support package.
+- `cli/` commands are thin wiring: parse flags → construct dependencies → start servers.
 
 ### New External Dependencies
 
@@ -82,108 +93,190 @@ src/
 |---|---|
 | `github.com/coder/websocket` | WebSocket server (minimal, idiomatic, context-native) |
 | `github.com/modelcontextprotocol/go-sdk` | Official MCP Go SDK (JSON-RPC over stdio) |
+| `golang.org/x/sync/errgroup` | Concurrent server lifecycle coordination |
 
 ---
 
 ## 3. Server Lifecycle
 
-### `oraculo all-in` (primary path, launched by Claude Code)
+### `oraculo start` (launched by Claude Code)
 
 ```
-Claude Code starts "oraculo all-in"
+Claude Code starts "oraculo start"
        │
        ▼
   Open SQLite (.oraculo/oraculo.db)
        │
        ▼
-  Read port from .oraculo/config.json
+  Read port from config.Read()
        │
        ▼
-  Attempt to bind port
-       ├── Success → start HTTP + WebSocket on port
-       │   └── Create ApprovalBridge with Go channels (in-process)
-       │
-       └── Port occupied → check if Oraculo (GET /health)
-           ├── Is Oraculo → use ApprovalBridge with SQLite polling
-           └── Not Oraculo → try next port in range 3100-3199
-               └── Save new port to config.json
+  Create ws.Hub, approval.Bridge, server.Server, mcp.Server
        │
        ▼
-  Start MCP server on stdio (go-sdk)
+  errgroup.WithContext(ctx):
+    g.Go(hub.Run)           — WebSocket broadcast loop
+    g.Go(srv.ListenAndServe) — HTTP server
+    g.Go(mcpSrv.ServeStdio)  — MCP stdio loop
        │
        ▼
-  Block until stdio closes (Claude Code terminates)
+  g.Wait() — blocks until any goroutine exits or SIGINT/SIGTERM
        │
        ▼
-  Graceful shutdown: stop HTTP server, close WebSocket connections, close DB
+  Context cancelled → all servers drain and exit
+       │
+       ▼
+  Close DB
 ```
 
-### `oraculo serve` (standalone dashboard)
+### Wiring Pattern
 
+```go
+// cli/start.go
+func runStart(cmd *cobra.Command, _ []string) error {
+    ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+    defer stop()
+
+    database, err := db.Open()
+    if err != nil { return err }
+    defer database.Close()
+
+    cfg, err := config.Read()
+    if err != nil { return err }
+
+    hub    := ws.NewHub()
+    bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
+    srv    := server.New(database, bridge, hub, cfg.Port)
+    mcpSrv := mcp.New(bridge, db.NewApprovalStore(database))
+
+    g, ctx := errgroup.WithContext(ctx)
+    g.Go(func() error { return hub.Run(ctx) })
+    g.Go(func() error { return srv.ListenAndServe(ctx) })
+    g.Go(func() error { return mcpSrv.ServeStdio(ctx) })
+    return g.Wait()
+}
 ```
-Open SQLite → Read port → Start HTTP + WebSocket → Block until SIGINT/SIGTERM
-```
 
-No MCP. Dashboard only.
+Each component's `Run`/`ListenAndServe`/`ServeStdio` method accepts `context.Context` and returns `error`. When any goroutine exits (or ctx is cancelled by a signal), errgroup cancels the shared context and all others drain gracefully.
 
-### `oraculo mcp` (standalone MCP)
+### Port Conflict Handling
 
-```
-Open SQLite → Start MCP server on stdio → Block until stdio closes
-```
+If the configured port is occupied:
 
-No HTTP, no WebSocket. Approvals use SQLite polling if a separate `oraculo serve` is running, or block indefinitely if no server is available to serve the dashboard.
+1. Try next available port in range 3100-3199
+2. Save new port to `.oraculo/config.json` atomically
+3. Log a warning to stderr: `"Port 3100 in use, using 3101 instead"`
+4. Continue startup normally
 
 ---
 
 ## 4. ApprovalBridge
 
-The `ApprovalBridge` is the coordination layer between MCP tools (where agents request approvals) and HTTP handlers (where humans submit verdicts). Two implementations handle the in-process and cross-process cases.
+The `ApprovalBridge` coordinates approvals between MCP tools (where agents request) and HTTP handlers (where humans decide). Since everything runs in one process, this is always in-memory Go channels.
 
-### Interface
+### Broadcaster Interface
+
+The bridge needs to push notifications to connected dashboards but must not import `ws/` directly. A narrow interface decouples the packages and simplifies testing:
 
 ```go
 // approval/bridge.go
 
-type Bridge interface {
-    // Request creates an approval in SQLite and blocks until a verdict arrives.
-    // Returns the verdict and any human feedback.
-    Request(ctx context.Context, req ApprovalRequest) (Verdict, error)
-
-    // Decide receives a verdict from the dashboard and unblocks the pending Request.
-    Decide(id string, verdict Verdict) error
-
-    // Status returns the current state of an approval (non-blocking polling fallback).
-    Status(id string) (ApprovalStatus, error)
+// Broadcaster pushes messages to connected dashboard clients.
+// ws.Hub satisfies this; tests use a stub.
+type Broadcaster interface {
+    Broadcast(msg []byte)
 }
 ```
 
-### In-Process Implementation (common case)
+### Bridge Struct
 
-Used when `oraculo all-in` successfully binds the port (MCP + HTTP in same process).
+```go
+type Bridge struct {
+    store       *db.ApprovalStore
+    broadcaster Broadcaster
+    mu          sync.Mutex
+    pending     map[string]chan domain.Verdict
+}
 
-- `Request`: inserts approval in SQLite → broadcasts WebSocket notification → creates `chan Verdict` → blocks on channel
-- `Decide`: writes verdict to SQLite → sends on channel → blocked `Request` unblocks
-- Zero latency between verdict submission and agent unblock.
+func NewBridge(store *db.ApprovalStore, b Broadcaster) *Bridge {
+    return &Bridge{
+        store:       store,
+        broadcaster: b,
+        pending:     make(map[string]chan domain.Verdict),
+    }
+}
+```
 
-Internal state: `sync.Map` of `approval_id → chan Verdict`. Channels are created on `Request` and cleaned up after verdict or context cancellation.
+`sync.Mutex` + plain map instead of `sync.Map`: the approval channel map has high churn (create, write once, delete) and low concurrency (one goroutine per approval). A mutex is clearer, safer, and avoids type assertions.
 
-### Cross-Process Implementation (fallback)
+### Methods
 
-Used when `oraculo all-in` detects another Oraculo instance on the port, or when `oraculo mcp` runs standalone.
+```go
+// Request creates an approval in SQLite, broadcasts to dashboard, and blocks
+// until a verdict arrives or context is cancelled.
+func (b *Bridge) Request(ctx context.Context, req ApprovalRequest) (domain.Verdict, error)
 
-- `Request`: inserts approval in SQLite → POSTs to running HTTP server at `POST /internal/approvals/notify` → polls SQLite every 500ms for verdict
-- `Decide`: not called (the HTTP server's own in-process bridge handles it)
-- `Status`: reads directly from SQLite
+// Decide receives a verdict from the dashboard, persists to SQLite, and
+// unblocks the pending Request.
+func (b *Bridge) Decide(id string, verdict domain.Verdict, comment string) error
 
-The 500ms polling interval is imperceptible for human approvals (which take seconds to minutes).
+// Status returns the current state of an approval (non-blocking).
+func (b *Bridge) Status(id string) (*domain.Approval, error)
+```
 
-### Crash Recovery
+### Flow
 
-SQLite is the source of truth, not in-memory channels.
+1. Agent calls MCP `request_approval` → MCP handler calls `bridge.Request()`
+2. Bridge inserts approval in SQLite (`status = 'pending'`)
+3. Bridge creates `chan domain.Verdict` (buffered, size 1) in `pending` map
+4. Bridge broadcasts `{"type": "approval_requested", ...}` to WebSocket
+5. Bridge blocks on channel via `select { case v := <-ch: ... case <-ctx.Done(): ... }`
+6. Human sees approval in dashboard, submits verdict
+7. Dashboard POSTs to `POST /api/approvals/{id}/verdict`
+8. HTTP handler calls `bridge.Decide(id, verdict, comment)`
+9. Bridge updates approval in SQLite, sends verdict on channel, deletes from map
+10. `bridge.Request()` unblocks, returns verdict to MCP handler
+11. MCP handler returns verdict to agent
 
-- **Server crashes while approval pending**: Verdict persisted in SQLite by the time server restarts. Agent calls `approval_status` to check.
-- **Agent crashes while approval pending**: Human can still submit verdict via dashboard (persisted to SQLite). When agent restarts and calls `request_approval` again, bridge detects existing verdict and returns it without creating a duplicate.
+### Lock Scope
+
+The mutex is held only for brief map operations — never while blocking on a channel or writing to SQLite:
+
+```go
+func (b *Bridge) Request(ctx context.Context, req ApprovalRequest) (domain.Verdict, error) {
+    // 1. Write to DB (no lock)
+    approval, err := b.store.Request(...)
+    if err != nil { return domain.Verdict{}, err }
+
+    // 2. Register channel (brief lock)
+    ch := make(chan domain.Verdict, 1)
+    b.mu.Lock()
+    b.pending[approval.ID] = ch
+    b.mu.Unlock()
+
+    // 3. Broadcast (no lock)
+    b.broadcaster.Broadcast(...)
+
+    // 4. Block on channel
+    select {
+    case v := <-ch:
+        return v, nil
+    case <-ctx.Done():
+        b.mu.Lock()
+        delete(b.pending, approval.ID)
+        b.mu.Unlock()
+        return domain.Verdict{}, ctx.Err()
+    }
+}
+```
+
+### Duplicate Detection
+
+If `request_approval` is called for an approval that already exists with a verdict, return the existing verdict without blocking. This covers crash + retry scenarios.
+
+### Context Cancellation
+
+If the agent's context is cancelled (Claude Code terminates), the blocked `Request` returns `context.Canceled`. The approval remains pending in SQLite — a future session can pick it up via `approval_status`.
 
 ---
 
@@ -212,17 +305,13 @@ All hook endpoints accept POST, persist metadata to SQLite, broadcast to WebSock
 | `GET /api/stories?epic=<name>` | List stories for an epic |
 | `GET /api/tasks?epic=<name>&story=<name>` | List tasks for a story |
 | `GET /api/approvals` | List approvals (optionally filter `?status=pending`) |
-| `POST /api/approvals/:id/verdict` | Submit verdict (human-in-the-loop) |
+| `POST /api/approvals/{id}/verdict` | Submit verdict (human-in-the-loop) |
 | `GET /api/sessions` | List active/recent sessions |
-| `GET /api/agents?session=<id>` | List agents for a session |
-| `GET /api/activity?session=<id>` | List recent tool events |
+| `GET /api/agents?session={id}` | List agents for a session |
+| `GET /api/activity?session={id}` | List recent tool events |
 | `GET /health` | Health check (returns `{"status": "ok"}`) |
 
-### Internal Endpoints
-
-| Endpoint | Purpose |
-|---|---|
-| `POST /internal/approvals/notify` | Cross-process: MCP notifies server of new approval |
+Path parameters use Go 1.22+ `{id}` syntax, accessed via `r.PathValue("id")`. No external router library needed.
 
 ### WebSocket
 
@@ -239,21 +328,122 @@ Broadcast message format (server → browser):
 }
 ```
 
-### API Design Rules
+### Handler Design
 
-- REST API endpoints consume the Trust Layer: they call the same `db.*Store` methods that CLI commands use. No direct SQLite queries.
-- Hook endpoints use dedicated stores for the new telemetry tables (`agents`, `tool_events`).
-- All errors return `{"error": "<code>", "message": "..."}` with appropriate HTTP status codes (400, 404, 500).
+HTTP handlers are methods on structs, not closures. This groups shared dependencies and makes handlers independently testable:
+
+```go
+// server/hooks.go
+type HookHandler struct {
+    sessions *db.ClaudeSessionStore
+    agents   *db.AgentStore
+    toolEvts *db.ToolEventStore
+    hub      *ws.Hub
+}
+
+// server/api.go
+type APIHandler struct {
+    epics     *db.EpicStore
+    stories   *db.StoryStore
+    tasks     *db.TaskStore
+    approvals *db.ApprovalStore
+    bridge    *approval.Bridge
+    hub       *ws.Hub
+}
+```
+
+Router wiring in `server.go`:
+
+```go
+mux := http.NewServeMux()
+mux.HandleFunc("POST /hooks/agent-start",          hook.handleAgentStart)
+mux.HandleFunc("POST /hooks/agent-stop",           hook.handleAgentStop)
+// ...
+mux.HandleFunc("GET /api/approvals",               api.handleListApprovals)
+mux.HandleFunc("POST /api/approvals/{id}/verdict",  api.handleVerdict)
+mux.HandleFunc("GET /ws",                          hub.ServeWS)
+mux.HandleFunc("GET /health",                      handleHealth)
+```
+
+### Error → HTTP Status Mapping
+
+A dedicated `writeAPIError` function in `server/errors.go` maps domain sentinel errors to HTTP status codes. This is separate from `output.WriteError` (which is for CLI output without status codes):
+
+| Domain Error | HTTP Status | JSON `error` code |
+|---|---|---|
+| `ErrNotFound` | 404 | `not_found` |
+| `ErrInvalidTransition` | 409 | `conflict` |
+| `ErrApprovalDecided` | 409 | `approval_decided` |
+| `ErrAlreadyExists` | 409 | `already_exists` |
+| `ErrMissingRequired` | 400 | `bad_request` |
+| (other) | 500 | `internal_error` |
 
 ---
 
-## 6. MCP Tools
+## 6. WebSocket Hub
 
-The MCP server exposes exactly 2 tools. Both use the `ApprovalBridge` for coordination.
+The `ws.Hub` manages WebSocket connections and broadcasts. It runs as its own goroutine via errgroup.
 
-### `request_approval` (blocking)
+```go
+// ws/hub.go
 
-**Input:**
+type Hub struct {
+    mu        sync.Mutex
+    clients   map[*client]struct{}
+    broadcast chan []byte           // buffered (64), non-blocking send
+}
+
+func NewHub() *Hub
+
+// Run processes broadcasts until ctx is cancelled. Called by errgroup.
+func (h *Hub) Run(ctx context.Context) error
+
+// Broadcast queues a message. Non-blocking: drops if buffer is full.
+// This ensures MCP handlers and HTTP handlers never block on slow WebSocket clients.
+func (h *Hub) Broadcast(msg []byte)
+
+// ServeWS upgrades an HTTP connection and registers the client.
+func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request)
+```
+
+The buffered channel with non-blocking send on `Broadcast` is critical: callers (MCP handler, hook handler) must not block waiting for a slow WebSocket client. If the buffer is full, the message is dropped — telemetry is best-effort.
+
+---
+
+## 7. MCP Server
+
+The MCP server is a struct with handler methods, mirroring the HTTP handler pattern.
+
+```go
+// mcp/server.go
+
+type Server struct {
+    bridge *approval.Bridge
+    store  *db.ApprovalStore
+}
+
+func New(bridge *approval.Bridge, store *db.ApprovalStore) *Server
+
+// ServeStdio starts the MCP server on stdin/stdout. Blocks until ctx is cancelled.
+func (s *Server) ServeStdio(ctx context.Context) error
+```
+
+Internally, `ServeStdio` creates the go-sdk server, registers tools, and runs on `StdioTransport`:
+
+```go
+func (s *Server) ServeStdio(ctx context.Context) error {
+    srv := mcpsdk.NewServer(&mcpsdk.Implementation{Name: "oraculo"}, nil)
+    mcpsdk.AddTool(srv, requestApprovalTool, s.handleRequestApproval)
+    mcpsdk.AddTool(srv, approvalStatusTool,  s.handleApprovalStatus)
+    return srv.Run(ctx, &mcpsdk.StdioTransport{})
+}
+```
+
+### Tools
+
+**`request_approval` (blocking):**
+
+Input:
 ```json
 {
   "type": "epic-requirements | story-definition | execution-plan | qa-escalation",
@@ -263,7 +453,7 @@ The MCP server exposes exactly 2 tools. Both use the `ApprovalBridge` for coordi
 }
 ```
 
-**Output (when human decides):**
+Output (when human decides):
 ```json
 {
   "id": "approval-uuid",
@@ -272,37 +462,15 @@ The MCP server exposes exactly 2 tools. Both use the `ApprovalBridge` for coordi
 }
 ```
 
-**Flow:**
-1. MCP handler calls `bridge.Request(ctx, req)`
-2. Bridge inserts approval in SQLite, broadcasts to WebSocket, blocks
-3. Human sees approval in dashboard, submits verdict
-4. HTTP handler calls `bridge.Decide(id, verdict)`
-5. Bridge writes verdict to SQLite, unblocks the pending Request
-6. MCP handler returns verdict to agent
+**`approval_status` (non-blocking):**
 
-**Duplicate detection:** If `request_approval` is called for an approval that already exists with a verdict, return the existing verdict without creating a duplicate. This covers crash + retry scenarios.
+Input: `{ "id": "approval-uuid" }`
 
-### `approval_status` (non-blocking)
-
-**Input:**
-```json
-{ "id": "approval-uuid" }
-```
-
-**Output:**
-```json
-{
-  "id": "approval-uuid",
-  "status": "pending | approved | rejected | needs_revision",
-  "comment": "human feedback (if decided)"
-}
-```
-
-Polling fallback for crash recovery. If an agent reconnects after a crash, it can check whether a pending approval has already been decided.
+Output: `{ "id": "...", "status": "pending|approved|rejected|needs_revision", "comment": "..." }`
 
 ---
 
-## 7. Schema Migration v3
+## 8. Schema Migration v3
 
 New migration adding telemetry tables for hook data.
 
@@ -341,16 +509,35 @@ CREATE INDEX idx_tool_events_timestamp ON tool_events(timestamp);
 
 ---
 
-## 8. `oraculo install`
+## 9. `oraculo install`
 
 ### What It Does
 
 1. Creates `.oraculo/` directory if it doesn't exist
 2. Initializes SQLite with the full schema (runs all migrations)
-3. Allocates a port (first available in range 3100-3199)
-4. Saves port to `.oraculo/config.json`
+3. Allocates a port via `config.FindPort(3100, 3199)`
+4. Saves port to `.oraculo/config.json` via `config.Write()` (atomic)
 5. Writes `.claude/settings.json` with hooks and MCP server configuration
 6. Copies skills from `claude-kit/skills/oraculo/` to `.claude/skills/oraculo/`
+
+### Config Package API
+
+```go
+// config/config.go
+
+type Config struct {
+    Port int `json:"port"`
+}
+
+// Read loads .oraculo/config.json. Returns zero-value Config if file doesn't exist.
+func Read() (*Config, error)
+
+// Write persists cfg to .oraculo/config.json atomically (temp file + rename).
+func Write(cfg *Config) error
+
+// FindPort returns the first available TCP port in [start, end].
+func FindPort(start, end int) (int, error)
+```
 
 ### Flags
 
@@ -422,7 +609,7 @@ CREATE INDEX idx_tool_events_timestamp ON tool_events(timestamp);
   "mcpServers": {
     "oraculo": {
       "command": "oraculo",
-      "args": ["all-in"],
+      "args": ["start"],
       "env": {}
     }
   }
@@ -431,26 +618,9 @@ CREATE INDEX idx_tool_events_timestamp ON tool_events(timestamp);
 
 `<PORT>` is replaced with the allocated port during install.
 
-### Config File Format
-
-`.oraculo/config.json`:
-
-```json
-{
-  "port": 3100
-}
-```
-
-### Port Allocation Logic
-
-1. Scan range 3100-3199
-2. For each port, attempt TCP listen
-3. First available port is allocated
-4. If port is later found occupied by a non-Oraculo process, `oraculo all-in` scans for the next free port and updates config
-
 ---
 
-## 9. `oraculo uninstall`
+## 10. `oraculo uninstall`
 
 ### What It Does
 
@@ -470,15 +640,98 @@ CREATE INDEX idx_tool_events_timestamp ON tool_events(timestamp);
 
 ---
 
-## 10. Decisions Log
+## 11. New Domain Errors
+
+Add to `domain/errors.go`:
+
+```go
+var ErrApprovalDecided = errors.New("approval already decided")
+```
+
+Used by `bridge.Decide` when a verdict is submitted for an approval that is not pending. Maps to HTTP 409 Conflict.
+
+---
+
+## 12. Test Patterns
+
+### Shared Test Helper
+
+`src/dbtest/dbtest.go` exports `Open(t) *db.DB` using an in-memory SQLite. Requires exposing `db.OpenMemory()` as a public function.
+
+```go
+// dbtest/dbtest.go
+func Open(t *testing.T) *db.DB {
+    t.Helper()
+    database, err := db.OpenMemory()
+    if err != nil { t.Fatalf("dbtest.Open: %v", err) }
+    t.Cleanup(func() { database.Close() })
+    return database
+}
+```
+
+### HTTP Handler Tests
+
+Use `net/http/httptest`:
+
+```go
+func TestHandleListApprovals(t *testing.T) {
+    database := dbtest.Open(t)
+    // ... seed data using stores ...
+    srv := server.New(database, bridge, hub, 0)
+
+    req := httptest.NewRequest("GET", "/api/approvals", nil)
+    rec := httptest.NewRecorder()
+    srv.ServeHTTP(rec, req)
+
+    if rec.Code != 200 { t.Fatalf("status %d", rec.Code) }
+}
+```
+
+### Bridge Tests
+
+Use a `stubBroadcaster` that satisfies the `Broadcaster` interface:
+
+```go
+type stubBroadcaster struct {
+    msgs [][]byte
+    mu   sync.Mutex
+}
+func (b *stubBroadcaster) Broadcast(msg []byte) {
+    b.mu.Lock()
+    b.msgs = append(b.msgs, msg)
+    b.mu.Unlock()
+}
+```
+
+### MCP Tool Tests
+
+Test handler methods directly (not over stdio):
+
+```go
+func TestHandleRequestApproval(t *testing.T) {
+    database := dbtest.Open(t)
+    bridge := approval.NewBridge(db.NewApprovalStore(database), &stubBroadcaster{})
+    srv := mcp.New(bridge, db.NewApprovalStore(database))
+    // call srv.handleRequestApproval directly
+}
+```
+
+---
+
+## 13. Decisions Log
 
 | Decision | Choice | Rationale |
 |---|---|---|
 | WebSocket library | `github.com/coder/websocket` | Minimal, idiomatic, context-native, actively maintained by Coder |
 | MCP library | `github.com/modelcontextprotocol/go-sdk` | Official SDK, maintained by MCP org + Google, spec-aligned |
-| Process model | `all-in` embeds both servers | Non-developer users (PMs on Windows) need single-binary simplicity |
-| Separate commands | `mcp`, `serve`, `all-in` | Each does exactly one thing; `all-in` is the configured default |
-| Approval coordination | Go channels (in-process) + SQLite polling (cross-process) | Optimal latency in common case, resilient fallback |
+| Process model | Single `oraculo start` command | MVP simplification: eliminates cross-process edge cases |
+| Server coordination | `errgroup.WithContext` | Idiomatic Go: one context, all goroutines drain on cancellation |
+| HTTP routing | Go 1.22+ stdlib `net/http` | `{id}` path params + method routing built in; no external router needed |
+| Handler design | Struct methods (`APIHandler`, `HookHandler`) | Groups shared deps, independently testable, matches Go convention |
+| Approval coordination | Go channels + `sync.Mutex` map | Single process; mutex beats `sync.Map` for high-churn low-concurrency |
+| Bridge → WS coupling | `Broadcaster` interface | Decouples packages; tests use a stub |
+| Config writes | Atomic (temp file + rename) | No corrupt config on crash |
+| Test DB | `dbtest.Open(t)` shared helper | Avoids duplicating in-memory DB setup across packages |
 | Telemetry FK | No FK on agents.session_id | Server may be offline during session start; events should not be rejected |
 | Port range | 3100-3199 | Avoids common ports; 100 ports enough for multi-project setups |
-| Polling interval | 500ms | Imperceptible for human approvals (seconds/minutes) |
+| Future expansion | `serve` and `mcp` commands | Can be added later when advanced use cases emerge |
