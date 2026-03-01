@@ -21,6 +21,14 @@ Two operating modes:
 
 Full document: [docs/design.md](docs/design.md)
 
+## Steering
+
+Steering is Oraculo's **context layer** — two documents (`product.md` and `design.md`) that capture project identity before any action. Product covers company, product, vision, and business principles. Design covers tech stack, architecture, code conventions, and project structure. Read mandatorily before every Epic and Story. Complementary to CLAUDE.md — Steering says "what is here", CLAUDE.md says "how to work here".
+
+Full document: [docs/steering/philosophy.md](docs/steering/philosophy.md)
+
+Design index: [docs/steering/design.md](docs/steering/design.md)
+
 ## Epic Phase
 
 Transforms raw ideas into validated problem definitions through Socratic exploration. Uses Double Diamond, JTBD (with Four Forces), TOC, and Assumption Mapping frameworks.
@@ -72,12 +80,16 @@ claude-kit/
         │       ├── frameworks.md              # Framework descriptions
         │       ├── artifact-templates.md      # Intermediate artifact formats (Codebase Impact)
         │       └── requirements-template.md   # Primary output: Requirements document template
-        └── story/
-            ├── SKILL.md                       # /oraculo:story skill
+        ├── story/
+        │   ├── SKILL.md                       # /oraculo:story skill
+        │   └── references/
+        │       ├── question-bank.md           # Question templates by phase/level
+        │       ├── frameworks.md              # Framework descriptions (simplified)
+        │       └── story-template.md          # Primary output: Story document template
+        └── steering/
             └── references/
-                ├── question-bank.md           # Question templates by phase/level
-                ├── frameworks.md              # Framework descriptions (simplified)
-                └── story-template.md          # Primary output: Story document template
+                ├── product-template.md        # Template for .oraculo/steering/product.md
+                └── design-template.md         # Template for .oraculo/steering/design.md
 ```
 
 Only `SKILL.md` files appear as slash commands. Reference files inside skill directories are internal — they don't pollute the command list.
