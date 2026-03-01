@@ -6,4 +6,4 @@ _plans
 .playwright-cli
 .worktrees
 .oraculo/
-/oraculo
+/oraculo.claude/worktrees/
