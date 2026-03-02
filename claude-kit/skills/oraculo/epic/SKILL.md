@@ -52,3 +52,4 @@ disable-model-invocation: true
 - Persist validated phase outputs with `oraculo tools phase complete`.
 - Use CLI commands for state, approvals, and artifacts. Do not invent alternatives.
 - Do not auto-invoke downstream commands. Recommend them explicitly instead.
+- When asking the user any question, ALWAYS use the `AskUserQuestion` tool. Never write questions as plain text. Offer 2–4 directional options per question; the user can always select "Other" for free-form input. Use `multiSelect: true` when multiple answers can apply simultaneously (e.g., listing risks, forces, or concerns). When presenting concrete artifacts for comparison (task lists, problem framings, story definitions), populate the `markdown` field on each option to trigger the side-by-side preview UI — only available on single-select questions.

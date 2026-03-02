@@ -38,3 +38,17 @@ Execution completion hands off:
 - story or epic context
 
 It does not perform QA itself.
+
+## Agent Interactive Questions
+
+When an agent needs clarification before or during a task, it must use the
+`AskUserQuestion` tool — never plain text questions.
+
+The orchestrator must include this in every agent prompt:
+> "If you have questions before or during the task, use the `AskUserQuestion`
+> tool. Never ask questions as plain text."
+
+Constraints (same as orchestrator):
+- 2–4 options per question
+- header max 12 characters
+- `multiSelect: true` when multiple answers can apply simultaneously

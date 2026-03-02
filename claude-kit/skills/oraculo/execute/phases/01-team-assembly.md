@@ -34,6 +34,7 @@ Give each agent:
 - acceptance criteria
 - relevant file scope
 - parent story or epic context
+- instruction: if you have questions before or during the task, use the `AskUserQuestion` tool — never ask as plain text
 
 Use the persisted DAG and known file conflicts to decide what can run in parallel.
 
