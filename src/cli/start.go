@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -50,7 +51,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
 	srv := server.New(database, bridge, hub)
-	mcpSrv := mcpserver.New(bridge, db.NewApprovalStore(database))
+	mcpSrv := mcpserver.New(bridge, db.NewApprovalStore(database), slog.Default())
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return hub.Run(ctx) })
