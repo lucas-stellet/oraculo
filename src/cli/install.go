@@ -16,20 +16,17 @@ import (
 
 // claudeSettings is the structure written to .claude/settings.json.
 type claudeSettings struct {
-	Hooks      map[string][]hookGroup `json:"hooks"`
+	Hooks      map[string][]hookEntry `json:"hooks"`
 	MCPServers map[string]mcpServer   `json:"mcpServers"`
 }
 
-// hookGroup is the new hooks format: a matcher string paired with an array of commands.
-// Matcher is a tool-name pattern; "*" or empty string matches all tools.
-type hookGroup struct {
-	Matcher string    `json:"matcher,omitempty"`
-	Hooks   []hookCmd `json:"hooks"`
-}
-
-type hookCmd struct {
+// hookEntry represents a single hook — either a command hook or an HTTP hook.
+type hookEntry struct {
 	Type    string `json:"type"`
-	Command string `json:"command"`
+	Command string `json:"command,omitempty"` // type "command"
+	URL     string `json:"url,omitempty"`     // type "http"
+	Matcher string `json:"matcher,omitempty"` // type "http"
+	Timeout int    `json:"timeout,omitempty"` // type "http"
 }
 
 type mcpServer struct {
@@ -86,15 +83,34 @@ func runInstall(cmd *cobra.Command) error {
 	fmt.Fprintln(w, "created .claude/")
 
 	// Step 6: Write .claude/settings.json with hooks and MCP config.
-	hook := func(cmd string) []hookGroup {
-		return []hookGroup{{Hooks: []hookCmd{{Type: "command", Command: cmd}}}}
-	}
+	baseURL := fmt.Sprintf("http://localhost:%d", port)
 	settings := claudeSettings{
-		Hooks: map[string][]hookGroup{
-			"PreToolUse":   hook("oraculo hook pre-tool $TOOL_NAME"),
-			"PostToolUse":  hook("oraculo hook post-tool $TOOL_NAME"),
-			"SessionStart": hook("oraculo hook session-start"),
-			"SessionEnd":   hook("oraculo hook session-end"),
+		Hooks: map[string][]hookEntry{
+			"SessionStart": {
+				{Type: "command", Command: "oraculo hook session-start"},
+			},
+			"SubagentStart": {
+				{Type: "http", URL: baseURL + "/hooks/agent-start", Timeout: 5},
+			},
+			"SubagentStop": {
+				{Type: "http", URL: baseURL + "/hooks/agent-stop", Timeout: 5},
+			},
+			"PostToolUse": {
+				{Type: "http", URL: baseURL + "/hooks/tool-used",
+					Matcher: "Bash|Edit|Write|NotebookEdit", Timeout: 5},
+			},
+			"TaskCompleted": {
+				{Type: "http", URL: baseURL + "/hooks/task-completed", Timeout: 5},
+			},
+			"Stop": {
+				{Type: "http", URL: baseURL + "/hooks/stop", Timeout: 5},
+			},
+			"TeammateIdle": {
+				{Type: "http", URL: baseURL + "/hooks/teammate-idle", Timeout: 5},
+			},
+			"SessionEnd": {
+				{Type: "http", URL: baseURL + "/hooks/session-end", Timeout: 5},
+			},
 		},
 		MCPServers: map[string]mcpServer{
 			"oraculo": {
