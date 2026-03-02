@@ -3,10 +3,13 @@ package cli_test
 import (
 	"bytes"
 	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	claudekit "github.com/lucas/oraculo/claude-kit"
 	"github.com/lucas/oraculo/src/cli"
 )
 
@@ -36,15 +39,6 @@ func setupInstallDir(t *testing.T) string {
 	return tmp
 }
 
-func writeFixtureFile(t *testing.T, path, content string) {
-	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatalf("mkdir %s: %v", filepath.Dir(path), err)
-	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatalf("write %s: %v", path, err)
-	}
-}
 
 func TestInstall_CreatesOraculoConfig(t *testing.T) {
 	setupInstallDir(t)
@@ -194,9 +188,25 @@ func TestInstall_HooksConfiguration(t *testing.T) {
 	}
 
 	requiredHooks := []string{"PreToolUse", "PostToolUse", "SessionStart", "SessionEnd"}
-	for _, hook := range requiredHooks {
-		if _, ok := hooks[hook]; !ok {
-			t.Errorf("hooks missing %q entry", hook)
+	for _, hookName := range requiredHooks {
+		val, ok := hooks[hookName]
+		if !ok {
+			t.Errorf("hooks missing %q entry", hookName)
+			continue
+		}
+		// Each hook event must be an array of hook groups (new format).
+		groups, ok := val.([]any)
+		if !ok || len(groups) == 0 {
+			t.Errorf("hooks[%q] must be a non-empty array", hookName)
+			continue
+		}
+		group, ok := groups[0].(map[string]any)
+		if !ok {
+			t.Errorf("hooks[%q][0] must be an object", hookName)
+			continue
+		}
+		if _, ok := group["hooks"]; !ok {
+			t.Errorf("hooks[%q][0] missing 'hooks' field", hookName)
 		}
 	}
 }
@@ -223,24 +233,48 @@ func TestInstall_Idempotent(t *testing.T) {
 	}
 }
 
-func TestInstall_CopiesLocalOraculoSkills(t *testing.T) {
+func TestInstall_CopiesEmbeddedOraculoSkills(t *testing.T) {
 	setupInstallDir(t)
-
-	sourcePath := filepath.Join("claude-kit", "skills", "oraculo", "epic", "SKILL.md")
-	sourceContent := "---\nname: oraculo:epic\n---\n# Epic\n"
-	writeFixtureFile(t, sourcePath, sourceContent)
 
 	_, err := installCmd(t)
 	if err != nil {
 		t.Fatalf("install failed: %v", err)
 	}
 
-	destPath := filepath.Join(".claude", "skills", "oraculo", "epic", "SKILL.md")
-	data, err := os.ReadFile(destPath)
+	// Walk the embedded FS and verify every file was copied to .claude/skills/oraculo-<name>/
+	err = fs.WalkDir(claudekit.SkillsFS, filepath.Join("skills", "oraculo"), func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		// path: skills/oraculo/epic/SKILL.md
+		// rel:  epic/SKILL.md
+		rel, err := filepath.Rel(filepath.Join("skills", "oraculo"), path)
+		if err != nil {
+			return err
+		}
+		// skills/oraculo/epic/SKILL.md → .claude/skills/oraculo-epic/SKILL.md
+		parts := strings.SplitN(rel, string(filepath.Separator), 2)
+		var destPath string
+		if len(parts) == 2 {
+			destPath = filepath.Join(".claude", "skills", "oraculo-"+parts[0], parts[1])
+		} else {
+			destPath = filepath.Join(".claude", "skills", "oraculo-"+parts[0])
+		}
+		got, err := os.ReadFile(destPath)
+		if err != nil {
+			t.Errorf("expected %s to exist: %v", destPath, err)
+			return nil
+		}
+		want, err := fs.ReadFile(claudekit.SkillsFS, path)
+		if err != nil {
+			return err
+		}
+		if string(got) != string(want) {
+			t.Errorf("content mismatch for %s", destPath)
+		}
+		return nil
+	})
 	if err != nil {
-		t.Fatalf("expected %s to exist: %v", destPath, err)
-	}
-	if string(data) != sourceContent {
-		t.Fatalf("copied skill content mismatch:\nwant:\n%s\ngot:\n%s", sourceContent, string(data))
+		t.Fatalf("walk embedded FS: %v", err)
 	}
 }

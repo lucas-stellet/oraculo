@@ -4,10 +4,11 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
-	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
+	claudekit "github.com/lucas/oraculo/claude-kit"
 	"github.com/lucas/oraculo/src/config"
 	"github.com/lucas/oraculo/src/db"
 	"github.com/spf13/cobra"
@@ -15,11 +16,18 @@ import (
 
 // claudeSettings is the structure written to .claude/settings.json.
 type claudeSettings struct {
-	Hooks      map[string][]hookEntry `json:"hooks"`
+	Hooks      map[string][]hookGroup `json:"hooks"`
 	MCPServers map[string]mcpServer   `json:"mcpServers"`
 }
 
-type hookEntry struct {
+// hookGroup is the new hooks format: a matcher string paired with an array of commands.
+// Matcher is a tool-name pattern; "*" or empty string matches all tools.
+type hookGroup struct {
+	Matcher string    `json:"matcher,omitempty"`
+	Hooks   []hookCmd `json:"hooks"`
+}
+
+type hookCmd struct {
 	Type    string `json:"type"`
 	Command string `json:"command"`
 }
@@ -78,12 +86,15 @@ func runInstall(cmd *cobra.Command) error {
 	fmt.Fprintln(w, "created .claude/")
 
 	// Step 6: Write .claude/settings.json with hooks and MCP config.
+	hook := func(cmd string) []hookGroup {
+		return []hookGroup{{Hooks: []hookCmd{{Type: "command", Command: cmd}}}}
+	}
 	settings := claudeSettings{
-		Hooks: map[string][]hookEntry{
-			"PreToolUse":  {{Type: "command", Command: "oraculo hook pre-tool $TOOL_NAME"}},
-			"PostToolUse": {{Type: "command", Command: "oraculo hook post-tool $TOOL_NAME"}},
-			"SessionStart": {{Type: "command", Command: "oraculo hook session-start"}},
-			"SessionEnd":  {{Type: "command", Command: "oraculo hook session-end"}},
+		Hooks: map[string][]hookGroup{
+			"PreToolUse":   hook("oraculo hook pre-tool $TOOL_NAME"),
+			"PostToolUse":  hook("oraculo hook post-tool $TOOL_NAME"),
+			"SessionStart": hook("oraculo hook session-start"),
+			"SessionEnd":   hook("oraculo hook session-end"),
 		},
 		MCPServers: map[string]mcpServer{
 			"oraculo": {
@@ -101,56 +112,49 @@ func runInstall(cmd *cobra.Command) error {
 	}
 	fmt.Fprintln(w, "created .claude/settings.json")
 
-	// Step 7: Copy skills from claude-kit/skills/oraculo/ to .claude/skills/oraculo/ if source exists.
-	skillsSrc := filepath.Join("claude-kit", "skills", "oraculo")
-	if _, err := os.Stat(skillsSrc); err == nil {
-		skillsDst := filepath.Join(".claude", "skills", "oraculo")
-		if err := copyDir(skillsSrc, skillsDst); err != nil {
-			return fmt.Errorf("copy skills: %w", err)
-		}
-		fmt.Fprintln(w, "copied skills to .claude/skills/oraculo/")
+	// Step 7: Copy embedded skills to .claude/skills/oraculo-<name>/.
+	skillsSrcRoot := filepath.Join("skills", "oraculo")
+	entries, err := fs.ReadDir(claudekit.SkillsFS, skillsSrcRoot)
+	if err != nil {
+		return fmt.Errorf("read embedded skills: %w", err)
 	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		src := filepath.Join(skillsSrcRoot, e.Name())
+		dst := filepath.Join(".claude", "skills", "oraculo-"+e.Name())
+		if err := copyFromFS(claudekit.SkillsFS, src, dst); err != nil {
+			return fmt.Errorf("copy skill %s: %w", e.Name(), err)
+		}
+	}
+	fmt.Fprintln(w, "copied skills to .claude/skills/")
 
 	fmt.Fprintln(w, "Oraculo installed successfully.")
 	return nil
 }
 
-// copyDir recursively copies src directory to dst.
-func copyDir(src, dst string) error {
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+// copyFromFS recursively copies srcDir from fsys into dst on the local filesystem.
+func copyFromFS(fsys fs.FS, srcDir, dst string) error {
+	return fs.WalkDir(fsys, srcDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		rel, err := filepath.Rel(src, path)
+		rel, err := filepath.Rel(srcDir, path)
 		if err != nil {
 			return err
 		}
 		target := filepath.Join(dst, rel)
-		if info.IsDir() {
-			return os.MkdirAll(target, info.Mode())
+		if d.IsDir() {
+			return os.MkdirAll(target, 0o755)
 		}
-		return copyFile(path, target, info.Mode())
+		data, err := fs.ReadFile(fsys, path)
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0o644)
 	})
-}
-
-// copyFile copies a single file from src to dst.
-func copyFile(src, dst string, mode os.FileMode) error {
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return err
-	}
-
-	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, in)
-	return err
 }
