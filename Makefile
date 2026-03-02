@@ -1,5 +1,6 @@
 BINARY  := oraculo
 BUILD   := ./cmd/oraculo
+PREFIX  ?= $(HOME)/.local
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
@@ -9,7 +10,7 @@ build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(BUILD)
 
 install: build
-	cp $(BINARY) /usr/local/bin/$(BINARY)
+	install -m 755 $(BINARY) $(DESTDIR)$(PREFIX)/bin/$(BINARY)
 
 test:
 	go test ./... -count=1
