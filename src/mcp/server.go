@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -19,6 +20,7 @@ type Server struct {
 	inner  *sdk.Server
 	bridge *approval.Bridge
 	store  *db.ApprovalStore
+	logger *slog.Logger
 }
 
 // requestApprovalInput is the typed input for the request_approval tool.
@@ -58,7 +60,7 @@ type approvalStatusOutput struct {
 
 // New constructs and wires an MCP server with the request_approval and
 // approval_status tools registered.
-func New(bridge *approval.Bridge, store *db.ApprovalStore) *Server {
+func New(bridge *approval.Bridge, store *db.ApprovalStore, logger *slog.Logger) *Server {
 	inner := sdk.NewServer(
 		&sdk.Implementation{Name: "oraculo", Version: "1.0.0"},
 		nil,
@@ -68,6 +70,7 @@ func New(bridge *approval.Bridge, store *db.ApprovalStore) *Server {
 		inner:  inner,
 		bridge: bridge,
 		store:  store,
+		logger: logger,
 	}
 
 	sdk.AddTool(inner,
@@ -101,6 +104,7 @@ func (s *Server) RunStdio(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("mcp stdio connect: %w", err)
 	}
+	s.logger.Info("mcp.connected")
 	<-ctx.Done()
 	return ctx.Err()
 }

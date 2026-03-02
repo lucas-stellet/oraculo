@@ -2,6 +2,8 @@ package mcp_test
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -39,7 +41,7 @@ func TestNew_ReturnsNonNil(t *testing.T) {
 	database := dbtest.Open(t)
 	store := db.NewApprovalStore(database)
 
-	srv := mcpserver.New(bridge, store)
+	srv := mcpserver.New(bridge, store, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if srv == nil {
 		t.Fatal("expected non-nil server")
 	}
@@ -51,7 +53,7 @@ func TestNew_InnerServerNonNil(t *testing.T) {
 	database := dbtest.Open(t)
 	store := db.NewApprovalStore(database)
 
-	srv := mcpserver.New(bridge, store)
+	srv := mcpserver.New(bridge, store, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if srv.Inner() == nil {
 		t.Fatal("expected non-nil inner SDK server")
 	}
@@ -198,7 +200,7 @@ func TestMCPServer_ToolsViaSDK(t *testing.T) {
 	database := dbtest.Open(t)
 	store := db.NewApprovalStore(database)
 
-	srv := mcpserver.New(bridge, store)
+	srv := mcpserver.New(bridge, store, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 	// Connect an in-memory client to the server using the SDK helpers.
 	mcp := srv.Inner()
