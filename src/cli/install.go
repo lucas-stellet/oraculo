@@ -16,16 +16,22 @@ import (
 
 // claudeSettings is the structure written to .claude/settings.json.
 type claudeSettings struct {
-	Hooks      map[string][]hookEntry `json:"hooks"`
+	Hooks      map[string][]hookGroup `json:"hooks"`
 	MCPServers map[string]mcpServer   `json:"mcpServers"`
 }
 
-// hookEntry represents a single hook — either a command hook or an HTTP hook.
-type hookEntry struct {
+// hookGroup is the Claude Code hooks format: an optional regex matcher paired
+// with an array of hook definitions. Matcher filters which tools trigger the hook.
+type hookGroup struct {
+	Matcher string    `json:"matcher,omitempty"`
+	Hooks   []hookDef `json:"hooks"`
+}
+
+// hookDef is a single hook action — either a command or an HTTP request.
+type hookDef struct {
 	Type    string `json:"type"`
 	Command string `json:"command,omitempty"` // type "command"
 	URL     string `json:"url,omitempty"`     // type "http"
-	Matcher string `json:"matcher,omitempty"` // type "http"
 	Timeout int    `json:"timeout,omitempty"` // type "http"
 }
 
@@ -84,33 +90,24 @@ func runInstall(cmd *cobra.Command) error {
 
 	// Step 6: Write .claude/settings.json with hooks and MCP config.
 	baseURL := fmt.Sprintf("http://localhost:%d", port)
+	httpGroup := func(url string) []hookGroup {
+		return []hookGroup{{Hooks: []hookDef{{Type: "http", URL: url, Timeout: 5}}}}
+	}
 	settings := claudeSettings{
-		Hooks: map[string][]hookEntry{
-			"SessionStart": {
-				{Type: "command", Command: "oraculo hook session-start"},
-			},
-			"SubagentStart": {
-				{Type: "http", URL: baseURL + "/hooks/agent-start", Timeout: 5},
-			},
-			"SubagentStop": {
-				{Type: "http", URL: baseURL + "/hooks/agent-stop", Timeout: 5},
-			},
-			"PostToolUse": {
-				{Type: "http", URL: baseURL + "/hooks/tool-used",
-					Matcher: "Bash|Edit|Write|NotebookEdit", Timeout: 5},
-			},
-			"TaskCompleted": {
-				{Type: "http", URL: baseURL + "/hooks/task-completed", Timeout: 5},
-			},
-			"Stop": {
-				{Type: "http", URL: baseURL + "/hooks/stop", Timeout: 5},
-			},
-			"TeammateIdle": {
-				{Type: "http", URL: baseURL + "/hooks/teammate-idle", Timeout: 5},
-			},
-			"SessionEnd": {
-				{Type: "http", URL: baseURL + "/hooks/session-end", Timeout: 5},
-			},
+		Hooks: map[string][]hookGroup{
+			"SessionStart": {{
+				Hooks: []hookDef{{Type: "command", Command: "oraculo hook session-start"}},
+			}},
+			"SubagentStart":  httpGroup(baseURL + "/hooks/agent-start"),
+			"SubagentStop":   httpGroup(baseURL + "/hooks/agent-stop"),
+			"TaskCompleted":  httpGroup(baseURL + "/hooks/task-completed"),
+			"Stop":           httpGroup(baseURL + "/hooks/stop"),
+			"TeammateIdle":   httpGroup(baseURL + "/hooks/teammate-idle"),
+			"SessionEnd":     httpGroup(baseURL + "/hooks/session-end"),
+			"PostToolUse": {{
+				Matcher: "Bash|Edit|Write|NotebookEdit",
+				Hooks:   []hookDef{{Type: "http", URL: baseURL + "/hooks/tool-used", Timeout: 5}},
+			}},
 		},
 		MCPServers: map[string]mcpServer{
 			"oraculo": {
