@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/lucas/oraculo/src/applog"
 	"github.com/lucas/oraculo/src/approval"
 	"github.com/lucas/oraculo/src/db"
 	"github.com/lucas/oraculo/src/ws"
@@ -18,7 +19,7 @@ type Server struct {
 }
 
 // New constructs a Server wired with all stores, bridge, and hub.
-func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub) *Server {
+func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Broadcaster) *Server {
 	hook := &HookHandler{
 		agents:   db.NewAgentStore(database),
 		toolEvts: db.NewToolEventStore(database),
@@ -56,6 +57,11 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub) *Server {
 
 	// WebSocket
 	mux.HandleFunc("GET /ws", hub.ServeWS)
+
+	// SSE log stream
+	if logs != nil {
+		mux.HandleFunc("GET /logs", logs.ServeSSE)
+	}
 
 	return &Server{mux: mux, database: database}
 }

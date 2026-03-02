@@ -1,12 +1,15 @@
 package server_test
 
 import (
+	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/lucas/oraculo/src/applog"
 	"github.com/lucas/oraculo/src/approval"
 	"github.com/lucas/oraculo/src/db"
 	"github.com/lucas/oraculo/src/dbtest"
@@ -20,7 +23,7 @@ func testServerWithDB(t *testing.T) (*server.Server, *db.DB) {
 	database := dbtest.Open(t)
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
-	return server.New(database, bridge, hub), database
+	return server.New(database, bridge, hub, nil), database
 }
 
 func TestListEpics_Empty(t *testing.T) {
@@ -168,6 +171,28 @@ func TestVerdict_ApprovesPendingApproval(t *testing.T) {
 	}
 	if updated.VerdictComment != "LGTM" {
 		t.Errorf("verdict comment = %q, want LGTM", updated.VerdictComment)
+	}
+}
+
+func TestLogsEndpoint_ReturnsSSE(t *testing.T) {
+	database := dbtest.Open(t)
+	hub := ws.NewHub()
+	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
+	logs := applog.NewBroadcaster(io.Discard)
+	srv := server.New(database, bridge, hub, logs)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately so ServeSSE returns after replay
+	req := httptest.NewRequest(http.MethodGet, "/logs", nil).WithContext(ctx)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET /logs status %d, want 200", rec.Code)
+	}
+	ct := rec.Header().Get("Content-Type")
+	if !strings.Contains(ct, "text/event-stream") {
+		t.Errorf("Content-Type = %q, want text/event-stream", ct)
 	}
 }
 
