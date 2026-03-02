@@ -66,18 +66,60 @@ claude-kit/
 └── skills/
     └── oraculo/
         ├── epic/
-        │   ├── SKILL.md                       # /oraculo:epic skill
+        │   ├── SKILL.md
+        │   ├── phases/
+        │   │   ├── 00-setup.md
+        │   │   ├── 01-reframing.md
+        │   │   ├── 02-divergence.md
+        │   │   ├── 03-codebase-analysis.md
+        │   │   ├── 04-convergence.md
+        │   │   ├── 05-assumptions.md
+        │   │   ├── 06-exit-gate.md
+        │   │   ├── 07-artifact.md
+        │   │   └── 08-approval.md
         │   └── references/
-        │       ├── question-bank.md           # Question templates by phase/level
-        │       ├── frameworks.md              # Framework descriptions
-        │       ├── artifact-templates.md      # Intermediate artifact formats (Codebase Impact)
-        │       └── requirements-template.md   # Primary output: Requirements document template
+        │       ├── question-bank.md
+        │       ├── frameworks.md
+        │       └── artifact-templates.md
         └── story/
-            ├── SKILL.md                       # /oraculo:story skill
+            ├── SKILL.md
+            ├── phases/
+            │   ├── 00-setup.md
+            │   ├── 01-reframing.md
+            │   ├── 02-assumptions.md
+            │   ├── 03-exit-gate.md
+            │   ├── 04-artifact.md
+            │   └── 05-approval.md
             └── references/
-                ├── question-bank.md           # Question templates by phase/level
-                ├── frameworks.md              # Framework descriptions (simplified)
-                └── story-template.md          # Primary output: Story document template
+                ├── question-bank.md
+                └── artifact-templates.md
+        ├── plan/
+        │   ├── SKILL.md
+        │   ├── phases/
+        │   │   ├── 00-setup.md
+        │   │   ├── 01-decomposition.md
+        │   │   ├── 02-dependencies.md
+        │   │   ├── 03-optimization.md
+        │   │   └── 04-artifact.md
+        │   └── references/
+        │       └── decomposition-patterns.md
+        ├── execute/
+        │   ├── SKILL.md
+        │   ├── phases/
+        │   │   ├── 00-setup.md
+        │   │   ├── 01-team-assembly.md
+        │   │   ├── 02-monitoring.md
+        │   │   └── 03-completion.md
+        │   └── references/
+        │       └── agent-dispatch.md
+        └── validate/
+            ├── SKILL.md
+            ├── phases/
+            │   ├── 00-setup.md
+            │   ├── 01-qa-dispatch.md
+            │   └── 02-verdict.md
+            └── references/
+                └── qa-criteria.md
 ```
 
 Only `SKILL.md` files appear as slash commands. Reference files inside skill directories are internal — they don't pollute the command list.
