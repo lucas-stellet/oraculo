@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/lucas/oraculo/src/applog"
 	"github.com/lucas/oraculo/src/approval"
@@ -14,8 +16,10 @@ import (
 
 // Server is the HTTP server that exposes hooks, API, and WebSocket endpoints.
 type Server struct {
-	mux      *http.ServeMux
-	database *db.DB
+	mux          *http.ServeMux
+	database     *db.DB
+	lastActivity time.Time
+	mu           sync.Mutex
 }
 
 // New constructs a Server wired with all stores, bridge, and hub.
@@ -63,28 +67,68 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 		mux.HandleFunc("GET /logs", logs.ServeSSE)
 	}
 
-	return &Server{mux: mux, database: database}
+	return &Server{mux: mux, database: database, lastActivity: time.Now()}
+}
+
+// LastActivity returns the time of the last HTTP request.
+func (s *Server) LastActivity() time.Time {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.lastActivity
+}
+
+func (s *Server) touchActivity() {
+	s.mu.Lock()
+	s.lastActivity = time.Now()
+	s.mu.Unlock()
 }
 
 // ServeHTTP implements http.Handler.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.touchActivity()
 	s.mux.ServeHTTP(w, r)
 }
 
 // ListenAndServe starts the HTTP server on the given port.
-// It returns when ctx is cancelled or an error occurs.
-func (s *Server) ListenAndServe(ctx context.Context, port int) error {
+// If idleTimeout > 0, the server shuts down after that duration of inactivity.
+// It returns when ctx is cancelled, the idle timeout fires, or an error occurs.
+func (s *Server) ListenAndServe(ctx context.Context, port int, idleTimeout time.Duration) error {
+	addr := fmt.Sprintf(":%d", port)
 	httpSrv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: s.mux,
+		Addr:    addr,
+		Handler: s,
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Idle timeout watchdog
+	if idleTimeout > 0 {
+		go func() {
+			ticker := time.NewTicker(idleTimeout / 4)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					if time.Since(s.LastActivity()) > idleTimeout {
+						cancel()
+						return
+					}
+				}
+			}
+		}()
 	}
 
 	go func() {
 		<-ctx.Done()
-		httpSrv.Shutdown(context.Background())
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		httpSrv.Shutdown(shutdownCtx)
 	}()
 
-	ln, err := net.Listen("tcp", httpSrv.Addr)
+	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}

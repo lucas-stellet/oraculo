@@ -60,7 +60,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 	g.Go(func() error { return hub.Run(ctx) })
 	g.Go(func() error {
 		logger.Info("server.started", "port", port)
-		return srv.ListenAndServe(ctx, port)
+		return srv.ListenAndServe(ctx, port, 0)
 	})
 	g.Go(func() error { return mcpSrv.RunStdio(ctx) })
 
