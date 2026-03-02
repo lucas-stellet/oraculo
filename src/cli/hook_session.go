@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -58,22 +59,77 @@ func hookSessionStart(cmd *cobra.Command) error {
 		return fmt.Errorf("register session: %w", err)
 	}
 
-	// Health check if config exists
+	// Health check and auto-start
 	cfg, _ := config.Read()
 	port := cfg.Port
-	if port > 0 {
-		healthURL := fmt.Sprintf("http://localhost:%d/health", port)
-		client := &http.Client{Timeout: 2 * time.Second}
-		resp, err := client.Get(healthURL)
-		if err != nil || resp.StatusCode != http.StatusOK {
-			fmt.Fprintf(cmd.ErrOrStderr(), "warning: Oraculo dashboard is offline. Run 'oraculo server' to start it.\n")
+	if port == 0 {
+		return nil
+	}
+
+	healthURL := fmt.Sprintf("http://localhost:%d/health", port)
+	online := isServerHealthy(healthURL)
+
+	if !online {
+		fmt.Fprintf(cmd.ErrOrStderr(), "warning: Oraculo HTTP server offline — auto-starting on port %d\n", port)
+		if err := startHTTPDaemon(); err != nil {
+			msg := fmt.Sprintf("warning: failed to auto-start Oraculo server: %v", err)
+			fmt.Fprintln(cmd.ErrOrStderr(), msg)
+			fmt.Fprintln(cmd.OutOrStdout(), msg)
 			return nil
 		}
-		// POST session-start
-		postURL := fmt.Sprintf("http://localhost:%d/hooks/session-start", port)
-		client.Post(postURL, "application/json", strings.NewReader(string(metadataJSON)))
+		online = pollHealth(healthURL, 500*time.Millisecond, 10*time.Second)
+		if !online {
+			msg := "warning: Oraculo server started but not responding. Telemetry unavailable."
+			fmt.Fprintln(cmd.ErrOrStderr(), msg)
+			fmt.Fprintln(cmd.OutOrStdout(), msg)
+			return nil
+		}
 	}
+
+	// POST session-start
+	postURL := fmt.Sprintf("http://localhost:%d/hooks/session-start", port)
+	client := &http.Client{Timeout: 2 * time.Second}
+	client.Post(postURL, "application/json", strings.NewReader(string(metadataJSON)))
+
 	return nil
+}
+
+func isServerHealthy(url string) bool {
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(url)
+	return err == nil && resp.StatusCode == http.StatusOK
+}
+
+func startHTTPDaemon() error {
+	exe, err := os.Executable()
+	if err != nil {
+		exe = "oraculo"
+	}
+	cmd := exec.Command(exe, "start", "http")
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	cmd.Stdin = nil
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	return cmd.Process.Release()
+}
+
+func pollHealth(url string, interval, timeout time.Duration) bool {
+	deadline := time.After(timeout)
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-deadline:
+			return false
+		case <-ticker.C:
+			if isServerHealthy(url) {
+				return true
+			}
+		}
+	}
 }
 
 func gitBranch() string {
@@ -83,4 +139,3 @@ func gitBranch() string {
 	}
 	return strings.TrimSpace(string(out))
 }
-
