@@ -36,6 +36,16 @@ func setupInstallDir(t *testing.T) string {
 	return tmp
 }
 
+func writeFixtureFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", filepath.Dir(path), err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
 func TestInstall_CreatesOraculoConfig(t *testing.T) {
 	setupInstallDir(t)
 
@@ -210,5 +220,27 @@ func TestInstall_Idempotent(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(".claude", "settings.json")); os.IsNotExist(err) {
 		t.Error("settings.json missing after second install")
+	}
+}
+
+func TestInstall_CopiesLocalOraculoSkills(t *testing.T) {
+	setupInstallDir(t)
+
+	sourcePath := filepath.Join("claude-kit", "skills", "oraculo", "epic", "SKILL.md")
+	sourceContent := "---\nname: oraculo:epic\n---\n# Epic\n"
+	writeFixtureFile(t, sourcePath, sourceContent)
+
+	_, err := installCmd(t)
+	if err != nil {
+		t.Fatalf("install failed: %v", err)
+	}
+
+	destPath := filepath.Join(".claude", "skills", "oraculo", "epic", "SKILL.md")
+	data, err := os.ReadFile(destPath)
+	if err != nil {
+		t.Fatalf("expected %s to exist: %v", destPath, err)
+	}
+	if string(data) != sourceContent {
+		t.Fatalf("copied skill content mismatch:\nwant:\n%s\ngot:\n%s", sourceContent, string(data))
 	}
 }
