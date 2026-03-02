@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -11,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/lucas/oraculo/src/applog"
 	"github.com/lucas/oraculo/src/approval"
 	"github.com/lucas/oraculo/src/config"
 	"github.com/lucas/oraculo/src/db"
@@ -48,18 +48,23 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		port = 3100
 	}
 
+	broadcaster := applog.NewBroadcaster(os.Stderr)
+	logger := slog.New(broadcaster)
+
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
-	srv := server.New(database, bridge, hub)
-	mcpSrv := mcpserver.New(bridge, db.NewApprovalStore(database), slog.Default())
+	srv := server.New(database, bridge, hub, broadcaster)
+	mcpSrv := mcpserver.New(bridge, db.NewApprovalStore(database), logger)
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return hub.Run(ctx) })
 	g.Go(func() error {
-		fmt.Fprintf(os.Stderr, "Oraculo HTTP server listening on :%d\n", port)
+		logger.Info("server.started", "port", port)
 		return srv.ListenAndServe(ctx, port)
 	})
 	g.Go(func() error { return mcpSrv.RunStdio(ctx) })
 
-	return g.Wait()
+	err = g.Wait()
+	logger.Info("server.stopping")
+	return err
 }

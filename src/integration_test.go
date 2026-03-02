@@ -3,12 +3,14 @@ package integration_test
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/lucas/oraculo/src/applog"
 	"github.com/lucas/oraculo/src/approval"
 	"github.com/lucas/oraculo/src/db"
 	"github.com/lucas/oraculo/src/dbtest"
@@ -35,7 +37,8 @@ func TestIntegration_ApprovalFlow(t *testing.T) {
 
 	approvalStore := db.NewApprovalStore(database)
 	bridge := approval.NewBridge(approvalStore, hub)
-	srv := server.New(database, bridge, hub)
+	broadcaster := applog.NewBroadcaster(io.Discard)
+	srv := server.New(database, bridge, hub, broadcaster)
 
 	// 2. Start the HTTP server as a test server.
 	httpSrv := httptest.NewServer(srv)
