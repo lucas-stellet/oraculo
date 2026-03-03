@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"sync"
@@ -24,10 +25,18 @@ type Server struct {
 
 // New constructs a Server wired with all stores, bridge, and hub.
 func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Broadcaster) *Server {
+	var logger *slog.Logger
+	if logs != nil {
+		logger = slog.New(logs)
+	} else {
+		logger = slog.New(slog.DiscardHandler)
+	}
+
 	hook := &HookHandler{
 		agents:   db.NewAgentStore(database),
 		toolEvts: db.NewToolEventStore(database),
 		hub:      hub,
+		logger:   logger,
 	}
 
 	api := &APIHandler{

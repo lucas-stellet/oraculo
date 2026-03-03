@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/lucas/oraculo/src/db"
@@ -13,6 +14,7 @@ type HookHandler struct {
 	agents   *db.AgentStore
 	toolEvts *db.ToolEventStore
 	hub      *ws.Hub
+	logger   *slog.Logger
 }
 
 func (h *HookHandler) broadcast(event string, payload any) {
@@ -21,6 +23,7 @@ func (h *HookHandler) broadcast(event string, payload any) {
 		return
 	}
 	h.hub.Broadcast(msg)
+	h.logger.Info("hook.broadcast", "event", event)
 }
 
 // handleAgentStart records a new agent start event.
@@ -36,8 +39,10 @@ func (h *HookHandler) handleAgentStart(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
+	h.logger.Info("hook.agent_started", "agent", body.AgentName, "type", body.AgentType)
 	agent, err := h.agents.Start(body.SessionID, body.AgentName, body.AgentType)
 	if err != nil {
+		h.logger.Warn("hook.agent_started.error", "err", err)
 		writeAPIError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -57,8 +62,10 @@ func (h *HookHandler) handleAgentStop(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
+	h.logger.Info("hook.agent_stopped", "agent_id", body.AgentID, "status", body.Status)
 	agent, err := h.agents.Stop(body.AgentID, body.Status)
 	if err != nil {
+		h.logger.Warn("hook.agent_stopped.error", "err", err)
 		writeAPIError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -79,7 +86,9 @@ func (h *HookHandler) handleToolUsed(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
+	h.logger.Info("hook.tool_used", "tool", body.ToolName, "file", body.FilePath)
 	if err := h.toolEvts.Record(body.SessionID, body.ToolName, body.FilePath); err != nil {
+		h.logger.Warn("hook.tool_used.error", "err", err)
 		writeAPIError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -100,6 +109,7 @@ func (h *HookHandler) handleTaskCompleted(w http.ResponseWriter, r *http.Request
 		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
+	h.logger.Info("hook.task_completed", "task", body.TaskName, "status", body.Status)
 	h.broadcast("task_completed", body)
 	writeJSON(w, map[string]string{"status": "ok"})
 }
@@ -107,6 +117,7 @@ func (h *HookHandler) handleTaskCompleted(w http.ResponseWriter, r *http.Request
 // handleStop broadcasts a server stop event.
 // POST /hooks/stop
 func (h *HookHandler) handleStop(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("hook.stop")
 	h.broadcast("server_stop", nil)
 	writeJSON(w, map[string]string{"status": "ok"})
 }
@@ -119,6 +130,7 @@ func (h *HookHandler) handleTeammateIdle(w http.ResponseWriter, r *http.Request)
 		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
+	h.logger.Info("hook.teammate_idle")
 	h.broadcast("teammate_idle", body)
 	writeJSON(w, map[string]string{"status": "ok"})
 }
@@ -134,6 +146,7 @@ func (h *HookHandler) handleSessionStart(w http.ResponseWriter, r *http.Request)
 		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
+	h.logger.Info("hook.session_started", "session_id", body.SessionID)
 	h.broadcast("session_started", body)
 	writeJSON(w, map[string]string{"status": "ok"})
 }
@@ -149,6 +162,7 @@ func (h *HookHandler) handleSessionEnd(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
+	h.logger.Info("hook.session_ended", "session_id", body.SessionID)
 	h.broadcast("session_ended", body)
 	writeJSON(w, map[string]string{"status": "ok"})
 }
