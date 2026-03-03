@@ -222,6 +222,46 @@ func TestApprovalStore_Verdict_NonPending_Error(t *testing.T) {
 	}
 }
 
+func TestApprovalStore_Verdict_PropagatesEpicApprovalStatus(t *testing.T) {
+	database := testDB(t)
+	store := NewApprovalStore(database)
+	epicStore := NewEpicStore(database)
+
+	epic, _, _ := epicStore.Create("test-epic", "desc")
+	created, _ := store.Request(domain.ApprovalEpicRequirements, &epic.ID, nil, "content")
+
+	store.Verdict(created.ID, domain.VerdictApproved, "lgtm")
+
+	updated, err := epicStore.GetByName("test-epic")
+	if err != nil {
+		t.Fatalf("GetByName: %v", err)
+	}
+	if updated.ApprovalStatus != domain.ApprovalApproved {
+		t.Errorf("epic ApprovalStatus = %q, want %q", updated.ApprovalStatus, domain.ApprovalApproved)
+	}
+}
+
+func TestApprovalStore_Verdict_PropagatesStoryApprovalStatus(t *testing.T) {
+	database := testDB(t)
+	store := NewApprovalStore(database)
+	epicStore := NewEpicStore(database)
+	storyStore := NewStoryStore(database)
+
+	epic, _, _ := epicStore.Create("test-epic", "desc")
+	story, _, _ := storyStore.Create(epic.ID, "test-story", "desc")
+	created, _ := store.Request(domain.ApprovalStoryDefinition, &epic.ID, &story.ID, "content")
+
+	store.Verdict(created.ID, domain.VerdictApproved, "lgtm")
+
+	updated, err := storyStore.GetByName(epic.ID, "test-story")
+	if err != nil {
+		t.Fatalf("GetByName: %v", err)
+	}
+	if updated.ApprovalStatus != domain.ApprovalApproved {
+		t.Errorf("story ApprovalStatus = %q, want %q", updated.ApprovalStatus, domain.ApprovalApproved)
+	}
+}
+
 func TestApprovalStore_Verdict_NotFound(t *testing.T) {
 	database := testDB(t)
 	store := NewApprovalStore(database)

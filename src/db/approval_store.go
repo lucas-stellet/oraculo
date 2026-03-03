@@ -161,7 +161,13 @@ func (s *ApprovalStore) Verdict(id string, verdict domain.Verdict, comment strin
 		previousVersion = current.Content
 	}
 
-	_, err = s.db.conn.Exec(
+	tx, err := s.db.conn.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("begin verdict tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(
 		`UPDATE approvals
 		 SET status = ?, verdict_comment = ?, previous_version = ?, decided_at = datetime('now')
 		 WHERE id = ?`,
@@ -169,6 +175,34 @@ func (s *ApprovalStore) Verdict(id string, verdict domain.Verdict, comment strin
 	)
 	if err != nil {
 		return nil, fmt.Errorf("verdict approval: %w", err)
+	}
+
+	// Propagate approval status to the parent entity.
+	switch current.Type {
+	case domain.ApprovalEpicRequirements:
+		if current.EpicID != nil {
+			_, err = tx.Exec(
+				`UPDATE epics SET approval_status = ?, updated_at = datetime('now') WHERE id = ?`,
+				status, *current.EpicID,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("propagate epic approval status: %w", err)
+			}
+		}
+	case domain.ApprovalStoryDefinition:
+		if current.StoryID != nil {
+			_, err = tx.Exec(
+				`UPDATE stories SET approval_status = ?, updated_at = datetime('now') WHERE id = ?`,
+				status, *current.StoryID,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("propagate story approval status: %w", err)
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit verdict tx: %w", err)
 	}
 	return s.GetByID(id)
 }
