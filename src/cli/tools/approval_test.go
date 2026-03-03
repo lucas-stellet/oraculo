@@ -361,6 +361,38 @@ func TestApprovalStatusNotFound(t *testing.T) {
 	}
 }
 
+// TestApprovalRequestStoryNotFound tests that a missing story produces an actionable error.
+func TestApprovalRequestStoryNotFound(t *testing.T) {
+	setupTestDir(t)
+
+	_, err := executeCmd(t, "tools", "epic", "init", "notfound-epic", "--description", "test")
+	if err != nil {
+		t.Fatalf("epic init: %v", err)
+	}
+
+	var buf bytes.Buffer
+	cmd := cli.NewRoot("test")
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetIn(strings.NewReader("content"))
+	cmd.SetArgs([]string{"tools", "approval", "request", "--type", "story-definition", "--epic", "notfound-epic", "--story", "nonexistent-story"})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for nonexistent story")
+	}
+
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "notfound-epic") {
+		t.Errorf("error should contain epic name, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "nonexistent-story") {
+		t.Errorf("error should contain story name, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "oraculo tools story init") {
+		t.Errorf("error should contain hint about 'oraculo tools story init', got: %s", errMsg)
+	}
+}
+
 // TestApprovalVerdictInvalidVerdict tests that an invalid verdict value is rejected.
 func TestApprovalVerdictInvalidVerdict(t *testing.T) {
 	setupTestDir(t)

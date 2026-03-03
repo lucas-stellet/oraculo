@@ -131,6 +131,41 @@ func TestStorySave(t *testing.T) {
 	}
 }
 
+func TestStorySave_CreatesDBRecord(t *testing.T) {
+	setupTestDir(t)
+
+	// Create the parent epic but do NOT call story init.
+	_, _ = executeCmd(t, "tools", "epic", "init", "my-epic")
+
+	content := "# Requirements\n\nSave-only story."
+	var buf bytes.Buffer
+	cmd := cli.NewRoot("test")
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetIn(strings.NewReader(content))
+	cmd.SetArgs([]string{"tools", "story", "save", "new-story", "--epic", "my-epic"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("save: %v\noutput: %s", err, buf.String())
+	}
+
+	// Verify the DB record was created by listing stories.
+	out, err := executeCmd(t, "tools", "story", "list", "--epic", "my-epic")
+	if err != nil {
+		t.Fatalf("list: %v\noutput: %s", err, out)
+	}
+
+	var stories []map[string]any
+	if err := json.Unmarshal([]byte(out), &stories); err != nil {
+		t.Fatalf("invalid JSON array: %v\noutput: %s", err, out)
+	}
+	if len(stories) != 1 {
+		t.Fatalf("len = %d, want 1", len(stories))
+	}
+	if stories[0]["Name"] != "new-story" {
+		t.Errorf("Name = %v, want %q", stories[0]["Name"], "new-story")
+	}
+}
+
 func TestStorySave_EpicNotFound(t *testing.T) {
 	setupTestDir(t)
 

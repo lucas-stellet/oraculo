@@ -13,6 +13,7 @@ func TestPhaseIndex(t *testing.T) {
 		{SessionEpic, "artifact", 8},
 		{SessionStory, "setup", 0},
 		{SessionStory, "artifact", 4},
+		{SessionStory, "approval", 5},
 		{SessionPlan, "decomposition", 1},
 		{SessionExecute, "team-assembly", 1},
 		{SessionValidate, "verdict", 2},
@@ -48,7 +49,7 @@ func TestPhasesCount(t *testing.T) {
 		want        int
 	}{
 		{SessionEpic, 9},
-		{SessionStory, 5},
+		{SessionStory, 6},
 		{SessionPlan, 5},
 		{SessionExecute, 4},
 		{SessionValidate, 3},

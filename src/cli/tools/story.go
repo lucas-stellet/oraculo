@@ -88,8 +88,15 @@ func newStorySaveCmd() *cobra.Command {
 			name := args[0]
 			w := cmd.OutOrStdout()
 
-			_, epicName, _, err := resolveEpic(cmd)
+			database, epicName, epicID, err := resolveEpic(cmd)
 			if err != nil {
+				return err
+			}
+
+			// Upsert DB record so downstream commands (e.g. approval request) can find the story.
+			store := db.NewStoryStore(database)
+			if _, _, err := store.Create(epicID, name, ""); err != nil {
+				output.WriteError(w, err)
 				return err
 			}
 

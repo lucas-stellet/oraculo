@@ -13,7 +13,8 @@ const configPath = ".oraculo/config.json"
 
 // Config holds Oraculo project configuration.
 type Config struct {
-	Port int `json:"port"`
+	Port              int    `json:"port"`
+	PreferredLanguage string `json:"preferred_language,omitempty"`
 }
 
 // Read loads .oraculo/config.json from the working directory.

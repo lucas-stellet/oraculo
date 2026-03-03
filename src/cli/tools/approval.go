@@ -2,6 +2,7 @@
 package tools
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
@@ -42,7 +43,7 @@ func newApprovalRequestCmd() *cobra.Command {
 				return err
 			}
 
-			database, _, epicID, err := resolveEpic(cmd)
+			database, epicName, epicID, err := resolveEpic(cmd)
 			if err != nil {
 				return err
 			}
@@ -53,6 +54,9 @@ func newApprovalRequestCmd() *cobra.Command {
 				storyStore := db.NewStoryStore(database)
 				story, err := storyStore.GetByName(epicID, storyName)
 				if err != nil {
+					if errors.Is(err, domain.ErrNotFound) {
+						err = fmt.Errorf("story %q not found in database for epic %q (did you run 'oraculo tools story init' first?): %w", storyName, epicName, domain.ErrNotFound)
+					}
 					output.WriteError(w, err)
 					return err
 				}

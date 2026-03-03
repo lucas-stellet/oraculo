@@ -33,19 +33,21 @@ disable-model-invocation: true
 
 ## Bootstrap
 
-1. Call `oraculo tools approval list --pending`.
-2. If there is a pending approval relevant to this epic, surface it immediately and do not continue silently.
-3. Call `oraculo tools session status --type epic --epic "$ARGUMENTS"` when an epic name is already known.
-4. If an active session exists:
+1. Read `.oraculo/config.json` and check `preferred_language`. Communicate in that language throughout the session. If not set, ask the user their preferred language in the first interaction.
+2. Call `oraculo tools approval list --pending`.
+3. If there is a pending approval relevant to this epic, surface it immediately and do not continue silently.
+4. Call `oraculo tools session status --type epic --epic "$ARGUMENTS"` when an epic name is already known.
+5. If an active session exists:
    - Call `oraculo tools session state --session <id>` if prior phase outputs are needed.
    - Read the file for `current_phase`.
    - Tell the user you are resuming from that phase.
-5. If no active session exists:
+6. If no active session exists:
    - Start with `phases/00-setup.md`.
    - Create the session through the CLI when setup is complete.
 
 ## Rules
 
+- Always communicate in the user's `preferred_language` from `.oraculo/config.json`. If not set, ask in the first interaction.
 - Read exactly one phase file at a time.
 - Load reference files only when the active phase instructs you to.
 - Persist validated phase outputs with `oraculo tools phase complete`.

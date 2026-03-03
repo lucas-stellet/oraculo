@@ -5,7 +5,7 @@ package domain
 // The CLI enforces that phase N completes only if phase N-1 exists.
 var Phases = map[SessionType][]string{
 	SessionEpic:     {"setup", "reframing", "divergence", "codebase", "convergence", "assumptions", "stress-test", "exit-gate", "artifact"},
-	SessionStory:    {"setup", "reframing", "assumptions", "exit-gate", "artifact"},
+	SessionStory:    {"setup", "reframing", "assumptions", "exit-gate", "artifact", "approval"},
 	SessionPlan:     {"setup", "decomposition", "dependencies", "optimization", "artifact"},
 	SessionExecute:  {"setup", "team-assembly", "monitoring", "completion"},
 	SessionValidate: {"setup", "qa-dispatch", "verdict"},
