@@ -8,7 +8,6 @@ allowed-tools:
   - Read
   - Bash
   - Task
-  - AskUserQuestion
 disable-model-invocation: true
 ---
 
