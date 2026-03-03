@@ -233,6 +233,37 @@ func TestInstall_Idempotent(t *testing.T) {
 	}
 }
 
+func TestInstall_MCPServerArgs(t *testing.T) {
+	setupInstallDir(t)
+	_, err := installCmd(t)
+	if err != nil {
+		t.Fatalf("install: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(".claude", "settings.json"))
+	if err != nil {
+		t.Fatalf("read settings.json: %v", err)
+	}
+
+	var settings struct {
+		MCPServers map[string]struct {
+			Command string   `json:"command"`
+			Args    []string `json:"args"`
+		} `json:"mcpServers"`
+	}
+	if err := json.Unmarshal(data, &settings); err != nil {
+		t.Fatalf("parse settings.json: %v", err)
+	}
+
+	oraculo, ok := settings.MCPServers["oraculo"]
+	if !ok {
+		t.Fatal("mcpServers.oraculo not found")
+	}
+	if len(oraculo.Args) != 2 || oraculo.Args[0] != "start" || oraculo.Args[1] != "mcp" {
+		t.Errorf("expected args [start mcp], got %v", oraculo.Args)
+	}
+}
+
 func TestInstall_CopiesEmbeddedOraculoSkills(t *testing.T) {
 	setupInstallDir(t)
 
