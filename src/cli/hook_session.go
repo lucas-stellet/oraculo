@@ -71,7 +71,7 @@ func hookSessionStart(cmd *cobra.Command) error {
 
 	if !online {
 		fmt.Fprintf(cmd.ErrOrStderr(), "warning: Oraculo HTTP server offline — auto-starting on port %d\n", port)
-		if err := startHTTPDaemon(); err != nil {
+		if err := SpawnDaemon(); err != nil {
 			msg := fmt.Sprintf("warning: failed to auto-start Oraculo server: %v", err)
 			fmt.Fprintln(cmd.ErrOrStderr(), msg)
 			fmt.Fprintln(cmd.OutOrStdout(), msg)
@@ -100,10 +100,19 @@ func isServerHealthy(url string) bool {
 	return err == nil && resp.StatusCode == http.StatusOK
 }
 
+// SpawnDaemon is the function used to start the HTTP daemon. It is exported
+// so tests can replace it with a no-op stub instead of spawning real detached
+// processes (which would be fork-bomb-like during go test).
+var SpawnDaemon = startHTTPDaemon
+
 func startHTTPDaemon() error {
 	exe, err := os.Executable()
 	if err != nil {
 		exe = "oraculo"
+	}
+	// Guard: never spawn from a test binary.
+	if strings.HasSuffix(exe, ".test") {
+		return fmt.Errorf("refusing to spawn daemon from test binary: %s", exe)
 	}
 	cmd := exec.Command(exe, "start", "http")
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}

@@ -2,6 +2,7 @@ package cli_test
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,18 @@ import (
 
 	"github.com/lucas/oraculo/src/cli"
 )
+
+// stubSpawnDaemon replaces the real daemon spawner with a stub that returns
+// an error, preventing fork-bomb behavior when os.Executable() returns the
+// test binary and avoiding the 10s pollHealth wait.
+func stubSpawnDaemon(t *testing.T) {
+	t.Helper()
+	orig := cli.SpawnDaemon
+	cli.SpawnDaemon = func() error {
+		return fmt.Errorf("stub: daemon spawn disabled in tests")
+	}
+	t.Cleanup(func() { cli.SpawnDaemon = orig })
+}
 
 func TestHookSessionStart_NoConfig(t *testing.T) {
 	// Setup temp dir
@@ -37,6 +50,7 @@ func TestHookSessionStart_NoConfig(t *testing.T) {
 }
 
 func TestHookSessionStart_AlertsWhenServerOffline(t *testing.T) {
+	stubSpawnDaemon(t)
 	orig, _ := os.Getwd()
 	tmp := t.TempDir()
 	os.Chdir(tmp)
@@ -67,6 +81,7 @@ func TestHookSessionStart_AlertsWhenServerOffline(t *testing.T) {
 }
 
 func TestHookSessionStart_AttemptsAutoStart(t *testing.T) {
+	stubSpawnDaemon(t)
 	orig, _ := os.Getwd()
 	tmp := t.TempDir()
 	os.Chdir(tmp)
