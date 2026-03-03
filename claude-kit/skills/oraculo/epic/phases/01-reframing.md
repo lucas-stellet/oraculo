@@ -63,7 +63,8 @@ After each answer, check:
     - At least one explicit scope exclusion is defined
 
   Persist via CLI:
-    - `oraculo tools phase complete reframing --session=$SESSION_ID`
+    - Collect the phase outputs into a JSON object with keys: `reframed_problem` (problem statement independent of solution) and `scope_exclusions` (array of explicit exclusions)
+    - `echo '<json>' | oraculo tools phase complete reframing --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and correct the invalid transition.
   On success: Read `phases/02-divergence.md`

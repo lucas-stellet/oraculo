@@ -34,9 +34,10 @@ func newSessionInitCmd() *cobra.Command {
 
 			sessionType, _ := cmd.Flags().GetString("type")
 			epicName, _ := cmd.Flags().GetString("epic")
+			description, _ := cmd.Flags().GetString("description")
 
 			epicStore := db.NewEpicStore(database)
-			epic, _, err := epicStore.Create(epicName, "")
+			epic, _, err := epicStore.Create(epicName, description)
 			if err != nil {
 				output.WriteError(w, err)
 				return err
@@ -60,6 +61,7 @@ func newSessionInitCmd() *cobra.Command {
 	}
 	cmd.Flags().String("type", "", "Session type (epic, story, plan, execute, validate)")
 	cmd.Flags().String("epic", "", "Epic name")
+	cmd.Flags().String("description", "", "Epic description")
 	cmd.MarkFlagRequired("type")
 	cmd.MarkFlagRequired("epic")
 	return cmd

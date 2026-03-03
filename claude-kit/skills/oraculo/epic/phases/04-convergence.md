@@ -50,7 +50,8 @@ Force tradeoffs. Keep narrowing until the user can express:
     - The chosen direction is consistent with discovery and codebase findings
 
   Persist via CLI:
-    - `oraculo tools phase complete convergence --session=$SESSION_ID`
+    - Collect the phase outputs into a JSON object with keys: `root_problem` (the one-sentence problem statement), `target_outcome` (the measurable outcome or signal), and `why_it_matters` (the primary reason this matters now)
+    - `echo '<json>' | oraculo tools phase complete convergence --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and correct the invalid transition.
   On success: Read `phases/05-assumptions.md`

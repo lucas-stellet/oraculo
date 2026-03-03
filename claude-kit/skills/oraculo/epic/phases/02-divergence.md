@@ -63,7 +63,8 @@ If codebase-analysis findings arrive during this phase, incorporate them without
     - At least one edge case or risk surfaced that the user had not considered before
 
   Persist via CLI:
-    - `oraculo tools phase complete divergence --session=$SESSION_ID`
+    - Collect the phase outputs into a JSON object with keys: `jtbd_dimensions` (object with `functional`, `emotional`, `social`), `four_forces` (object with `push`, `pull`, `anxiety`, `habit`), and `edge_cases` (array of surfaced edge cases/risks)
+    - `echo '<json>' | oraculo tools phase complete divergence --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and resolve it before proceeding.
   On success: Read `phases/03-codebase-analysis.md`

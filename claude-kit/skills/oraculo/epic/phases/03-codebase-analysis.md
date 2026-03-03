@@ -51,7 +51,8 @@ Keep the conversation at the level of problem feasibility and discovery quality.
     - Technical evidence has informed, not replaced, the problem definition
 
   Persist via CLI:
-    - `oraculo tools phase complete codebase --session=$SESSION_ID`
+    - Collect the phase outputs into a JSON object with keys: `findings` (array of relevant codebase findings), `constraints` (array of architectural constraints discovered), and `reuse_opportunities` (array of existing components/patterns that can be leveraged)
+    - `echo '<json>' | oraculo tools phase complete codebase --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and resolve the sequence issue.
   On success: Read `phases/04-convergence.md`

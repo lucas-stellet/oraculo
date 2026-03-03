@@ -53,7 +53,8 @@ For each important assumption, ask for:
     - The user acknowledges which risks remain open going into planning
 
   Persist via CLI:
-    - `oraculo tools phase complete assumptions --session=$SESSION_ID`
+    - Collect the phase outputs into a JSON object with key: `assumptions` (array of objects, each with `category` (problem/solution/value/feasibility), `description`, `risk` (high/medium/low), and `evidence` (supporting evidence or "none"))
+    - `echo '<json>' | oraculo tools phase complete assumptions --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and resolve it before continuing.
   On success: Read `phases/06-exit-gate.md`

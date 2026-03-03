@@ -67,7 +67,8 @@ When a verdict exists:
     - Verdict handling path is clear for approved, rejected, or needs_revision
 
   Persist via CLI:
-    - `oraculo tools phase complete artifact --session=$SESSION_ID`
+    - Collect the phase outputs into a JSON object with key: `approval_id` (the ID returned by `oraculo tools approval request`)
+    - `echo '<json>' | oraculo tools phase complete artifact --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and resolve the sequence issue.
   On success: Stop and wait for the human verdict. Do not auto-invoke another command.

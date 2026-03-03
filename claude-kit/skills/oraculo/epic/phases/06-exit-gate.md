@@ -53,7 +53,8 @@ Pressure test the current epic by asking:
     - Self-check passes and the story still holds together under stress
 
   Persist via CLI:
-    - `oraculo tools phase complete stress-test --session=$SESSION_ID`
+    - Collect the phase outputs into a JSON object with keys: `pressure_test_results` (array of test results from the stress test) and `unresolved_risks` (array of risks that remain open)
+    - `echo '<json>' | oraculo tools phase complete stress-test --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and resolve it before proceeding.
   On success: Read `phases/07-artifact.md`

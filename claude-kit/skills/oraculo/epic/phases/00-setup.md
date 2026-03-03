@@ -51,7 +51,7 @@ Each name should be:
 Present the options via `AskUserQuestion` with a brief rationale for each.
 Once the user picks a name, initialize the session with:
 
-`oraculo tools session init --type epic --epic <epic-name>`
+`oraculo tools session init --type epic --epic <epic-name> --description "<raw idea as stated by the user>"`
 
 <iteration-limit phase="setup" max="3">
   If the user cannot clearly express the idea after 3 attempts:
@@ -74,7 +74,8 @@ Once the user picks a name, initialize the session with:
     - Active session exists in the CLI
 
   Persist via CLI:
-    - `oraculo tools phase complete setup --session=$SESSION_ID`
+    - Collect the phase outputs into a JSON object with keys: `raw_idea` (the user's original idea verbatim) and `reasoning_level` (`"deep"` or `"light"`)
+    - `echo '<json>' | oraculo tools phase complete setup --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and fix the session issue before continuing.
   On success: Read `phases/01-reframing.md`

@@ -45,7 +45,8 @@ Before saving anything, confirm the final artifact will include:
     - No missing section requires invention or technical design drift
 
   Persist via CLI:
-    - `oraculo tools phase complete exit-gate --session=$SESSION_ID`
+    - Collect the phase outputs into a JSON object with key: `artifact_ready` (boolean, true if all sections are fully determined)
+    - `echo '<json>' | oraculo tools phase complete exit-gate --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and resolve the transition issue.
   On success: Read `phases/08-approval.md`

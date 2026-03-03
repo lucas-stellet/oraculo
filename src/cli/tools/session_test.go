@@ -37,6 +37,41 @@ func TestSessionInit(t *testing.T) {
 	}
 }
 
+func TestSessionInit_Description(t *testing.T) {
+	setupTestDir(t)
+
+	// session init creates the epic if it doesn't exist, passing description through
+	out, err := executeCmd(t, "tools", "session", "init", "--type", "epic", "--epic", "desc-epic", "--description", "A raw idea about improving auth")
+	if err != nil {
+		t.Fatalf("unexpected error: %v\noutput: %s", err, out)
+	}
+
+	// Verify description was persisted by reading the epic back via list
+	listOut, err := executeCmd(t, "tools", "epic", "list")
+	if err != nil {
+		t.Fatalf("list error: %v\noutput: %s", err, listOut)
+	}
+
+	var epics []map[string]any
+	if err := json.Unmarshal([]byte(listOut), &epics); err != nil {
+		t.Fatalf("invalid JSON: %v\noutput: %s", err, listOut)
+	}
+
+	var found bool
+	for _, e := range epics {
+		if e["Name"] == "desc-epic" {
+			found = true
+			if e["Description"] != "A raw idea about improving auth" {
+				t.Errorf("Description = %v, want %q", e["Description"], "A raw idea about improving auth")
+			}
+			break
+		}
+	}
+	if !found {
+		t.Fatal("epic desc-epic not found in list")
+	}
+}
+
 func TestSessionInit_Idempotent(t *testing.T) {
 	setupTestDir(t)
 
