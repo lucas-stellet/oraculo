@@ -38,11 +38,20 @@ Ask one question at a time. Prioritize:
 - why they think it matters
 - whether this is broad enough for an epic
 
-When the idea looks epic-sized, initialize the session with:
+When the idea looks epic-sized, propose 3–4 epic name options before initializing the session.
+
+### Epic naming
+
+Use what you learned from the user's idea and triage questions to generate name candidates.
+Each name should be:
+- **Short** — 2–3 words in kebab-case (e.g., `agent-orchestration`, `real-time-sync`)
+- **Domain-rooted** — reflect the problem space, not a solution or feature title
+- **Stable** — the name becomes the session identifier and artifact path, so it must age well
+
+Present the options via `AskUserQuestion` with a brief rationale for each.
+Once the user picks a name, initialize the session with:
 
 `oraculo tools session init --type epic --epic <epic-name>`
-
-Choose or derive `<epic-name>` from the domain of the idea and keep it stable for the rest of the session.
 
 <iteration-limit phase="setup" max="3">
   If the user cannot clearly express the idea after 3 attempts:
@@ -61,6 +70,7 @@ Choose or derive `<epic-name>` from the domain of the idea and keep it stable fo
     - Raw idea captured in the user's own terms
     - Reasoning level identified as light or deep
     - Epic-sized scope confirmed, or the user explicitly accepts the cost of epic discovery
+    - Epic name chosen by the user from proposed options
     - Active session exists in the CLI
 
   Persist via CLI:
