@@ -29,7 +29,7 @@ Full details: [`design/orchestrator.md`](design/orchestrator.md)
 
 A single code agent type handles all implementation tasks. There is no separate test-author or implementer — one agent writes tests and implementation, guided by the TDD skill's red-green-refactor loop.
 
-Each code agent receives focused context: the task description, relevant files, project conventions from CLAUDE.md, and story/epic requirements. Less context produces better code — agents receive the minimum viable information, not the entire repository.
+Each code agent receives focused context via a standardized prompt template: the task description, relevant files, the architectural design document from the Plan phase, project conventions from CLAUDE.md, story/epic requirements, the TDD skill, and any additional skills specified in the story or task configuration. The template ensures every code agent starts from the same baseline — the orchestrator fills slots, it does not compose prompts ad hoc. Less context produces better code — agents receive the minimum viable information, not the entire repository.
 
 All code agents work on the same branch in the same directory. The orchestrator ensures no two agents touch the same files simultaneously through DAG dependencies. Scope is enforced by skill instructions and task descriptions, not by filesystem ACLs.
 
@@ -49,11 +49,14 @@ Full details: [`design/qa-agent.md`](design/qa-agent.md)
 
 ## 4.5 Research Agent
 
-Research agents investigate the codebase and external references to provide evidence for decision-making. They are dispatched during Discover (when no prior context exists) and during Plan (for technical feasibility analysis).
+Research agents investigate the codebase and external references to provide evidence for decision-making. They are dispatched during Discover (when no prior context exists) and during Plan (for technical feasibility analysis and architectural design).
 
-Each research agent receives a focused investigation scope: relevant directories, specific patterns to look for, or external references to analyze. They return structured findings — not opinions. The orchestrator integrates findings into the dialogue or the planning process.
+Two specializations exist:
 
-Research agents do not write code, run tests, or modify files. They observe, analyze, and report.
+- **Codebase Research Agent** — Investigates the existing codebase: architecture, patterns, conventions, and relevant file structures. Dispatched during Plan's Design sub-phase to analyze how new features integrate with existing code.
+- **Web Research Agent** — Researches external technologies, best practices, libraries, and integration approaches for features not yet present in the project. Dispatched during Plan's Design sub-phase to evaluate available solutions and trade-offs.
+
+Both specializations are read-only — they never modify files. Each receives a focused investigation scope and returns structured findings that the orchestrator synthesizes into the architectural design document.
 
 Full details: [`design/research-agent.md`](design/research-agent.md)
 

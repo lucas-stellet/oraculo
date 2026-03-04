@@ -9,6 +9,7 @@ var migrations = []func(*sql.Tx) error{
 	migrateV1,
 	migrateV2,
 	migrateV3,
+	migrateV4,
 }
 
 // migrateV1 creates all core tables, knowledge with FTS5, approvals, and validations.
@@ -177,6 +178,34 @@ func migrateV3(tx *sql.Tx) error {
 	for _, stmt := range stmts {
 		if _, err := tx.Exec(stmt); err != nil {
 			return fmt.Errorf("migration v3: %w\nSQL: %s", err, stmt)
+		}
+	}
+	return nil
+}
+
+func migrateV4(tx *sql.Tx) error {
+	stmts := []string{
+		`CREATE TABLE approvals_new (
+			id               TEXT PRIMARY KEY,
+			type             TEXT NOT NULL CHECK (type IN ('epic-requirements','story-definition',
+			                                               'qa-escalation','execution-plan','design')),
+			epic_id          INTEGER REFERENCES epics(id),
+			story_id         INTEGER REFERENCES stories(id),
+			content          TEXT NOT NULL,
+			previous_version TEXT DEFAULT '',
+			status           TEXT DEFAULT 'pending'
+			                 CHECK (status IN ('pending','approved','rejected','needs_revision')),
+			verdict_comment  TEXT DEFAULT '',
+			requested_at     TEXT DEFAULT (datetime('now')),
+			decided_at       TEXT
+		)`,
+		`INSERT INTO approvals_new SELECT * FROM approvals`,
+		`DROP TABLE approvals`,
+		`ALTER TABLE approvals_new RENAME TO approvals`,
+	}
+	for _, stmt := range stmts {
+		if _, err := tx.Exec(stmt); err != nil {
+			return fmt.Errorf("migration v4: %w\nSQL: %s", err, stmt)
 		}
 	}
 	return nil

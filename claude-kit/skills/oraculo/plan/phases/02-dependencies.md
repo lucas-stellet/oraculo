@@ -47,5 +47,5 @@ Model the graph explicitly. Keep only dependencies that are necessary for correc
     - `oraculo tools phase complete dependencies --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and correct the model.
-  On success: Read `phases/03-optimization.md`
+  On success: Read `phases/03-design.md`
 </phase-gate>

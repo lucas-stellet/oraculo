@@ -34,7 +34,13 @@ Give each agent:
 - acceptance criteria
 - relevant file scope
 - parent story or epic context
+- design doc (`oraculo tools design get <story> --epic <epic>`)
+- project conventions (CLAUDE.md content)
+- additional skills from config (`skills.code_agent` entries)
+- TDD instructions (mandatory, always included)
 - instruction: if you have questions before or during the task, use the `AskUserQuestion` tool — never ask as plain text
+
+Follow the prompt template in references/agent-dispatch.md section "Prompt Template".
 
 Use the persisted DAG and known file conflicts to decide what can run in parallel.
 

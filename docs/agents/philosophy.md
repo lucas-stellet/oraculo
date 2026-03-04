@@ -30,7 +30,7 @@ The orchestrator is the only agent that sees the full picture. It receives proje
 
 Code agents are the hands of the system. They receive a focused task, a constrained context, and clear instructions. They implement, nothing more.
 
-**Less context produces better code.** Code agents receive the minimum viable information for their task — relevant interfaces, architectural patterns, test context — not the entire repository. Targeted context reduces token cost and produces more deterministic output. The CLI builds this working set.
+**Less context produces better code.** Code agents receive the minimum viable information for their task — relevant interfaces, architectural patterns, test context, and the architectural design document from the Plan phase — not the entire repository. The TDD skill is always loaded, plus any additional skills specified in the story or task configuration. Targeted context reduces token cost and produces more deterministic output. The CLI builds this working set.
 
 **Agents work on the same branch in the same directory.** All code agents operate on the shared working branch. The orchestrator manages file-level coordination — ensuring no two agents modify the same files simultaneously. This eliminates worktree complexity while the DAG's dependency structure prevents conflicts.
 
@@ -49,6 +49,16 @@ QA agents are the immune system. They validate all output with fresh eyes, no sh
 **The Trust Layer is the final arbiter, not the QA agent.** The recursive problem of "who watches the watchmen" is not solved by adding more watchers. It is solved by deterministic reality. Compilation, test execution, and contract assertions do not have opinions. The QA agent produces findings and evidence; the CLI verifies them. If the output violates the contract, it is rejected — no debate.
 
 **A circuit breaker triggers a dashboard approval gate.** When QA rejection cycles exceed the configured threshold, the system does not silently fail or spawn more agents. The QA agent submits a `qa-escalation` approval request to the dashboard, enters `awaiting_approval`, and halts further dispatch on that task. The human reviews the accumulated findings and issues a verdict — `approved`, `rejected`, or `needs_revision` — before work resumes.
+
+## 5.5 Research Agents
+
+Research agents investigate the codebase and external references to provide evidence for decision-making. They are dispatched during Discover and during Plan's Design sub-phase.
+
+**Codebase Research Agent.** Investigates the existing codebase — architecture, patterns, conventions, and relevant file structures — to provide evidence for planning and design decisions. Read-only — never modifies files.
+
+**Web Research Agent.** Researches external technologies, best practices, libraries, and integration approaches for features not yet present in the project. Provides structured findings about available solutions, trade-offs, and recommendations. Read-only — never modifies files.
+
+Research agents do not write code, run tests, or modify files. They observe, analyze, and report. Their findings are synthesized by the orchestrator into the architectural design document during the Plan phase.
 
 ## 6. Memory
 
@@ -76,7 +86,15 @@ Agents communicate with the outside world through two dedicated channels — one
 
 **The dashboard cannot interfere with agents through telemetry.** A slow dashboard, an overloaded WebSocket broadcast, or a full SQLite disk cannot delay agent work. The only path from the dashboard to an agent is through an approval gate — an explicit, intentional blocking point the orchestrator created on purpose. Outside of approval gates, agents and the dashboard are causally independent.
 
-## 8. What This Document Is Not
+## 8. Standardized Agent Prompts
+
+The orchestrator uses a fixed template for code agent prompts. Rather than composing prompts ad hoc, the template defines a deterministic structure with slots that are filled via CLI commands and configuration: task description, relevant files, design document, CLAUDE.md conventions, skill instructions, and story requirements.
+
+This ensures every code agent receives the same baseline context regardless of which task it handles. The template is not a suggestion — it is the only way code agents are prompted. Deviations would require changing the template itself, not working around it per-task.
+
+The standardized template eliminates a class of orchestrator errors where forgotten context or inconsistent formatting leads to agent drift. When every agent starts from the same structure, the quality floor is deterministic.
+
+## 9. What This Document Is Not
 
 This document defines beliefs, not implementation. It does not specify CLI commands, database schemas, DAG formats, or agent prompt templates. Those belong in the design document.
 

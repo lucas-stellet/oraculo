@@ -11,11 +11,13 @@ const (
 	ApprovalStoryDefinition  ApprovalType = "story-definition"
 	ApprovalQAEscalation     ApprovalType = "qa-escalation"
 	ApprovalExecutionPlan    ApprovalType = "execution-plan"
+	ApprovalDesign           ApprovalType = "design"
 )
 
 var validApprovalTypes = map[ApprovalType]bool{
 	ApprovalEpicRequirements: true, ApprovalStoryDefinition: true,
 	ApprovalQAEscalation: true, ApprovalExecutionPlan: true,
+	ApprovalDesign: true,
 }
 
 // Valid reports whether a is a recognized approval type.

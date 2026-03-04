@@ -11,10 +11,17 @@ import (
 
 const configPath = ".oraculo/config.json"
 
+// AgentSkills maps agent types to their available skill commands.
+type AgentSkills struct {
+	DesignAgent []string `json:"design_agent,omitempty"`
+	CodeAgent   []string `json:"code_agent,omitempty"`
+}
+
 // Config holds Oraculo project configuration.
 type Config struct {
-	Port              int    `json:"port"`
-	PreferredLanguage string `json:"preferred_language,omitempty"`
+	Port              int         `json:"port"`
+	PreferredLanguage string      `json:"preferred_language,omitempty"`
+	Skills            AgentSkills `json:"skills,omitempty"`
 }
 
 // Read loads .oraculo/config.json from the working directory.

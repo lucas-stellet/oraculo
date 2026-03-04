@@ -22,6 +22,10 @@ _Mandatory for epics. Skipped when a story is submitted directly with sufficient
 
 Requirements are decomposed into tasks. Oraculo models the dependencies as a DAG — identifies what is parallel, what is sequential, and where the constraint lies (TOC). The output is an optimized execution plan.
 
+The Plan phase includes a **Design sub-phase** between dependency analysis and optimization. The orchestrator dispatches two parallel research agents — a codebase research agent that analyzes existing architecture, patterns, and conventions, and a web research agent that investigates external technologies, best practices, and libraries relevant to the feature. Their findings are synthesized into an architectural design document that specifies the technical approach, component boundaries, and integration points.
+
+A mandatory **approval gate** (`design`) follows the Design sub-phase: the agent calls `oraculo tools approval request --type design`, the dashboard presents the architectural design document for human review, and the agent enters `awaiting_approval`. Optimization and execution do not proceed until a verdict is received. This gate ensures the technical approach is validated before any code is written.
+
 An optional **approval gate** (`execution-plan`) exists between Plan and Execute: the agent may call `oraculo tools approval request --type execution-plan` to present the DAG for human review before agents are dispatched. This gate is recommended for large or high-risk epics.
 
 ### 1.3 Execute
@@ -34,7 +38,7 @@ A dedicated QA agent reviews the implementation. It verifies: tests pass, projec
 
 When the QA agent identifies a critical defect that it cannot resolve autonomously, it escalates via `oraculo tools approval request --type qa-escalation`. This triggers an **approval gate** (`qa-escalation`) that surfaces the issue to a human reviewer through the dashboard. The agent enters `awaiting_approval` until the reviewer delivers a verdict directing the next action.
 
-**Golden rule:** Oraculo never skips the core phases (Plan, Execute, Validate). For epics, Discover is mandatory. Approval gates between phases are mandatory — workflow never advances past a gate without an explicit verdict.
+**Golden rule:** Oraculo never skips the core phases (Plan, Execute, Validate). For epics, Discover is mandatory. Approval gates between phases are mandatory — workflow never advances past a gate without an explicit verdict. The five approval gates are: `epic-requirements`, `story-definition`, `design`, `execution-plan`, and `qa-escalation`.
 
 ## 2. Documentation as Project Memory
 
@@ -137,16 +141,18 @@ Oraculo is a team tool, not a solo developer tool.
 2. Starts Oraculo with `/oraculo:epic` — questions, refinement, edge cases
 3. **Approval gate** (`epic-requirements`) — dashboard presents requirements for human review; workflow pauses until verdict
 4. Validated requirements become a plan with tasks in a DAG
-5. Optional **approval gate** (`execution-plan`) — dashboard presents the DAG for review before agents are dispatched
-6. Agents execute in parallel, following TDD and project standards
-7. QA agent validates independently — critical defects trigger **approval gate** (`qa-escalation`) for human direction; if rejected, returns to the appropriate phase
+5. **Approval gate** (`design`) — dashboard presents the architectural design document for review; workflow pauses until verdict
+6. Optional **approval gate** (`execution-plan`) — dashboard presents the DAG for review before agents are dispatched
+7. Agents execute in parallel, following TDD and project standards
+8. QA agent validates independently — critical defects trigger **approval gate** (`qa-escalation`) for human direction; if rejected, returns to the appropriate phase
 
 **Story flow (Software Engineering):**
 
 1. A work item is already defined or the user supplies direct context
 2. Starts Oraculo with `/oraculo:story` — skips Discover, goes straight to Plan
 3. **Approval gate** (`story-definition`) — dashboard presents the story definition for human review; workflow pauses until verdict
-4. Agents execute in parallel, following TDD and project standards
-5. QA agent validates independently — critical defects trigger **approval gate** (`qa-escalation`) for human direction; if rejected, returns to the appropriate phase
+4. **Approval gate** (`design`) — dashboard presents the architectural design document for review; workflow pauses until verdict
+5. Agents execute in parallel, following TDD and project standards
+6. QA agent validates independently — critical defects trigger **approval gate** (`qa-escalation`) for human direction; if rejected, returns to the appropriate phase
 
 **Oraculo reduces the distance between an idea and quality code.** It does not replace the team — it amplifies the team's ability to think well and execute with rigor.

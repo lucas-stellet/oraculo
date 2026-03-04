@@ -23,8 +23,9 @@ disable-model-invocation: true
   00-setup: Load approved requirements and confirm planning readiness
   01-decomposition: Break requirements into concrete tasks
   02-dependencies: Model ordering constraints and task dependencies
-  03-optimization: Maximize safe parallelism and minimize the critical path
-  04-artifact: Persist the plan through task commands and handle optional approval
+  03-design: Dispatch research agents and produce architectural design doc
+  04-optimization: Maximize safe parallelism and minimize the critical path
+  05-artifact: Persist the plan through task commands and handle optional approval
 </workflow>
 
 ## Bootstrap
