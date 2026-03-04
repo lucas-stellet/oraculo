@@ -19,12 +19,14 @@
 
 <rationalization-table>
   "The user already described the problem" → Verify whether they described a problem or just a chosen solution.
+  "The problem statement is already clear and well-framed" → Clarity of framing does not imply depth of understanding. Challenge root cause, hidden assumptions, and scope boundaries before accepting.
   "Reframing is slowing us down" → Skipping reframing creates fast movement in the wrong direction.
 </rationalization-table>
 
 <anti-patterns>
   "Premature solutioning" — letting implementation ideas replace problem discovery
   "Shallow reframing" — accepting the first restatement without pressure testing it
+  "Deference to articulate input" — treating a well-framed problem as pre-validated, skipping root-cause and assumption probing
   "Scope inflation" — absorbing adjacent problems into the core statement
 </anti-patterns>
 
@@ -32,10 +34,24 @@
 
 Use the reasoning level to guide depth. Ask one question at a time.
 
+### When the input is solution-first (user describes what to build)
+
 - "You described what you want to build. What problem does this solve for the user?"
 - "If this feature did not exist, what would the user do instead?"
 - "What cost does that workaround create?"
 - "What is explicitly out of scope for this exploration?"
+
+### When the input is already problem-framed
+
+A well-articulated problem statement does NOT mean reframing is done.
+Do not acknowledge and move on — your job is to add depth the user cannot add alone.
+
+- Challenge the framing: "What if the problem isn't [stated problem] but [plausible alternative]?"
+- Probe root cause vs symptom: "Is this the problem itself, or a consequence of a deeper issue?"
+- Surface hidden assumptions: "Your framing assumes [implicit scope/cause]. Is that validated or assumed?"
+- Test boundaries: "Where does this problem end and an adjacent problem begin?"
+
+The phase gate still requires the same rigor — the reframed problem must show genuine analytical distance from the raw input, even when the raw input was already well-framed.
 
 ## Execution
 

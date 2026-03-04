@@ -38,7 +38,7 @@ Ask one question at a time. Prioritize:
 - why they think it matters
 - whether this is broad enough for an epic
 
-When the idea looks epic-sized, propose 3–4 epic name options before initializing the session.
+When the idea looks epic-sized, you MUST present 3–4 epic name candidates for the user to choose from before initializing the session. Never auto-pick a single name.
 
 ### Epic naming
 
@@ -48,7 +48,10 @@ Each name should be:
 - **Domain-rooted** — reflect the problem space, not a solution or feature title
 - **Stable** — the name becomes the session identifier and artifact path, so it must age well
 
-Present the options via `AskUserQuestion` with a brief rationale for each.
+<critical>
+  You MUST always generate exactly 3–4 name candidates and present ALL of them to the user via `AskUserQuestion` with each name as a selectable option and a brief rationale. Do NOT pick a name on behalf of the user or present only one option.
+</critical>
+
 Once the user picks a name, initialize the session with:
 
 `oraculo tools session init --type epic --epic <epic-name> --description "<raw idea as stated by the user>"`
@@ -62,7 +65,10 @@ Once the user picks a name, initialize the session with:
 
 <halt>
   - The user only wants implementation details and refuses discovery — note the mismatch and stop
-  - The work is clearly story-sized — recommend `/oraculo:story` and stop escalating it into an epic
+  - The work is clearly story-sized — before redirecting, explicitly separate:
+    1. **Observation** — the underlying problem or symptom the user described (e.g., "Users aren't clicking the submit button")
+    2. **Assumed fix** — the solution the user is proposing (e.g., "Change button color to green")
+    Then recommend `/oraculo:story` and instruct it to explore the *observation*, not to implement the assumed fix directly. Present this separation to the user before redirecting.
 </halt>
 
 <phase-gate phase="setup">
