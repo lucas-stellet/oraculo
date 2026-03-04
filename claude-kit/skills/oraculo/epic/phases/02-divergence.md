@@ -57,6 +57,15 @@ If codebase-analysis findings arrive during this phase, incorporate them without
 
 Checking off "functional, emotional, social" or "push, pull, anxiety, habit" is not the goal — extracting genuine insight is. For each dimension or force, probe until you surface something the user had not articulated before. A single well-explored force that reveals a hidden dynamic is worth more than four forces with surface-level answers. If the user's answer to a force question is generic ("people resist change"), push deeper: what specific behavior would they resist? What would they lose? What would make the anxiety irrational vs. justified?
 
+<critical>
+  Before completing divergence, verify you asked the user a dedicated question about EACH of the three JTBD dimensions:
+  - Functional: What are they trying to accomplish practically?
+  - Emotional: How does this situation make them feel?
+  - Social: How do they want to be perceived by others?
+
+  If any dimension was NOT explored via a direct question to the user, ask about it now. Do NOT synthesize missing dimensions from other answers — each dimension requires its own dedicated question.
+</critical>
+
 ### Handling user pushback
 
 When the user resists the exploration process (e.g., "Can we just get to the solution?", "I already know the problem"), do not capitulate or become rigid. Instead:
@@ -72,7 +81,7 @@ When the user resists the exploration process (e.g., "Can we just get to the sol
 
 <phase-gate phase="divergence">
   Exit conditions:
-    - Functional, emotional, and social JTBD dimensions explored with specific, concrete insights (not generic statements)
+    - Functional, emotional, and social JTBD dimensions explored with specific, concrete insights (not generic statements) — each explored via a dedicated question, not synthesized from other dimensions
     - All four forces addressed: push, pull, anxiety, habit — each with at least one specific behavior, cost, or outcome identified
     - At least one edge case or risk surfaced that the user had not considered before
     - User pushback (if any) was handled gracefully and unexplored areas recorded as risks

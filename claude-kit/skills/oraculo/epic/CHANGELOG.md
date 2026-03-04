@@ -1,5 +1,18 @@
 # Epic Skill Changelog
 
+## 2026-03-04 (iteration-5)
+
+Fixes based on iteration-4 benchmark (51/55 assertions, 92.7%). Four failures across three evals: compound question evasion via dashes, scope exclusion inflation, JTBD social dimension synthesis, and setup phase file loading inconsistency.
+
+### Changed
+
+- **SKILL.md — Compound questions broadened**: Rule now covers dash-separated sub-questions ("is it X, Y, or Z?"), semicolons, and "or"-chained alternatives — not just "and"-joined. Added new BAD examples for each pattern and a GOOD example showing how to put alternatives in the `options` array instead of the question stem.
+- **SKILL.md — Bootstrap loading reinforced**: Wrapped `00-setup.md` loading instruction in `<critical>` tag. Added "visibly loaded" and "implicit loading is not sufficient" language to ensure the loading appears in transcript actions.
+- **Phase 01 — Scope exclusion self-check**: Added `<critical>` block inside phase-gate (before persist step) requiring every exclusion to map to a specific user statement. Strengthened existing checklist item: "not said or agreed = not confirmed".
+- **Phase 02 — JTBD dimension checklist**: Added `<critical>` block requiring a dedicated question for each of functional, emotional, and social dimensions before completing divergence. Updated phase-gate exit condition to explicitly prohibit synthesizing missing dimensions from other answers.
+
+---
+
 ## 2026-03-04 (iteration-4)
 
 Fixes based on iteration-3 benchmark (45/47 assertions, 95.7%). Two failures: compound question slipping through despite the rule, and 00-setup.md loaded one turn late.

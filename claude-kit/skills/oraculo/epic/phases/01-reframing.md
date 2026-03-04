@@ -68,7 +68,7 @@ After each answer, check:
 - is the problem independent of a specific implementation?
 - does the reframed problem avoid solution-specific terms (e.g., "dashboard", "API", "screen", "migration")?
 - did the user define at least one explicit exclusion?
-- were scope exclusions confirmed with the user, not decided unilaterally?
+- were scope exclusions explicitly stated or confirmed by the user in conversation? If an exclusion was not said or agreed to by the user, it is not confirmed — do not include it.
 - does the question avoid naming specific technologies, products, or architectural patterns? Frame probing in terms of behaviors, constraints, and outcomes — not implementation vocabulary.
 
 <iteration-limit phase="reframing" max="3">
@@ -88,6 +88,10 @@ After each answer, check:
     - Problem statement is articulated independently from a specific solution
     - Raw idea is preserved separately from the reframed problem
     - At least one explicit scope exclusion is defined
+
+  <critical>
+    Before persisting scope_exclusions, verify every exclusion in the array was explicitly stated or confirmed by the user in conversation. Do NOT add exclusions you inferred, synthesized, or consider obvious — if the user didn't say it or agree to it, it doesn't go in the payload. Review the conversation history and match each exclusion to a specific user statement.
+  </critical>
 
   Persist via CLI:
     - Collect the phase outputs into a JSON object with keys: `reframed_problem` (problem statement independent of solution) and `scope_exclusions` (array of explicit exclusions)
