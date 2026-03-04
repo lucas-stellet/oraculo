@@ -42,7 +42,7 @@ disable-model-invocation: true
    - Read the file for `current_phase`.
    - Tell the user you are resuming from that phase.
 6. If no active session exists:
-   - Start with `phases/00-setup.md`.
+   - Read `phases/00-setup.md` immediately (same turn as the bootstrap checks above).
    - Create the session through the CLI when setup is complete.
 
 ## Rules
@@ -55,4 +55,10 @@ disable-model-invocation: true
 - Do not auto-invoke downstream commands. Recommend them explicitly instead.
 - When asking the user any question, ALWAYS use the `AskUserQuestion` tool. Never write questions as plain text. This includes ALL text that expects user input: transition prompts ("Ready to continue?", "Shall we proceed?"), confirmation prompts ("Does this look right?"), phase-gate prompts ("Can we move on to the next phase?"), and any sentence ending with "?". Ending a turn with plain-text like "Ready to continue?" instead of an `AskUserQuestion` call is a rule violation. Offer 2–4 directional options per question; the user can always select "Other" for free-form input. Use `multiSelect: true` when multiple answers can apply simultaneously (e.g., listing risks, forces, or concerns). When presenting concrete artifacts for comparison (task lists, problem framings, story definitions), populate the `markdown` field on each option to trigger the side-by-side preview UI — only available on single-select questions.
 - Question options must be directional and exploratory, not leading. Do not frame options that funnel the user toward a predetermined answer. Each option should open a different line of inquiry.
-- **One question per turn (hard rule).** Each assistant turn MUST contain exactly one `AskUserQuestion` call — never batch multiple questions in a single turn. If a topic needs deeper exploration, break it into sequential turns. This applies to ALL phases without exception.
+- **One atomic question per turn (hard rule).** Each assistant turn MUST contain exactly one `AskUserQuestion` call with exactly one question — never batch multiple questions in a single turn. A "single question" means one coherent inquiry, not two questions joined by "and" or packed into one block (e.g., "What about X, and also Y?" is two questions — split them into separate turns). If a topic needs deeper exploration, break it into sequential turns. This applies to ALL phases without exception.
+  - **Violations and corrections:**
+    - BAD: "How many teams would use this, **and** do they each define performance differently?" → Two questions joined by "and". Split: Turn N asks about team count, Turn N+1 asks about performance definitions.
+    - BAD: "What triggers this need, and what have you tried so far?" → Two distinct inquiries. Split into separate turns.
+    - GOOD: "How many different teams or roles would need to use this?" → Single atomic question.
+- **No passive confirmation options.** Options like "Yes, that captures it well", "Agreed, let's continue", or "No changes needed" are not exploratory — they close inquiry instead of opening it. Every option must propose a direction, angle, or dimension to investigate. If you need to confirm understanding, frame the options as competing interpretations, not agreement/disagreement.
+- **Phase gate payloads must be substantive.** When persisting phase outputs via CLI, each field in the JSON payload must contain specific, concrete content derived from the conversation — not generic summaries or placeholder text. For example, `reframed_problem` should be a precise statement that could not have been written before the conversation happened, and `assumptions` entries should reference specific claims surfaced during the session with real evidence assessments.

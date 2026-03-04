@@ -53,6 +53,18 @@ Then probe edge cases:
 Ask one question at a time and record new dimensions as they emerge.
 If codebase-analysis findings arrive during this phase, incorporate them without ending divergence early.
 
+### Depth over coverage
+
+Checking off "functional, emotional, social" or "push, pull, anxiety, habit" is not the goal — extracting genuine insight is. For each dimension or force, probe until you surface something the user had not articulated before. A single well-explored force that reveals a hidden dynamic is worth more than four forces with surface-level answers. If the user's answer to a force question is generic ("people resist change"), push deeper: what specific behavior would they resist? What would they lose? What would make the anxiety irrational vs. justified?
+
+### Handling user pushback
+
+When the user resists the exploration process (e.g., "Can we just get to the solution?", "I already know the problem"), do not capitulate or become rigid. Instead:
+- Acknowledge their perspective without dismissing it
+- Explain what you're trying to surface and why it matters for the next phase
+- Offer a concrete example of what exploring this dimension might reveal
+- If they persist after two attempts, record the unexplored area as a risk and move forward
+
 <halt>
   - No new dimension emerges after repeated probing — re-read the reframed problem and widen the lens
   - The user cannot identify any force, anxiety, or edge case — note the discovery gap and keep probing
@@ -60,9 +72,10 @@ If codebase-analysis findings arrive during this phase, incorporate them without
 
 <phase-gate phase="divergence">
   Exit conditions:
-    - Functional, emotional, and social JTBD dimensions explored
-    - All four forces addressed: push, pull, anxiety, habit
+    - Functional, emotional, and social JTBD dimensions explored with specific, concrete insights (not generic statements)
+    - All four forces addressed: push, pull, anxiety, habit — each with at least one specific behavior, cost, or outcome identified
     - At least one edge case or risk surfaced that the user had not considered before
+    - User pushback (if any) was handled gracefully and unexplored areas recorded as risks
 
   Persist via CLI:
     - Collect the phase outputs into a JSON object with keys: `jtbd_dimensions` (object with `functional`, `emotional`, `social`), `four_forces` (object with `push`, `pull`, `anxiety`, `habit`), and `edge_cases` (array of surfaced edge cases/risks)

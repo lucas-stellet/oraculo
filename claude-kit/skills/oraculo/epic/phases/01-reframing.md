@@ -56,6 +56,13 @@ The phase gate still requires the same rigor — the reframed problem must show 
 
 ## Execution
 
+### Handling user pushback
+
+When the user resists reframing (e.g., "The problem is clear, let's move on", "I already told you the problem"), do not cave in or become combative. Instead:
+- Validate what they said, then surface a specific assumption or angle they may not have considered
+- Frame your probe as adding depth, not doubting their competence
+- If they push back twice on the same point, accept their framing, record the unexamined area as a risk in the phase output, and proceed
+
 After each answer, check:
 - is this phrased as a problem rather than a solution?
 - is the problem independent of a specific implementation?

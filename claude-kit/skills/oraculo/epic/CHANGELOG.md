@@ -1,5 +1,38 @@
 # Epic Skill Changelog
 
+## 2026-03-04 (iteration-4)
+
+Fixes based on iteration-3 benchmark (45/47 assertions, 95.7%). Two failures: compound question slipping through despite the rule, and 00-setup.md loaded one turn late.
+
+### Changed
+
+- **SKILL.md — Compound questions**: Added explicit violation/correction examples to the atomic question rule showing the exact "and"-joined pattern and how to split it.
+- **SKILL.md — Bootstrap timing**: Step 6 now explicitly says to read `phases/00-setup.md` immediately in the same turn as bootstrap checks, not a subsequent turn.
+
+### Evals
+
+- **reads-setup-phase-first**: Relaxed from "loaded in Turn 1" to "loaded before any setup-phase question is asked" to account for bootstrap overhead.
+- **New assertions**: `phase-file-loading-protocol` (all evals), `scope-exclusions-in-phase-gate` (vague-feature, solution-first), `jtbd-depth-not-just-coverage` (solution-first), `explores-jtbd-dimensions` (solution-first), `session-init-solution-neutral-name` (solution-first).
+
+---
+
+## 2026-03-04 (iteration-3)
+
+Improvements based on iteration-2 benchmark (35/35 assertions, 100%) and grader-suggested next steps.
+Four new behavioral areas: compound questions, passive confirmation options, phase gate data quality, JTBD depth, and user pushback handling.
+
+### Changed
+
+- **SKILL.md — Atomic questions**: Strengthened one-question-per-turn rule to explicitly prohibit compound questions joined by "and" or packed into one block.
+- **SKILL.md — No passive confirmation options**: New rule prohibiting options like "Yes, that captures it well" or "Agreed, let's continue". Every option must propose a direction to investigate. Confirmation should be framed as competing interpretations.
+- **SKILL.md — Phase gate payload quality**: New rule requiring substantive, conversation-specific content in phase gate JSON payloads — no generic summaries or placeholder text.
+- **Phase 01 — User pushback handling**: New section guiding how to handle resistance to reframing without caving in or becoming combative. Record unexamined areas as risks after two pushback attempts.
+- **Phase 02 — Depth over coverage**: New section requiring genuine insight extraction from JTBD/Four Forces, not just checkbox coverage. Push deeper on generic answers.
+- **Phase 02 — User pushback handling**: New section for handling resistance to exploration. Acknowledge, explain value, offer concrete examples, record gaps as risks.
+- **Phase 02 — Phase gate specificity**: Exit conditions now require specific concrete insights (not generic statements) and specific behaviors/costs/outcomes for each force.
+
+---
+
 ## 2026-03-04 (iteration-2)
 
 Fixes based on skill benchmark iteration-1 results (24/25 assertions, 95.8%).
