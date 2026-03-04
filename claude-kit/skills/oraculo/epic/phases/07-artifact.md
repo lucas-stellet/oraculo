@@ -26,7 +26,7 @@
 ## Execution
 
 Before saving anything, confirm the final artifact will include:
-- the raw idea and reframed problem
+- the reframed problem
 - target outcome
 - requirement or job-story set
 - scope boundaries

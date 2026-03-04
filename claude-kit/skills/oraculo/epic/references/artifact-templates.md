@@ -5,14 +5,13 @@
 Use this structure:
 
 1. Title
-2. Raw Idea
-3. Reframed Problem
-4. Motivation and Context
-5. Target Outcome
-6. Requirement Set or Job Stories
-7. Scope Boundaries
-8. Assumption Register
-9. Codebase Impact Summary
+2. Reframed Problem
+3. Motivation and Context
+4. Target Outcome
+5. Requirement Set or Job Stories
+6. Scope Boundaries
+7. Assumption Register
+8. Codebase Impact Summary
 
 ## Codebase Impact Summary
 
