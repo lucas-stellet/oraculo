@@ -28,6 +28,7 @@
   "Shallow reframing" — accepting the first restatement without pressure testing it
   "Deference to articulate input" — treating a well-framed problem as pre-validated, skipping root-cause and assumption probing
   "Scope inflation" — absorbing adjacent problems into the core statement
+  "Technology anchoring" — naming specific technologies, architectures, patterns, or products (e.g., "Postgres read replicas", "CQRS", "Redis") during problem exploration, even when framed as questions or evidence. Technology names anchor the user toward implementation thinking.
 </anti-patterns>
 
 ## Questions
@@ -58,7 +59,10 @@ The phase gate still requires the same rigor — the reframed problem must show 
 After each answer, check:
 - is this phrased as a problem rather than a solution?
 - is the problem independent of a specific implementation?
+- does the reframed problem avoid solution-specific terms (e.g., "dashboard", "API", "screen", "migration")?
 - did the user define at least one explicit exclusion?
+- were scope exclusions confirmed with the user, not decided unilaterally?
+- does the question avoid naming specific technologies, products, or architectural patterns? Frame probing in terms of behaviors, constraints, and outcomes — not implementation vocabulary.
 
 <iteration-limit phase="reframing" max="3">
   If the user cannot separate problem from solution after 3 attempts:

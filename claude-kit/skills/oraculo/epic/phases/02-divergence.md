@@ -27,6 +27,7 @@
   "Narrow too early" — converging before enough dimensions are explored
   "Framework theater" — naming JTBD or Four Forces without extracting useful insight
   "Edge-case neglect" — exploring happy paths only
+  "Technology anchoring" — naming specific technologies, architectures, patterns, or products (e.g., "Postgres read replicas", "CQRS", "Redis") during problem exploration, even when framed as questions or evidence. Technology names anchor the user toward implementation thinking.
 </anti-patterns>
 
 ## Questions
@@ -36,7 +37,8 @@ Start with JTBD:
 - "What are they trying to accomplish functionally, emotionally, and socially?"
 - "What alternatives do they use today, and why are they insufficient?"
 
-Then cover the Four Forces:
+Then cover the Four Forces.
+Frame all force questions in terms of user behaviors, costs, and outcomes — never reference specific technologies or implementation patterns by name.
 - "What pushes the user away from the current state?"
 - "What makes the new direction attractive?"
 - "What creates anxiety or hesitation?"
