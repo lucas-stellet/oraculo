@@ -106,7 +106,9 @@ func runInstall(cmd *cobra.Command) error {
 			"TaskCompleted":  httpGroup(baseURL + "/hooks/task-completed"),
 			"Stop":           httpGroup(baseURL + "/hooks/stop"),
 			"TeammateIdle":   httpGroup(baseURL + "/hooks/teammate-idle"),
-			"SessionEnd":     httpGroup(baseURL + "/hooks/session-end"),
+			"SessionEnd": {{
+			Hooks: []hookDef{{Type: "command", Command: "oraculo hook session-end"}},
+		}},
 			"PostToolUse": {{
 				Matcher: "Bash|Edit|Write|NotebookEdit",
 				Hooks:   []hookDef{{Type: "http", URL: baseURL + "/hooks/tool-used", Timeout: 5}},

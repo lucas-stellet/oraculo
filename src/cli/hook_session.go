@@ -114,6 +114,68 @@ func hookSessionStart(cmd *cobra.Command) error {
 	return nil
 }
 
+func newHookSessionEndCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "session-end",
+		Short: "Register a Claude Code session end",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := hookSessionEnd(cmd); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "warning: hook session-end: %v\n", err)
+			}
+			return nil
+		},
+	}
+}
+
+func hookSessionEnd(cmd *cobra.Command) error {
+	var input struct {
+		SessionID string `json:"session_id"`
+		Reason    string `json:"reason"`
+	}
+	if err := json.NewDecoder(cmd.InOrStdin()).Decode(&input); err != nil {
+		return fmt.Errorf("read stdin: %w", err)
+	}
+	if input.SessionID == "" {
+		return fmt.Errorf("missing session_id in stdin")
+	}
+
+	database, err := db.Open()
+	if err != nil {
+		return fmt.Errorf("open database: %w", err)
+	}
+	defer database.Close()
+
+	// Update ended_at
+	database.Conn().Exec(
+		"UPDATE claude_sessions SET ended_at = datetime('now') WHERE id = ?",
+		input.SessionID,
+	)
+
+	// Record session event
+	payload, _ := json.Marshal(map[string]string{"reason": input.Reason})
+	database.Conn().Exec(
+		"INSERT INTO session_events (session_id, event_type, payload) VALUES (?, 'session_end', ?)",
+		input.SessionID, string(payload),
+	)
+
+	// Notify HTTP server if online
+	cfg, _ := config.Read()
+	port := cfg.Port
+	if port == 0 {
+		return nil
+	}
+	healthURL := fmt.Sprintf("http://localhost:%d/health", port)
+	if !isServerHealthy(healthURL) {
+		return nil
+	}
+	body, _ := json.Marshal(map[string]string{"session_id": input.SessionID, "reason": input.Reason})
+	postURL := fmt.Sprintf("http://localhost:%d/hooks/session-end", port)
+	client := &http.Client{Timeout: 2 * time.Second}
+	client.Post(postURL, "application/json", strings.NewReader(string(body)))
+
+	return nil
+}
+
 func isServerHealthy(url string) bool {
 	client := &http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Get(url)
