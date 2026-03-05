@@ -50,6 +50,7 @@ func newInstallCmd() *cobra.Command {
 	}
 	cmd.Flags().Bool("global", false, "Install globally for all projects")
 	cmd.Flags().Bool("local", false, "Install locally for current project")
+	cmd.Flags().String("lang", "", "Preferred language for Oraculo sessions (BCP 47, e.g. pt-BR, en-US)")
 	return cmd
 }
 
@@ -77,7 +78,9 @@ func runInstall(cmd *cobra.Command) error {
 	}
 
 	// Step 4: Write config.
-	if err := config.Write(&config.Config{Port: port}); err != nil {
+	lang, _ := cmd.Flags().GetString("lang")
+	cfg := &config.Config{Port: port, PreferredLanguage: lang}
+	if err := config.Write(cfg); err != nil {
 		return fmt.Errorf("write config: %w", err)
 	}
 	fmt.Fprintf(w, "created .oraculo/config.json (port %d)\n", port)

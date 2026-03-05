@@ -13,14 +13,14 @@ import (
 	"github.com/lucas/oraculo/src/cli"
 )
 
-// installCmd builds a fresh root command, sets args to "install", captures stdout, and executes.
-func installCmd(t *testing.T) (string, error) {
+// installCmd builds a fresh root command, sets args to "install" (plus any extra args), captures stdout, and executes.
+func installCmd(t *testing.T, extraArgs ...string) (string, error) {
 	t.Helper()
 	var buf bytes.Buffer
 	cmd := cli.NewRoot("test")
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"install"})
+	cmd.SetArgs(append([]string{"install"}, extraArgs...))
 	err := cmd.Execute()
 	return buf.String(), err
 }
@@ -261,6 +261,56 @@ func TestInstall_MCPServerArgs(t *testing.T) {
 	}
 	if len(oraculo.Args) != 2 || oraculo.Args[0] != "start" || oraculo.Args[1] != "mcp" {
 		t.Errorf("expected args [start mcp], got %v", oraculo.Args)
+	}
+}
+
+func TestInstall_PreferredLanguage(t *testing.T) {
+	setupInstallDir(t)
+
+	_, err := installCmd(t, "--lang", "pt-BR")
+	if err != nil {
+		t.Fatalf("install failed: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(".oraculo", "config.json"))
+	if err != nil {
+		t.Fatalf("read config.json: %v", err)
+	}
+
+	var cfg map[string]any
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		t.Fatalf("parse config.json: %v", err)
+	}
+
+	lang, ok := cfg["preferred_language"]
+	if !ok {
+		t.Fatal("config.json missing 'preferred_language' field")
+	}
+	if lang != "pt-BR" {
+		t.Errorf("preferred_language = %v, want pt-BR", lang)
+	}
+}
+
+func TestInstall_NoLang(t *testing.T) {
+	setupInstallDir(t)
+
+	_, err := installCmd(t)
+	if err != nil {
+		t.Fatalf("install failed: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(".oraculo", "config.json"))
+	if err != nil {
+		t.Fatalf("read config.json: %v", err)
+	}
+
+	var cfg map[string]any
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		t.Fatalf("parse config.json: %v", err)
+	}
+
+	if _, ok := cfg["preferred_language"]; ok {
+		t.Error("expected 'preferred_language' to be absent when --lang is not provided")
 	}
 }
 

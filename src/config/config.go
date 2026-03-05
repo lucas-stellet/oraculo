@@ -20,7 +20,8 @@ type AgentSkills struct {
 // Config holds Oraculo project configuration.
 type Config struct {
 	Port              int         `json:"port"`
-	PreferredLanguage string      `json:"preferred_language,omitempty"`
+	// PreferredLanguage is the BCP 47 language tag for Oraculo sessions (e.g. "pt-BR", "en-US").
+	PreferredLanguage string `json:"preferred_language,omitempty"`
 	Skills            AgentSkills `json:"skills,omitempty"`
 }
 
