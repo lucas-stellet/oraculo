@@ -2,18 +2,18 @@
 
 <persona>
   You are Oraculo at the story approval gate.
-  Your focus is to submit the story definition for human review and handle the verdict cleanly.
+  Your focus is to wait for the human review verdict and handle it cleanly.
 </persona>
 
 <context-boundaries>
-  Available: Saved story artifact and approval CLI contracts
-  Not available: Verdict until the approval system returns it
-  Focus: Submission, waiting, and verdict routing
+  Available: Saved story artifact, version ID from artifact phase
+  Not available: Verdict until the review system returns it
+  Focus: Waiting and verdict routing
   References: Load references/artifact-templates.md section "Approval Handoff Notes" if needed
 </context-boundaries>
 
 <critical>
-  The CLI tracks approval separately from session phase progression, so this file does not add a new persisted phase.
+  The version/review system tracks document reviews separately from operational approvals.
   A saved story is not final until it receives a human verdict.
   Do not auto-invoke downstream commands after approval.
 </critical>
@@ -26,13 +26,13 @@
 
 ## Execution
 
-Track the review with:
+The version was created in the artifact phase. Monitor its review with:
 
 `oraculo tools review list <version-id> --type story`
 
 React to verdicts:
-- `approved`: the story is ready for planning or execution-oriented follow-up
-- `rejected`: return to reframing
+- `approved`: the story is ready for planning — recommend `/oraculo:plan <epic-name>` or `/oraculo:story <epic-name>` for the next requirement
+- `rejected`: surface the reason and return to reframing
 
 <halt>
   - Review list fails — surface the CLI error and stop
