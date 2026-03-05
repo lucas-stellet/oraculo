@@ -21,7 +21,7 @@ func (s *stubBroadcaster) Broadcast(_ []byte) {}
 
 // setup creates a test database, an ApprovalStore, and a Bridge.
 // It also creates a test epic so that approvals with epicID references work.
-func setup(t *testing.T) (*db.ApprovalStore, *approval.Bridge) {
+func setup(t *testing.T) (*db.DB, *db.ApprovalStore, *approval.Bridge) {
 	t.Helper()
 	database := dbtest.Open(t)
 
@@ -32,16 +32,22 @@ func setup(t *testing.T) (*db.ApprovalStore, *approval.Bridge) {
 
 	store := db.NewApprovalStore(database)
 	bridge := approval.NewBridge(store, &stubBroadcaster{})
-	return store, bridge
+	return database, store, bridge
+}
+
+func newServer(t *testing.T, database *db.DB, bridge *approval.Bridge) *mcpserver.Server {
+	t.Helper()
+	return mcpserver.New(
+		bridge,
+		db.NewApprovalStore(database),
+		slog.New(slog.NewTextHandler(io.Discard, nil)),
+	)
 }
 
 // TestNew_ReturnsNonNil verifies that New constructs a non-nil server.
 func TestNew_ReturnsNonNil(t *testing.T) {
-	_, bridge := setup(t)
-	database := dbtest.Open(t)
-	store := db.NewApprovalStore(database)
-
-	srv := mcpserver.New(bridge, store, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	database, _, bridge := setup(t)
+	srv := newServer(t, database, bridge)
 	if srv == nil {
 		t.Fatal("expected non-nil server")
 	}
@@ -49,11 +55,8 @@ func TestNew_ReturnsNonNil(t *testing.T) {
 
 // TestNew_InnerServerNonNil checks that the underlying SDK server is wired.
 func TestNew_InnerServerNonNil(t *testing.T) {
-	_, bridge := setup(t)
-	database := dbtest.Open(t)
-	store := db.NewApprovalStore(database)
-
-	srv := mcpserver.New(bridge, store, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	database, _, bridge := setup(t)
+	srv := newServer(t, database, bridge)
 	if srv.Inner() == nil {
 		t.Fatal("expected non-nil inner SDK server")
 	}
@@ -62,11 +65,11 @@ func TestNew_InnerServerNonNil(t *testing.T) {
 // TestApprovalStatus_PendingAfterRequest verifies that approval_status returns
 // "pending" immediately after a request is created (before any verdict).
 func TestApprovalStatus_PendingAfterRequest(t *testing.T) {
-	store, bridge := setup(t)
+	_, store, bridge := setup(t)
 
 	// Create an approval directly via the store so we don't block.
 	a, err := store.Request(
-		domain.ApprovalEpicRequirements,
+		domain.ApprovalQAEscalation,
 		nil, nil,
 		"# Requirements",
 	)
@@ -85,7 +88,7 @@ func TestApprovalStatus_PendingAfterRequest(t *testing.T) {
 
 // TestApprovalStatus_NotFound verifies that an unknown ID returns ErrNotFound.
 func TestApprovalStatus_NotFound(t *testing.T) {
-	_, bridge := setup(t)
+	_, _, bridge := setup(t)
 
 	_, err := bridge.Status("nonexistent-id")
 	if err == nil {
@@ -96,7 +99,7 @@ func TestApprovalStatus_NotFound(t *testing.T) {
 // TestBridge_RequestAndDecide verifies the full round-trip: Request blocks,
 // Decide unblocks it, and the returned approval reflects the verdict.
 func TestBridge_RequestAndDecide(t *testing.T) {
-	store, bridge := setup(t)
+	_, store, bridge := setup(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -109,7 +112,7 @@ func TestBridge_RequestAndDecide(t *testing.T) {
 	ch := make(chan result, 1)
 	go func() {
 		v, err := bridge.Request(ctx, approval.ApprovalRequest{
-			Type:    domain.ApprovalEpicRequirements,
+			Type:    domain.ApprovalQAEscalation,
 			Content: "# Requirements v1",
 		})
 		ch <- result{v, err}
@@ -150,9 +153,9 @@ func TestBridge_RequestAndDecide(t *testing.T) {
 
 // TestBridge_DecideInvalidVerdict verifies that Decide rejects an invalid verdict.
 func TestBridge_DecideInvalidVerdict(t *testing.T) {
-	store, bridge := setup(t)
+	_, store, bridge := setup(t)
 
-	a, err := store.Request(domain.ApprovalStoryDefinition, nil, nil, "content")
+	a, err := store.Request(domain.ApprovalDesign, nil, nil, "content")
 	if err != nil {
 		t.Fatalf("Request: %v", err)
 	}
@@ -166,7 +169,7 @@ func TestBridge_DecideInvalidVerdict(t *testing.T) {
 // TestBridge_RequestCancelledContext verifies that cancelling the context
 // causes Request to return with a context error.
 func TestBridge_RequestCancelledContext(t *testing.T) {
-	_, bridge := setup(t)
+	_, _, bridge := setup(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -196,11 +199,8 @@ func TestBridge_RequestCancelledContext(t *testing.T) {
 // TestMCPServer_ToolsViaSDK verifies that the server can connect and expose
 // its tools to an in-memory MCP client session.
 func TestMCPServer_ToolsViaSDK(t *testing.T) {
-	_, bridge := setup(t)
-	database := dbtest.Open(t)
-	store := db.NewApprovalStore(database)
-
-	srv := mcpserver.New(bridge, store, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	database, _, bridge := setup(t)
+	srv := newServer(t, database, bridge)
 
 	// Connect an in-memory client to the server using the SDK helpers.
 	mcp := srv.Inner()
