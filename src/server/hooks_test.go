@@ -1,7 +1,6 @@
 package server_test
 
 import (
-	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -93,7 +92,9 @@ func TestTaskCompletedHook(t *testing.T) {
 
 func TestStopHook(t *testing.T) {
 	srv := testServer(t)
-	req := httptest.NewRequest("POST", "/hooks/stop", http.NoBody)
+	body := `{"session_id":"s1","last_assistant_message":"done"}`
+	req := httptest.NewRequest("POST", "/hooks/stop", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
 	if rec.Code != 200 {
@@ -122,6 +123,95 @@ func TestSessionStartHook(t *testing.T) {
 	srv.ServeHTTP(rec, req)
 	if rec.Code != 200 {
 		t.Fatalf("status %d, want 200", rec.Code)
+	}
+}
+
+func seedClaudeSession(t *testing.T, database *db.DB, id string) {
+	t.Helper()
+	_, err := database.Conn().Exec("INSERT INTO claude_sessions (id) VALUES (?)", id)
+	if err != nil {
+		t.Fatalf("seed claude session: %v", err)
+	}
+}
+
+func TestTaskCompletedHook_WritesSessionEvent(t *testing.T) {
+	srv, database := testServerWithDB(t)
+	seedClaudeSession(t, database, "s1")
+
+	body := `{"session_id":"s1","task_name":"implement-auth","status":"completed"}`
+	req := httptest.NewRequest("POST", "/hooks/task-completed", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+
+	if rec.Code != 200 {
+		t.Fatalf("status %d, want 200", rec.Code)
+	}
+
+	store := db.NewSessionEventStore(database)
+	events, err := store.ListBySession("s1", 10)
+	if err != nil {
+		t.Fatalf("list events: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if events[0].EventType != "task_completed" {
+		t.Errorf("expected task_completed, got %s", events[0].EventType)
+	}
+}
+
+func TestStopHook_WritesSessionEvent(t *testing.T) {
+	srv, database := testServerWithDB(t)
+	seedClaudeSession(t, database, "s1")
+
+	body := `{"session_id":"s1","last_assistant_message":"I've completed the work."}`
+	req := httptest.NewRequest("POST", "/hooks/stop", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+
+	if rec.Code != 200 {
+		t.Fatalf("status %d, want 200", rec.Code)
+	}
+
+	store := db.NewSessionEventStore(database)
+	events, err := store.ListBySession("s1", 10)
+	if err != nil {
+		t.Fatalf("list events: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if events[0].EventType != "stop" {
+		t.Errorf("expected stop, got %s", events[0].EventType)
+	}
+}
+
+func TestTeammateIdleHook_WritesSessionEvent(t *testing.T) {
+	srv, database := testServerWithDB(t)
+	seedClaudeSession(t, database, "s1")
+
+	body := `{"session_id":"s1","teammate_name":"researcher","team_name":"my-project"}`
+	req := httptest.NewRequest("POST", "/hooks/teammate-idle", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+
+	if rec.Code != 200 {
+		t.Fatalf("status %d, want 200", rec.Code)
+	}
+
+	store := db.NewSessionEventStore(database)
+	events, err := store.ListBySession("s1", 10)
+	if err != nil {
+		t.Fatalf("list events: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if events[0].EventType != "teammate_idle" {
+		t.Errorf("expected teammate_idle, got %s", events[0].EventType)
 	}
 }
 

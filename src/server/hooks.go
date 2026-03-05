@@ -13,6 +13,7 @@ import (
 type HookHandler struct {
 	agents   *db.AgentStore
 	toolEvts *db.ToolEventStore
+	sessEvts *db.SessionEventStore
 	hub      *ws.Hub
 	logger   *slog.Logger
 }
@@ -110,6 +111,15 @@ func (h *HookHandler) handleTaskCompleted(w http.ResponseWriter, r *http.Request
 		return
 	}
 	h.logger.Info("hook.task_completed", "task", body.TaskName, "status", body.Status)
+
+	payload, _ := json.Marshal(map[string]string{
+		"task_name": body.TaskName,
+		"status":    body.Status,
+	})
+	if err := h.sessEvts.Record(body.SessionID, "task_completed", string(payload)); err != nil {
+		h.logger.Warn("hook.task_completed.record_error", "err", err)
+	}
+
 	h.broadcast("task_completed", body)
 	writeJSON(w, map[string]string{"status": "ok"})
 }
@@ -117,20 +127,49 @@ func (h *HookHandler) handleTaskCompleted(w http.ResponseWriter, r *http.Request
 // handleStop broadcasts a server stop event.
 // POST /hooks/stop
 func (h *HookHandler) handleStop(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("hook.stop")
-	h.broadcast("server_stop", nil)
+	var body struct {
+		SessionID            string `json:"session_id"`
+		LastAssistantMessage string `json:"last_assistant_message"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	h.logger.Info("hook.stop", "session_id", body.SessionID)
+
+	payload, _ := json.Marshal(map[string]string{
+		"last_assistant_message": body.LastAssistantMessage,
+	})
+	if err := h.sessEvts.Record(body.SessionID, "stop", string(payload)); err != nil {
+		h.logger.Warn("hook.stop.record_error", "err", err)
+	}
+
+	h.broadcast("stop", body)
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 
 // handleTeammateIdle broadcasts a teammate idle event.
 // POST /hooks/teammate-idle
 func (h *HookHandler) handleTeammateIdle(w http.ResponseWriter, r *http.Request) {
-	var body map[string]any
+	var body struct {
+		SessionID    string `json:"session_id"`
+		TeammateName string `json:"teammate_name"`
+		TeamName     string `json:"team_name"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	h.logger.Info("hook.teammate_idle")
+	h.logger.Info("hook.teammate_idle", "teammate", body.TeammateName)
+
+	payload, _ := json.Marshal(map[string]string{
+		"teammate_name": body.TeammateName,
+		"team_name":     body.TeamName,
+	})
+	if err := h.sessEvts.Record(body.SessionID, "teammate_idle", string(payload)); err != nil {
+		h.logger.Warn("hook.teammate_idle.record_error", "err", err)
+	}
+
 	h.broadcast("teammate_idle", body)
 	writeJSON(w, map[string]string{"status": "ok"})
 }

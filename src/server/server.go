@@ -35,6 +35,7 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 	hook := &HookHandler{
 		agents:   db.NewAgentStore(database),
 		toolEvts: db.NewToolEventStore(database),
+		sessEvts: db.NewSessionEventStore(database),
 		hub:      hub,
 		logger:   logger,
 	}
