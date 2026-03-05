@@ -18,6 +18,7 @@
   Assumptions do not become a standalone section in the output artifact.
   High-risk assumptions feed "Dependencias" and "Notas tecnicas".
   Unresolved assumptions become questions during exit-gate.
+  When transitioning to the next phase, you MUST visibly Read the next phase file before asking any questions from that phase.
 </critical>
 
 <anti-patterns>

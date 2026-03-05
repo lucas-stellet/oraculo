@@ -15,6 +15,7 @@
 <critical>
   Keep the story focused on a problem slice, not a bundle of solutions.
   In epic-derived stories, inherit context from the epic instead of re-asking for everything.
+  When transitioning to the next phase, you MUST visibly Read the next phase file before asking any questions from that phase.
 </critical>
 
 <anti-patterns>

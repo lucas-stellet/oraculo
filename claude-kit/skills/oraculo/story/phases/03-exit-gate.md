@@ -16,6 +16,7 @@
   The story must address the four risks, but light reasoning mode may record explicit gaps instead of inventing product knowledge.
   Do not confuse "good enough to discuss" with "ready to execute."
   The four risk categories (value, usability, technical feasibility, business feasibility) are internal evaluation tools. Their names must not appear in the final artifact. Validated risks are translated into "Criterios de Aceite" entries.
+  When transitioning to the next phase, you MUST visibly Read the next phase file before asking any questions from that phase.
 </critical>
 
 <anti-patterns>

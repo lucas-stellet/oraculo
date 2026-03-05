@@ -16,6 +16,7 @@
 <critical>
   A story is a focused slice of work, not a vague container for a large initiative.
   If a parent epic is used, respect its approved context instead of rediscovering everything from scratch.
+  When transitioning to the next phase, you MUST visibly Read the next phase file before asking any questions from that phase.
 </critical>
 
 <anti-patterns>
