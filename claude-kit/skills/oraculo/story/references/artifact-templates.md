@@ -5,8 +5,8 @@
 ### Header metadata
 
 Every story document starts with:
-- **Epic:** [parent epic title]
-- **Requisitos relacionados:** [which user stories or requirements from the epic this story implements]
+- **Epic:** [epic ID — the CLI identifier, e.g., `gastos-pessoais`, not the display title]
+- **Requisitos relacionados:** [requirement codes from the epic, e.g., `REC-1`, `REC-2`]
 - **Produto:** [product name]
 - **Ultima atualizacao:** [date]
 
@@ -44,7 +44,12 @@ For standalone stories (no parent epic), omit the "Requisitos relacionados" fiel
 
 ## Approval Handoff Notes
 
-When submitting for approval, make clear:
-- which story was saved
+When creating a version for review, make clear:
+- which story was saved and its version ID
 - what slice of work it covers
-- which phase to return to if revisions are requested
+- which phase to return to if the verdict is `rejected`
+
+The story uses the **version/review** system (not the operational approval system):
+- Save: `oraculo tools story save <name> --epic <epic>`
+- Version: `oraculo tools story version <name> --epic <epic>`
+- Monitor: `oraculo tools review list <version-id> --type story`
