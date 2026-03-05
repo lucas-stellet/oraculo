@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/lucas/oraculo/src/cli"
+	"github.com/lucas/oraculo/src/db"
 )
 
 // stubSpawnDaemon replaces the real daemon spawner with a stub that returns
@@ -30,10 +31,13 @@ func TestHookSessionStart_NoConfig(t *testing.T) {
 	os.Chdir(tmp)
 	t.Cleanup(func() { os.Chdir(orig) })
 
+	stdinJSON := `{"session_id":"test-no-config","hook_event_name":"SessionStart","source":"startup"}`
+
 	var buf bytes.Buffer
 	cmd := cli.NewRoot("test")
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
+	cmd.SetIn(strings.NewReader(stdinJSON))
 	cmd.SetArgs([]string{"hook", "session-start"})
 	err := cmd.Execute()
 
@@ -64,10 +68,13 @@ func TestHookSessionStart_AlertsWhenServerOffline(t *testing.T) {
 		0o644,
 	)
 
+	stdinJSON := `{"session_id":"test-alerts","hook_event_name":"SessionStart","source":"startup"}`
+
 	var buf bytes.Buffer
 	cmd := cli.NewRoot("test")
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
+	cmd.SetIn(strings.NewReader(stdinJSON))
 	cmd.SetArgs([]string{"hook", "session-start"})
 	err := cmd.Execute()
 
@@ -94,10 +101,13 @@ func TestHookSessionStart_AttemptsAutoStart(t *testing.T) {
 		0o644,
 	)
 
+	stdinJSON := `{"session_id":"test-autostart","hook_event_name":"SessionStart","source":"startup"}`
+
 	var buf bytes.Buffer
 	cmd := cli.NewRoot("test")
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
+	cmd.SetIn(strings.NewReader(stdinJSON))
 	cmd.SetArgs([]string{"hook", "session-start"})
 	cmd.Execute()
 
@@ -114,14 +124,91 @@ func TestHookSessionStart_AlwaysExitsZero(t *testing.T) {
 	os.Chdir(tmp)
 	t.Cleanup(func() { os.Chdir(orig) })
 
+	stdinJSON := `{"session_id":"test-exit-zero","hook_event_name":"SessionStart","source":"startup"}`
+
 	var buf bytes.Buffer
 	cmd := cli.NewRoot("test")
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
+	cmd.SetIn(strings.NewReader(stdinJSON))
 	cmd.SetArgs([]string{"hook", "session-start"})
 	err := cmd.Execute()
 
 	if err != nil {
 		t.Fatalf("hook must always exit 0, got: %v", err)
+	}
+}
+
+func TestHookSessionStart_UsesClaudeSessionID(t *testing.T) {
+	orig, _ := os.Getwd()
+	tmp := t.TempDir()
+	os.Chdir(tmp)
+	t.Cleanup(func() { os.Chdir(orig) })
+
+	stdinJSON := `{"session_id":"claude-abc-123","hook_event_name":"SessionStart","source":"startup"}`
+
+	var buf bytes.Buffer
+	cmd := cli.NewRoot("test")
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetIn(strings.NewReader(stdinJSON))
+	cmd.SetArgs([]string{"hook", "session-start"})
+	err := cmd.Execute()
+
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	database, err := db.Open()
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer database.Close()
+
+	var id string
+	err = database.Conn().QueryRow(
+		"SELECT id FROM claude_sessions WHERE id = ?", "claude-abc-123",
+	).Scan(&id)
+	if err != nil {
+		t.Fatalf("session not found with Claude's session_id: %v", err)
+	}
+}
+
+func TestHookSessionStart_UpsertOnResume(t *testing.T) {
+	orig, _ := os.Getwd()
+	tmp := t.TempDir()
+	os.Chdir(tmp)
+	t.Cleanup(func() { os.Chdir(orig) })
+
+	startupJSON := `{"session_id":"claude-abc-123","hook_event_name":"SessionStart","source":"startup"}`
+	cmd1 := cli.NewRoot("test")
+	cmd1.SetOut(&bytes.Buffer{})
+	cmd1.SetErr(&bytes.Buffer{})
+	cmd1.SetIn(strings.NewReader(startupJSON))
+	cmd1.SetArgs([]string{"hook", "session-start"})
+	cmd1.Execute()
+
+	resumeJSON := `{"session_id":"claude-abc-123","hook_event_name":"SessionStart","source":"resume"}`
+	cmd2 := cli.NewRoot("test")
+	cmd2.SetOut(&bytes.Buffer{})
+	cmd2.SetErr(&bytes.Buffer{})
+	cmd2.SetIn(strings.NewReader(resumeJSON))
+	cmd2.SetArgs([]string{"hook", "session-start"})
+	err := cmd2.Execute()
+
+	if err != nil {
+		t.Fatalf("resume should succeed: %v", err)
+	}
+
+	database, err := db.Open()
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer database.Close()
+
+	var count int
+	database.Conn().QueryRow("SELECT COUNT(*) FROM claude_sessions WHERE id = ?", "claude-abc-123").Scan(&count)
+	if count != 1 {
+		t.Fatalf("expected 1 session row, got %d", count)
 	}
 }

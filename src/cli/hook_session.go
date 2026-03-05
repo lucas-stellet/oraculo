@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/lucas/oraculo/src/config"
 	"github.com/lucas/oraculo/src/db"
 	"github.com/spf13/cobra"
@@ -31,6 +30,12 @@ func newHookSessionStartCmd() *cobra.Command {
 	}
 }
 
+// hookInput is the JSON structure Claude Code sends on stdin for all hooks.
+type hookInput struct {
+	SessionID string `json:"session_id"`
+	Source    string `json:"source"`
+}
+
 func hookSessionStart(cmd *cobra.Command) error {
 	database, err := db.Open()
 	if err != nil {
@@ -38,25 +43,40 @@ func hookSessionStart(cmd *cobra.Command) error {
 	}
 	defer database.Close()
 
+	// Read Claude Code's JSON input from stdin
+	var input hookInput
+	if err := json.NewDecoder(cmd.InOrStdin()).Decode(&input); err != nil {
+		return fmt.Errorf("read stdin: %w", err)
+	}
+	if input.SessionID == "" {
+		return fmt.Errorf("missing session_id in stdin")
+	}
+
 	// Collect metadata
-	id := uuid.New().String()
 	wd, _ := os.Getwd()
 	branch := gitBranch()
 	metadata := map[string]string{
-		"session_id":  id,
 		"working_dir": wd,
 		"git_branch":  branch,
-		"started_at":  time.Now().UTC().Format(time.RFC3339),
+		"source":      input.Source,
+		"updated_at":  time.Now().UTC().Format(time.RFC3339),
 	}
 	metadataJSON, _ := json.Marshal(metadata)
 
-	// Register in SQLite
+	// Upsert: INSERT OR IGNORE for first time, then UPDATE metadata
 	_, err = database.Conn().Exec(
-		"INSERT INTO claude_sessions (id, metadata) VALUES (?, ?)",
-		id, string(metadataJSON),
+		"INSERT OR IGNORE INTO claude_sessions (id, metadata) VALUES (?, ?)",
+		input.SessionID, string(metadataJSON),
 	)
 	if err != nil {
 		return fmt.Errorf("register session: %w", err)
+	}
+	_, err = database.Conn().Exec(
+		"UPDATE claude_sessions SET metadata = ? WHERE id = ?",
+		string(metadataJSON), input.SessionID,
+	)
+	if err != nil {
+		return fmt.Errorf("update session metadata: %w", err)
 	}
 
 	// Health check and auto-start
