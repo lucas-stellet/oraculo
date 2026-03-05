@@ -33,7 +33,7 @@ Determine:
 
 If the story derives from an epic:
 - use `oraculo tools epic get <epic-name>` to load the approved epic requirements
-- identify the specific REC-N or focused slice to work on
+- identify the specific user story or requirement from the epic to work on
 
 If the work expands beyond a single focused slice, recommend `/oraculo:epic`.
 

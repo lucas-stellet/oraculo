@@ -46,7 +46,7 @@ disable-model-invocation: true
 
 - Always communicate in the user's `preferred_language` from `.oraculo/config.json`. If not set, ask in the first interaction.
 - Read exactly one phase file at a time.
-- Keep the story focused on what and why, never how.
+- The story is an executable specification: context, business rules, expected behavior, and acceptance criteria. Methodology jargon (JTBD, Four Forces, Double Diamond, INVEST, Assumption Mapping) must never appear in the final story document — these frameworks guide the conversation only.
 - Load references only when the current phase instructs you to.
 - Persist validated phase outputs with `oraculo tools phase complete`.
 - Use CLI commands for state, approvals, and artifacts. Do not invent alternatives.

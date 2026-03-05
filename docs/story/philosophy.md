@@ -6,7 +6,7 @@ The Story phase exists to transform work items into well-defined, executable uni
 
 Not every piece of work needs the deep exploration of an Epic. When the problem is understood, the scope is clear, and the work is focused, what's needed is a disciplined process to define it precisely — clear enough for a developer to implement without ambiguity.
 
-The Story phase applies the same Socratic discipline as the Epic, but with less depth and more focus. It asks the essential questions, surfaces the critical assumptions, and produces a compact artifact that captures WHAT and WHY.
+The Story phase applies the same Socratic discipline as the Epic, but with less depth and more focus. It asks the essential questions, surfaces the critical assumptions, and produces a compact artifact that captures context, business rules, expected behavior, and acceptance criteria — an executable specification.
 
 ## 2. Core Belief
 
@@ -32,6 +32,10 @@ Identifies the top 2-3 assumptions and assesses their evidence level (high/mediu
 
 **Why it matters:** Every piece of work carries assumptions. The Story doesn't need to map all of them — it needs to surface the ones that would cause the work to fail or need redoing if they're wrong.
 
+### 3.3 Internal Tools, Domain Output
+
+As with the Epic phase, the frameworks used during conversation (Double Diamond, Assumption Mapping) are internal tools. The Story Document uses domain language only — no methodology jargon appears in the output.
+
 ## 4. What Makes Oraculo's Story Definition Unique
 
 ### 4.1 Same Discipline, Less Depth
@@ -40,7 +44,7 @@ The Story phase is not a shortcut or a skip. It's the same Socratic approach —
 
 ### 4.2 Epic-Aware
 
-Stories can be standalone or derived from an Epic. When derived, the Story skill reads the parent Epic, understands the context of the specific REC-N being worked on, and adapts its questions accordingly. The user doesn't repeat context already captured in the Epic.
+Stories can be standalone or derived from an Epic. When derived, the Story skill reads the parent Epic, understands the context of the specific user story or requirement being worked on, and adapts its questions accordingly. The user doesn't repeat context already captured in the Epic.
 
 ### 4.3 Escalation-Ready
 
@@ -48,7 +52,7 @@ If during a Story session the work reveals itself to be larger than expected —
 
 ### 4.4 Approval-Ready
 
-The Story artifact is produced with human review in mind. A reviewer encountering the story through the dashboard has no session context — they weren't part of the dialogue. The artifact must be self-contained: motivation, requirement, scope, and critical assumptions must be legible to someone who reads only the document. Oraculo treats approval-readiness as a quality criterion alongside completeness. An artifact that a reviewer cannot evaluate independently is not finished.
+The Story artifact is produced with human review in mind. A reviewer encountering the story through the dashboard has no session context — they weren't part of the dialogue. The artifact must be self-contained: context, business rules, expected behavior, and acceptance criteria must be legible to someone who reads only the document. Oraculo treats approval-readiness as a quality criterion alongside completeness. An artifact that a reviewer cannot evaluate independently is not finished.
 
 ## 5. Principles Specific to Story Definition
 
@@ -72,4 +76,4 @@ A story can exist in two modes:
 
 - **Derived from Epic:** A specific REC-N from an Epic is being decomposed into an executable story. The Story skill reads the parent Epic and uses it as context for more focused questions.
 
-In both cases, the output is the same: a Story Document that captures motivation, requirement, scope, and assumptions.
+In both cases, the output is the same: a Story Document that captures context, business rules, expected behavior, acceptance criteria, dependencies, and technical notes.

@@ -80,7 +80,7 @@ CLAUDE.md is updated by the development team (human or agent-assisted) when conv
 
 Requirements documents, story definitions, and task summaries capture the accumulated intelligence of each feature:
 
-- **Epic requirements** — The validated problem definition, acceptance criteria, edge cases
+- **Epic requirements** — The validated problem definition, objectives, scope, user stories, and dependencies
 - **Story requirements** — Specific implementation scope and constraints
 - **Completion summaries** — What was built, decisions made, QA outcomes
 

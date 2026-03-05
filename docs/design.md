@@ -60,11 +60,15 @@ On epic/story completion:
 ### Markdown as Phase Output
 
 Each phase of the operating model produces its own markdown artifact:
-- **Discover** outputs a requirements document (`requirements.md` at epic level)
+- **Discover** outputs a requirements document (`requirements.md` at epic level) with context, business rules, expected behavior, and acceptance criteria
 - **Plan** consumes requirements and produces the DAG (tracked in SQLite)
 - **Validate** triggers generation of an overview markdown summarizing the implementation
 
 SQLite holds operational state and accumulated knowledge. Markdown files capture product definitions and implementation summaries. The project stays clean — one `.db` file, one `requirements.md` per epic/story, and one overview per validated implementation.
+
+### Internal Tools, Domain Output
+
+Oraculo uses analytical frameworks (Double Diamond, JTBD, TOC, Assumption Mapping) as internal conversation tools during discovery and refinement. Their terminology guides the agent's thinking but does not appear in output artifacts. Requirements documents and story definitions are written in the user's domain language — context, business rules, expected behavior, and acceptance criteria — not in framework jargon.
 
 ## 3. Claude Code Ecosystem
 

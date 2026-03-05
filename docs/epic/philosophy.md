@@ -48,6 +48,10 @@ Every idea carries hidden assumptions. Assumption Mapping makes them explicit an
 
 **Why it matters:** Teams don't fail because they lack ideas. They fail because they build on unvalidated beliefs. Making assumptions explicit — and prioritizing the most dangerous ones — is the difference between disciplined exploration and wishful thinking.
 
+### 3.5 Internal Tools, Domain Output
+
+The frameworks above (JTBD, Four Forces, TOC, Assumption Mapping) are internal conversation tools. They guide the Socratic exploration but their terminology does not appear in the output artifact. The Requirements Document uses domain language that any product manager, developer, or QA engineer can read without knowing the frameworks.
+
 ## 4. What Makes Oraculo's Epic Exploration Unique
 
 Traditional discovery frameworks assume a team of humans with whiteboards, sticky notes, and customer interviews. Oraculo operates on three principles that differentiate it:
@@ -82,6 +86,6 @@ These principles extend the core Oraculo principles for this specific phase:
 
 ## 6. Relationship to Stories
 
-The Epic phase produces a Requirements Document with REC-N requirements. Each REC-N is a candidate for decomposition into one or more stories via `/oraculo:story`. The Epic defines the **problem space**; stories define **executable work** within that space.
+The Epic phase produces a Requirements Document with user stories. Each user story is a candidate for decomposition into one or more executable stories via `/oraculo:story`. The Epic defines the **problem space**; stories define **executable work** within that space.
 
 An approved epic — one that has passed both the exit gate and the human version review — is a prerequisite for decomposition into stories. Decomposition does not begin from a submitted artifact; it begins from a verdict. An epic without stories is a validated, human-confirmed problem definition waiting to be decomposed. A story without an epic is a standalone piece of work that doesn't need the full exploration depth.

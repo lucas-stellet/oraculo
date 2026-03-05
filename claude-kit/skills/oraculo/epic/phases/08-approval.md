@@ -28,12 +28,15 @@
 ## Execution
 
 Generate the requirements document using the epic template. It should include:
-- problem and motivation
-- target outcome
-- job stories or requirement set
-- scope boundaries
-- assumption register
-- codebase impact summary
+- contexto
+- problema
+- objetivos (alcancar + medir + aprender)
+- publico-alvo
+- historias de usuario
+- escopo (dentro + fora)
+- armadilhas conhecidas (if applicable)
+- dependencias
+- questoes em aberto
 
 Save it with:
 

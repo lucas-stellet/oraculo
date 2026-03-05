@@ -102,4 +102,5 @@ Never write implementation before a failing test exists.
 - `{claude_md_content}`: read CLAUDE.md from the project root
 - `{additional_skills_from_config}`: read `skills.code_agent` from `.oraculo/config.json`; for each skill name, resolve it in `.claude/skills/` (local) or `~/.claude/skills/` (global) and include its content
 - `{working_directory}`: absolute path to the project root
-- `{task_name}`, `{task_description}`, `{acceptance_criteria}`: from the persisted task record
+- `{task_name}`, `{task_description}`, `{acceptance_criteria}`: from the persisted task record. `{acceptance_criteria}` maps to the "Criterios de Aceite" section of the story artifact.
+- `{story_requirements}`: the story artifact contains the following sections: Contexto, O que essa historia entrega, Regras de negocio, Comportamento esperado, Criterios de Aceite, Dependencias, Notas tecnicas. Include all sections so the agent has full context.

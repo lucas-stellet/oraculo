@@ -13,6 +13,11 @@ QA does not review the implementer's private reasoning.
 
 Check whether the implementation satisfies the acceptance criteria and behaves correctly for the specified inputs and outputs.
 
+Validate against three story sections:
+- Regras de negocio — all business rules must hold
+- Comportamento esperado — interface and backend behavior must match
+- Criterios de Aceite — all Given/When/Then criteria must pass
+
 ## Standards Compliance
 
 Check whether the implementation follows the project's conventions, structure, and established patterns.

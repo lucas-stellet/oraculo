@@ -23,13 +23,13 @@ Full document: [docs/design.md](docs/design.md)
 
 ## Epic Phase
 
-Transforms raw ideas into validated problem definitions through Socratic exploration. Uses Double Diamond, JTBD (with Four Forces), TOC, and Assumption Mapping frameworks.
+Transforms raw ideas into validated problem definitions through Socratic exploration. Uses Double Diamond, JTBD, TOC, and Assumption Mapping as internal conversation tools (their terminology does not appear in output artifacts).
 
 Full document: [docs/epic/philosophy.md](docs/epic/philosophy.md)
 
 ## Story Phase
 
-Transforms work items into well-defined, executable units. Same Socratic discipline as Epic, with less depth and more focus.
+Transforms work items into well-defined, executable units. Same Socratic discipline as Epic, with less depth and more focus. Produces executable specifications with context, business rules, expected behavior, and acceptance criteria.
 
 Full document: [docs/story/philosophy.md](docs/story/philosophy.md)
 

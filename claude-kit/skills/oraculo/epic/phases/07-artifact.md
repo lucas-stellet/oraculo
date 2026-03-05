@@ -9,7 +9,7 @@
   Available: All validated discovery outputs through the stress-test gate
   Not available: Human approval verdict
   Focus: Final readiness for document generation and persistence
-  References: Load references/artifact-templates.md sections "Epic Requirements Document", "Codebase Impact Summary", and "Assumption Register"
+  References: Load references/artifact-templates.md section "Epic Requirements Document"
 </context-boundaries>
 
 <critical>
@@ -26,12 +26,15 @@
 ## Execution
 
 Before saving anything, confirm the final artifact will include:
-- the reframed problem
-- target outcome
-- requirement or job-story set
-- scope boundaries
-- assumption register
-- codebase impact summary
+- contexto (situation narrative from reframing and divergence)
+- problema (concrete consequences from convergence)
+- objetivos (what to achieve, how to measure, what to learn)
+- publico-alvo (who is affected, from divergence)
+- historias de usuario (natural language, no methodology format)
+- escopo (inside and outside, from reframing and edge cases)
+- armadilhas conhecidas (optional — high-risk assumptions and technical traps)
+- dependencias (codebase components, constraints, reuse opportunities)
+- questoes em aberto (unresolved assumptions and exit-gate gaps)
 
 <halt>
   - The artifact would require invented facts to feel complete — return to the missing phase

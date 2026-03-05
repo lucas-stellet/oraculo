@@ -28,6 +28,8 @@
 - "What problem does this story solve?"
 - "What is explicitly outside the scope of this story?"
 - "If this comes from the epic, what part of the requirement does this story cover and what part does it leave for later?"
+- "What business rules or constraints govern this behavior?"
+- "What does the user see or experience when this works correctly?"
 
 ## Execution
 
@@ -38,6 +40,7 @@ Ask one question at a time until the story has:
 - one clear problem statement
 - one desired outcome
 - explicit scope boundaries
+- key business rules identified (or noted as needing discovery in assumptions phase)
 
 <halt>
   - The problem statement still describes a solution rather than a problem — keep reframing

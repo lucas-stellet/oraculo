@@ -15,6 +15,9 @@
 <critical>
   Stories need fewer assumptions than epics, but the important ones still need to be explicit.
   In light reasoning mode, note product-context gaps instead of pretending to know the answer.
+  Assumptions do not become a standalone section in the output artifact.
+  High-risk assumptions feed "Dependencias" and "Notas tecnicas".
+  Unresolved assumptions become questions during exit-gate.
 </critical>
 
 <anti-patterns>

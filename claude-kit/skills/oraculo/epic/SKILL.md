@@ -22,7 +22,7 @@ disable-model-invocation: true
 <workflow>
   00-setup: Session triage, reasoning level detection, and epic fit check
   01-reframing: Separate the user problem from any proposed solution
-  02-divergence: Expand the problem space with JTBD, Four Forces, and edge cases
+  02-divergence: Expand the problem space across user dimensions, forces of change, and edge cases
   03-codebase-analysis: Incorporate parallel research findings from the codebase
   04-convergence: Narrow to a validated problem definition and target outcome
   05-assumptions: Surface and score hidden assumptions

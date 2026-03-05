@@ -6,7 +6,7 @@ A fase Story existe para transformar itens de trabalho em unidades de trabalho b
 
 Nem todo trabalho precisa da exploração profunda de um Epic. Quando o problema é compreendido, o escopo é claro e o trabalho é focado, o que se precisa é de um processo disciplinado para defini-lo com precisão — claro o suficiente para um desenvolvedor implementar sem ambiguidade.
 
-A fase Story aplica a mesma disciplina socrática do Epic, mas com menos profundidade e mais foco. Ela faz as perguntas essenciais, revela as premissas críticas e produz um artefato compacto que captura O QUÊ e POR QUÊ.
+A fase Story aplica a mesma disciplina socrática do Epic, mas com menos profundidade e mais foco. Ela faz as perguntas essenciais, revela as premissas críticas e produz um artefato compacto que captura contexto, regras de negócio, comportamento esperado e critérios de aceite — uma especificação executável.
 
 ## 2. Crença Central
 
@@ -32,6 +32,10 @@ Identifica as 2-3 premissas mais importantes e avalia seu nível de evidência (
 
 **Por que importa:** Todo trabalho carrega premissas. A Story não precisa mapear todas — precisa revelar as que fariam o trabalho falhar ou precisar ser refeito se estiverem erradas.
 
+### 3.3 Ferramentas Internas, Output de Domínio
+
+Assim como na fase Epic, os frameworks usados durante a conversa (Double Diamond, Assumption Mapping) são ferramentas internas. O Documento de Story usa apenas linguagem de domínio — nenhum jargão de metodologia aparece no output.
+
 ## 4. O Que Torna a Definição de Story do Oraculo Única
 
 ### 4.1 Mesma Disciplina, Menos Profundidade
@@ -40,7 +44,7 @@ A fase Story não é um atalho ou um skip. É a mesma abordagem socrática — r
 
 ### 4.2 Consciência do Epic
 
-Stories podem ser standalone ou derivadas de um Epic. Quando derivadas, a skill Story lê o Epic pai, entende o contexto do REC-N específico sendo trabalhado e adapta suas perguntas de acordo. O usuário não repete contexto já capturado no Epic.
+Stories podem ser standalone ou derivadas de um Epic. Quando derivadas, a skill Story lê o Epic pai, entende o contexto da história de usuário ou requisito específico sendo trabalhado e adapta suas perguntas de acordo. O usuário não repete contexto já capturado no Epic.
 
 ### 4.3 Pronta para Escalação
 
@@ -48,7 +52,7 @@ Se durante uma sessão de Story o trabalho se revela maior do que o esperado —
 
 ### 4.4 Pronta para Aprovação
 
-O artefato de Story é produzido com revisão humana em mente. Um revisor que encontra a story pelo dashboard não tem contexto da sessão — não participou do diálogo. O artefato deve ser autocontido: motivação, requisito, escopo e premissas críticas devem ser legíveis para alguém que lê apenas o documento. O Oraculo trata a prontidão para aprovação como critério de qualidade ao lado da completude. Um artefato que um revisor não consegue avaliar de forma independente não está finalizado.
+O artefato de Story é produzido com revisão humana em mente. Um revisor que encontra a story pelo dashboard não tem contexto da sessão — não participou do diálogo. O artefato deve ser autocontido: contexto, regras de negócio, comportamento esperado e critérios de aceite devem ser legíveis para alguém que lê apenas o documento. O Oraculo trata a prontidão para aprovação como critério de qualidade ao lado da completude. Um artefato que um revisor não consegue avaliar de forma independente não está finalizado.
 
 ## 5. Princípios Específicos da Definição de Story
 
@@ -68,8 +72,8 @@ Estes princípios estendem os princípios centrais do Oraculo para esta fase esp
 
 Uma story pode existir em dois modos:
 
-- **Standalone:** Trabalho que não precisa de um Epic. O problema é claro, o escopo é pequeno, e a skill Story fornece estrutura suficiente para defini-lo.
+- **Standalone:** Trabalho que não precisa de um Epic. O problema é claro, o escopo é pequeno, e a skill Story fornece estrutura suficiente para defini-lo. Por baixo dos panos, a CLI cria um epic leve para preservar o modelo de dados hierárquico — isso é transparente para o usuário.
 
-- **Derivada de Epic:** Um REC-N específico de um Epic está sendo decomposto em uma story executável. A skill Story lê o Epic pai e usa como contexto para perguntas mais focadas.
+- **Derivada de Epic:** Uma história de usuário ou requisito específico de um Epic está sendo decomposto em uma story executável. A skill Story lê o Epic pai e usa como contexto para perguntas mais focadas.
 
-Em ambos os casos, o output é o mesmo: um Documento de Story que captura motivação, requisito, escopo e premissas.
+Em ambos os casos, o output é o mesmo: um Documento de Story que captura contexto, regras de negócio, comportamento esperado, critérios de aceite, dependências e notas técnicas.

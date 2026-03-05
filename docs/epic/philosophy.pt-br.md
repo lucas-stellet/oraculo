@@ -34,11 +34,13 @@ Usuários não querem features — eles "contratam" produtos para fazer progress
 
 > "Quando [situação específica], eu quero [motivação], para que eu possa [resultado esperado]."
 
-### 3.3 Opportunity Solution Tree (OST) — Estruturar a Exploração
+**Quatro Forças de Progresso.** O JTBD inclui um modelo do que impulsiona e resiste à adoção: Push (frustração com o estado atual), Pull (atração do novo), Ansiedade (medo do desconhecido) e Hábito (inércia do comportamento atual). Essas forças revelam edge cases de adoção que análises puramente funcionais não capturam — uma solução pode ser tecnicamente perfeita e ainda assim falhar porque os usuários têm ansiedade com mudança ou apego aos hábitos atuais.
 
-O framework de Teresa Torres fornece a espinha dorsal estrutural: Outcome desejado no topo, ramificando em Oportunidades (necessidades reais do usuário), depois Soluções potenciais, depois Experimentos para validar premissas. Essa árvore impede que soluções apareçam sem ancoragem baseada em evidências.
+### 3.3 Theory of Constraints (TOC) — Foco no Gargalo
 
-**Por que importa:** Sem estrutura, a exploração se torna uma conversa errante. A OST mantém cada ideia conectada a uma necessidade real do usuário e a um outcome mensurável. Soluções que não conseguem rastrear de volta a uma oportunidade não têm fundação.
+Todo sistema tem um único constraint que limita seu throughput. A TOC pergunta: qual é o único gargalo que, se removido, desbloquearia o maior valor? Aplicada à discovery, isso força a priorização — em vez de explorar cada oportunidade igualmente, a sessão identifica qual problema é o verdadeiro constraint para o usuário ou o sistema.
+
+**Por que importa:** Sem foco, a exploração produz um mapa amplo mas raso. A TOC força a convergência em direção ao problema de maior impacto. Esse mesmo princípio se aplica depois na execução, onde o throughput de QA governa o ritmo da produção de código.
 
 ### 3.4 Assumption Mapping — Priorizar o Que Pode Matar a Ideia
 
@@ -46,17 +48,9 @@ Toda ideia carrega premissas ocultas. O Assumption Mapping as torna explícitas 
 
 **Por que importa:** Times não falham porque faltam ideias. Eles falham porque constroem sobre crenças não validadas. Tornar premissas explícitas — e priorizar as mais perigosas — é a diferença entre exploração disciplinada e pensamento ilusório.
 
-### 3.5 Working Backwards (PR/FAQ) — Stress Test da Ideia
+### 3.5 Ferramentas Internas, Output de Domínio
 
-A técnica da Amazon de escrever um press release fictício antes de construir força clareza sobre quem se beneficia, o que muda e por que importa. Se o anúncio não soa convincente, a ideia não está pronta.
-
-**Por que importa:** Descrever o resultado final como se já existisse força o usuário a confrontar lacunas no pensamento que discussões abstratas não capturam. Responde à pergunta: "Alguém se importaria com isso?"
-
-### 3.6 Quatro Forças de Progresso — Mapear Edge Cases Comportamentais
-
-O modelo das Quatro Forças do JTBD mapeia o que impulsiona e resiste à adoção: Push (frustração com o estado atual), Pull (atração do novo), Ansiedade (medo do desconhecido) e Hábito (inércia do comportamento atual). Isso revela edge cases que análises puramente funcionais não capturam.
-
-**Por que importa:** Uma solução pode ser tecnicamente perfeita e ainda assim falhar porque os usuários têm ansiedade com mudança ou apego aos hábitos atuais. Essas forças revelam o lado humano da adoção que listas de features ignoram.
+Os frameworks acima (JTBD, Quatro Forças, TOC, Assumption Mapping) são ferramentas internas de conversação. Eles guiam a exploração socrática, mas sua terminologia não aparece no artefato de saída. O Documento de Requisitos usa linguagem de domínio que qualquer product manager, desenvolvedor ou engenheiro de QA pode ler sem conhecer os frameworks.
 
 ## 4. O Que Torna a Exploração Epic do Oraculo Única
 
@@ -92,6 +86,6 @@ Estes princípios estendem os princípios centrais do Oraculo para esta fase esp
 
 ## 6. Relacionamento com Stories
 
-A fase Epic produz um Documento de Requisitos com requisitos REC-N. Cada REC-N é um candidato para decomposição em uma ou mais stories via `/oraculo:story`. O Epic define o **espaço do problema**; stories definem **trabalho executável** dentro desse espaço.
+A fase Epic produz um Documento de Requisitos com histórias de usuário. Cada história de usuário é um candidato para decomposição em uma ou mais stories executáveis via `/oraculo:story`. O Epic define o **espaço do problema**; stories definem **trabalho executável** dentro desse espaço.
 
 Um epic aprovado — que passou tanto pelo exit gate quanto pela version review humana — é um pré-requisito para decomposição em stories. A decomposição não começa a partir de um artefato submetido; começa a partir de um verdict. Um epic sem stories é uma definição de problema validada e confirmada por humano esperando ser decomposta. Uma story sem epic é um pedaço de trabalho standalone que não precisa da profundidade completa de exploração.

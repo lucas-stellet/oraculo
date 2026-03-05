@@ -9,11 +9,11 @@
   Available: Validated story problem, scope, assumptions, and parent epic context when present
   Not available: Human approval verdict
   Focus: Story document generation and persistence
-  References: Load references/artifact-templates.md section "Story Document Template"
+  References: Load references/artifact-templates.md sections "Story Document Template" and "Rules"
 </context-boundaries>
 
 <critical>
-  The story document captures what and why, not implementation details.
+  The story document is an executable specification: problem context, business rules, expected behavior, and acceptance criteria. It must not contain methodology jargon (JTBD, Four Forces, INVEST, etc.).
   Save the artifact through the CLI rather than writing directly to the project tree.
 </critical>
 
@@ -25,13 +25,16 @@
 
 ## Execution
 
-Generate a story document with:
-- motivation
-- requirement
-- scope
-- assumptions
+Generate a story document with header metadata (Epic, Requisitos relacionados, Produto) and sections:
+- contexto (brief situation narrative, self-contained)
+- o que essa historia entrega (one clear sentence)
+- regras de negocio (specific conditions and constraints)
+- comportamento esperado (interface and backend behavior)
+- criterios de aceite (Given/When/Then with concrete values)
+- dependencias (with temporality: before, together, parallel)
+- notas tecnicas (optional — NFRs and implementation guidance)
 
-If the story comes from an epic, include the parent epic and parent requirement reference in the document.
+If the story comes from an epic, the header must include the parent epic title and which specific requirements it implements.
 
 Save it with:
 

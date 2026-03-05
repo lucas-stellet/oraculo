@@ -30,15 +30,15 @@ O Oraculo separa o problema de qualquer solução proposta antes de prosseguir.
 
 ### 1.2 Divergência — Expandindo o Espaço do Problema
 
-O Oraculo aplica templates de perguntas JTBD e Quatro Forças para explorar dimensões que o usuário não considerou.
+O Oraculo aplica templates de perguntas JTBD (incluindo Quatro Forças) para explorar dimensões que o usuário não considerou.
 
-**Perguntas JTBD:**
+**Perguntas de situação e motivação do usuário:**
 - "Em que situação específica o usuário encontra esse problema?"
 - "O que o usuário está tentando realizar — funcionalmente, emocionalmente, socialmente?"
 - "Que alternativas existem hoje? Por que são insuficientes?"
 - "O que faria o usuário 'contratar' uma nova solução para esse trabalho?"
 
-**Perguntas das Quatro Forças:**
+**Perguntas de forças de mudança:**
 - **Push:** "O que é frustrante o suficiente no estado atual para motivar mudança?"
 - **Pull:** "O que torna essa solução mais atraente do que o status quo?"
 - **Ansiedade:** "O que pode fazer os usuários hesitarem? Curva de aprendizado? Perda de dados? Dependências?"
@@ -53,7 +53,7 @@ O Oraculo aplica templates de perguntas JTBD e Quatro Forças para explorar dime
 
 ### 1.3 Análise da Codebase (Paralela)
 
-Enquanto o diálogo avança, o Oraculo dispara sub-agentes para analisar a base de código existente. Isso roda em paralelo — não bloqueia a conversa.
+Quando não há contexto prévio (sem documentação, sem fontes definidas), o Oraculo dispara agentes de pesquisa para analisar a base de código existente. Isso roda em paralelo — não bloqueia a conversa. Quando contexto prévio existe (fontes definidas, documentação existente), o orquestrador conduz uma análise leve diretamente sem despachar agentes.
 
 **O que os sub-agentes investigam:**
 - Implementações existentes que se sobrepõem à ideia proposta
@@ -90,10 +90,7 @@ O Oraculo revela premissas ocultas e as pontua por risco.
 - **Hipótese de viabilidade:** "Isso pode ser construído dentro da arquitetura atual sem refatoração significativa."
 
 **Mecanismo de pontuação de risco:**
-Cada premissa é avaliada em dois eixos:
-- **Impacto** (1-5): se estiver errada, quão mal quebra a ideia?
-- **Evidência** (1-5): quantos dados suportam isso? (1 = intuição pura, 5 = dados validados)
-- **Score de risco** = Impacto × (6 - Evidência). Score maior = prioridade maior.
+Cada premissa é avaliada por impacto e nível de evidência. Premissas de alto impacto com baixa evidência são priorizadas. O mecanismo de pontuação é interno — categorias de premissas e scores de risco não aparecem no documento de saída.
 
 **Condição de saída:** Todas as premissas com score de risco acima do limiar foram reconhecidas pelo usuário. Cada premissa crítica (alto impacto, baixa evidência) tem evidência de suporte ou está sinalizada como risco conhecido para a fase de Plan.
 
@@ -128,36 +125,25 @@ O Oraculo gera o Documento de Requisitos e o salva via CLI, depois cria uma vers
 
 ## 2. Artefatos de Saída
 
-A fase Epic produz artefatos estruturados que alimentam stories e a fase de Plan.
+A fase Epic produz um único Documento de Requisitos que alimenta diretamente stories e a fase de Plan.
 
-### 2.1 Job Stories
+### 2.1 Documento de Requisitos
 
-Uma ou mais Job Stories no formato:
+O output primário — salvo em `.oraculo/epics/<nome-epic>/requirements.md`. O documento tem 9 seções:
 
-> "Quando [situação/contexto específico], eu quero [motivação/trabalho a ser feito], para que eu possa [resultado esperado mensurável]."
+1. Contexto — Narrativa da situação
+2. Problema — Consequências concretas
+3. Objetivos — O que alcançar, como medir, o que aprender
+4. Publico-alvo — Quem é afetado
+5. Historias de Usuario — Histórias de usuário em linguagem natural
+6. Escopo — Dentro e fora
+7. Armadilhas conhecidas — (opcional) Armadilhas de implementação
+8. Dependencias — Componentes, serviços, sistemas
+9. Questoes em aberto — Decisões não resolvidas
 
-### 2.2 Opportunity Solution Tree (OST)
+**Regra-chave:** O documento usa apenas linguagem de domínio. Terminologia de metodologia (JTBD, Quatro Forças, Assumption Mapping, etc.) é usada internamente durante a conversa mas nunca aparece no output.
 
-Uma árvore estruturada:
-
-```
-Outcome (métrica de negócio / comportamento do usuário)
-  └── Oportunidade (necessidade do usuário, escrita em primeira pessoa)
-        └── Solução (abordagem proposta)
-              └── Premissa (hipótese + critério de validação)
-```
-
-### 2.3 Registro de Premissas
-
-Uma lista priorizada de premissas com descrição, categoria, score de risco, status e evidência associada.
-
-### 2.4 Resumo de Impacto na Codebase
-
-Resultados da análise dos sub-agentes: componentes relacionados, restrições arquiteturais, edge cases do código atual.
-
-### 2.5 Documento de Requisitos
-
-O output primário — um documento de 9 seções salvo em `.oraculo/projects/<nome-projeto>/epic.md`. Cada requisito REC-N é um candidato para decomposição em stories.
+Cada história de usuário na seção 5 é um candidato para decomposição em stories.
 
 ## 3. Escalando com a Complexidade
 
@@ -199,7 +185,7 @@ A fase Epic opera em dois níveis de reasoning que compartilham a mesma discipli
 - Explorando ideia que ele identificou
 - Tem dados de usuários, métricas de negócio, visão estratégica
 - Foco: comportamento do usuário, impacto no negócio, viabilidade técnica
-- Usa toolkit completo de frameworks (JTBD, Quatro Forças, PR/FAQ, OST)
+- Usa profundidade completa de exploração em dimensões do usuário, forças de mudança, constraints e premissas
 - Responde todas as perguntas do gate autonomamente
 
 ### 4.3 Sinais de Seleção
@@ -222,16 +208,16 @@ A fase Epic opera em dois níveis de reasoning que compartilham a mesma discipli
 
 ## 5. Integração com Stories
 
-A fase Epic produz um Documento de Requisitos com itens REC-N. Para implementar:
+A fase Epic produz um Documento de Requisitos com histórias de usuário. Para implementar:
 
 **Pré-condição:** Antes de decompor em stories, verificar que o `approval_status = approved` do epic. Um epic cujos requisitos ainda não foram aprovados por um revisor humano não deve ser decomposto — o artefato ainda pode mudar com base no verdict pendente.
 
 1. Invocar `/oraculo:story <nome-epic>`
 2. A skill Story lê `.oraculo/epics/<nome-epic>/requirements.md`
-3. O usuário seleciona qual REC-N trabalhar
+3. O usuário seleciona qual história de usuário ou requisito trabalhar
 4. A skill Story roda uma sessão focada para produzir uma definição de story executável
 
-Cada REC-N pode gerar uma ou mais stories dependendo do escopo.
+Cada história de usuário pode gerar uma ou mais stories executáveis dependendo do escopo.
 
 ## 6. Caminho de Saída
 

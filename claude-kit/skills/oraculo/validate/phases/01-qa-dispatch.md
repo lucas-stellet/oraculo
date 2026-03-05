@@ -6,7 +6,7 @@
 </persona>
 
 <context-boundaries>
-  Available: Diff, specs, acceptance criteria, test results, QA criteria
+  Available: Diff, story sections (Regras de negocio, Comportamento esperado, Criterios de Aceite), test results, QA criteria
   Not available: Implementer chat history or private reasoning
   Focus: Independent QA dispatch and criteria framing
   References: Load references/qa-criteria.md sections "Functional Correctness", "Standards Compliance", "Edge Cases", "Test Quality", and "Scope Adherence"
@@ -27,7 +27,7 @@
 
 Dispatch QA with exactly:
 - the diff
-- the relevant specs and acceptance criteria
+- the story's Regras de negocio, Comportamento esperado, and Criterios de Aceite sections
 - test results
 - explicit QA criteria
 

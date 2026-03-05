@@ -10,7 +10,7 @@
   Available: Reframed problem, divergence output, codebase findings gathered in parallel
   Not available: Final assumptions, final requirements document
   Focus: Evidence from existing code, architecture, tests, and constraints
-  References: Load references/artifact-templates.md section "Codebase Impact Summary" if needed
+  References: Load references/artifact-templates.md section "Epic Requirements Document" (Dependencias and Armadilhas conhecidas) if needed
 </context-boundaries>
 
 <critical>

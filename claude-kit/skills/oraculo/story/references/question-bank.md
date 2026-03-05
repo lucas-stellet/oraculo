@@ -1,3 +1,5 @@
+> **Internal reference only.** These questions guide the Socratic conversation. Methodology terminology MUST NOT appear in the generated artifact.
+
 # Story Question Bank
 
 ## Setup and Triage
@@ -34,3 +36,30 @@
 - "What would make this story hard to use or validate?"
 - "What is the biggest technical risk?"
 - "What product or business context is still missing, if any?"
+
+## Business Rules
+
+- "What rules or constraints govern this behavior?"
+- "What conditions must always hold true?"
+- "Are there different behaviors depending on user type, state, or configuration?"
+- "What happens when the input is invalid or unexpected?"
+
+## Expected Behavior
+
+- "What does the user see when this works correctly?"
+- "What are the key interaction steps from the user's perspective?"
+- "What does the system do in the backend when this is triggered?"
+- "What feedback does the user receive (success, error, warning)?"
+
+## Acceptance Criteria
+
+- "How will we know this story is done?"
+- "What are the pass/fail conditions?"
+- "What edge cases must be explicitly tested?"
+- "What should NOT change as a result of this work?"
+
+## Dependencies
+
+- "What other stories, systems, or APIs does this depend on?"
+- "What must be ready before this can start?"
+- "What can be worked on in parallel?"

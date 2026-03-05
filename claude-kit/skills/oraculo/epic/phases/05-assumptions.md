@@ -15,6 +15,10 @@
 <critical>
   Assumptions that feel obvious are often the ones with the least evidence.
   Score risk using both impact and evidence, not intuition alone.
+
+  The four assumption categories (problem, solution, value, feasibility) are internal classification tools.
+  They must not appear as labels in the final artifact. High-risk assumptions become "Armadilhas conhecidas"
+  entries; unresolved assumptions become "Questoes em aberto" entries.
 </critical>
 
 <rationalization-table>

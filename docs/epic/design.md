@@ -32,13 +32,13 @@ Oraculo separates the problem from any proposed solution before proceeding.
 
 Oraculo applies JTBD question templates (including Four Forces) to explore dimensions the user hasn't considered.
 
-**JTBD questions:**
+**User situation and motivation questions:**
 - "In what specific situation does the user encounter this problem?"
 - "What is the user trying to accomplish — functionally, emotionally, socially?"
 - "What alternatives exist today? Why are they insufficient?"
 - "What would make the user 'hire' a new solution for this job?"
 
-**Four Forces questions:**
+**Forces of change questions:**
 - **Push:** "What's frustrating enough about the current state to motivate change?"
 - **Pull:** "What makes this solution more attractive than the status quo?"
 - **Anxiety:** "What might make users hesitate? Learning curve? Data loss? Dependencies?"
@@ -90,10 +90,7 @@ Oraculo surfaces hidden assumptions and scores them by risk.
 - **Feasibility hypothesis:** "This can be built within the current architecture without major refactoring."
 
 **Risk scoring mechanism:**
-Each assumption is evaluated on two axes:
-- **Impact** (1-5): if wrong, how badly does it break the idea?
-- **Evidence** (1-5): how much data supports this? (1 = pure intuition, 5 = validated data)
-- **Risk score** = Impact × (6 - Evidence). Higher score = higher priority.
+Each assumption is evaluated by impact and evidence level. High-impact assumptions with low evidence are prioritized. The scoring mechanism is internal — assumption categories and risk scores do not appear in the output document.
 
 **Exit condition:** All assumptions with risk score above threshold are acknowledged by the user. Each critical assumption (high impact, low evidence) has either supporting evidence or is flagged as a known risk for the Plan phase.
 
@@ -128,49 +125,25 @@ Oraculo generates the Requirements Document and saves it via CLI, then creates a
 
 ## 2. Output Artifacts
 
-The Epic phase produces structured artifacts that feed directly into stories and the Plan phase.
+The Epic phase produces a single Requirements Document that feeds directly into stories and the Plan phase.
 
-### 2.1 Job Stories
-
-One or more Job Stories in the format:
-
-> "When [specific situation/context], I want [motivation/job to be done], so I can [expected measurable outcome]."
-
-Job Stories become the input for story decomposition. Each story must trace back to a Job Story or REC-N.
-
-### 2.2 Assumption Register
-
-A prioritized list of assumptions with:
-- Description of the assumption
-- Category (problem / solution / value / feasibility)
-- Risk score (impact × lack of evidence)
-- Status: unvalidated / validated / refuted
-- Associated evidence (if any)
-
-Critical assumptions (high risk) become explicit inputs for the Plan phase.
-
-### 2.3 Codebase Impact Summary
-
-Results from sub-agent analysis, recorded as:
-- Existing components that relate to the idea
-- Architectural constraints identified
-- Edge cases from current code that the new feature must handle
-
-### 2.4 Requirements Document
+### 2.1 Requirements Document
 
 The primary output — saved to `.oraculo/epics/<epic-name>/requirements.md`. The document has 9 sections:
 
-1. Summary
-2. Problem
-3. Context & Motivation
-4. Requirements
-5. User Experience
-6. Scope
-7. Assumptions & Risks
-8. Success Criteria
-9. Open Questions
+1. Contexto — Situation narrative
+2. Problema — Concrete consequences
+3. Objetivos — What to achieve, how to measure, what to learn
+4. Publico-alvo — Who is affected
+5. Historias de Usuario — Natural language user stories
+6. Escopo — Inside and outside
+7. Armadilhas conhecidas — (optional) Implementation traps
+8. Dependencias — Components, services, systems
+9. Questoes em aberto — Unresolved decisions
 
-Each REC-N requirement is a candidate for decomposition into stories.
+**Key rule:** The document uses domain language only. Methodology terminology (JTBD, Four Forces, Assumption Mapping, etc.) is used internally during the conversation but never appears in the output.
+
+Each user story in section 5 is a candidate for decomposition into stories.
 
 ## 3. Scaling with Complexity
 
@@ -212,7 +185,7 @@ The Epic phase operates at two reasoning levels that share the same Socratic dis
 - Exploring idea they identified
 - Has user data, business metrics, strategic vision
 - Focuses on: user behavior, business impact, technical feasibility
-- Uses full framework toolkit (JTBD with Four Forces, TOC, Assumption Mapping)
+- Uses full exploration depth across user dimensions, forces of change, constraints, and assumptions
 - Answers all gate questions autonomously
 
 ### 4.3 Selection Signals
@@ -235,16 +208,16 @@ The Epic phase operates at two reasoning levels that share the same Socratic dis
 
 ## 5. Integration with Stories
 
-The Epic phase produces a Requirements Document with REC-N items. To implement:
+The Epic phase produces a Requirements Document with user stories. To implement:
 
 **Precondition:** Before decomposing into stories, verify that the epic's `approval_status = approved`. An epic whose requirements have not been approved by a human reviewer must not be decomposed — the artifact may still change based on the pending verdict.
 
 1. Invoke `/oraculo:story <epic-name>`
 2. The Story skill reads `.oraculo/epics/<epic-name>/requirements.md`
-3. The user selects which REC-N to work on
+3. The user selects which user story or requirement to work on
 4. The Story skill runs a focused session to produce an executable story definition
 
-Each REC-N can generate one or more stories depending on its scope.
+Each user story can generate one or more executable stories depending on its scope.
 
 ## 6. Output Path
 

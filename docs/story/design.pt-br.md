@@ -11,7 +11,7 @@ O usuário chega com um item de trabalho. O Oraculo verifica se há um epic pai,
 **Workflow do epic pai:**
 - Se um nome de projeto foi passado como argumento (`/oraculo:story gastos-app`):
   - Busca `.oraculo/epics/<nome-epic>/requirements.md`
-  - Se encontra: verificar `approval_status = approved` — se não aprovado, bloquear a decomposição e informar o usuário que o epic pai ainda está pendente de revisão humana; se aprovado, ler o epic e perguntar qual REC-N trabalhar (ou se é algo novo)
+  - Se encontra: verificar `approval_status = approved` — se não aprovado, bloquear a decomposição e informar o usuário que o epic pai ainda está pendente de revisão humana; se aprovado, ler o epic e perguntar qual história de usuário ou requisito trabalhar (ou se é algo novo)
   - Se não encontra: segue como standalone
 - Se nenhum argumento: segue como standalone
 
@@ -32,7 +32,7 @@ O Oraculo separa o problema de qualquer solução proposta e define limites de e
 - "O que está explicitamente fora do escopo?"
 
 **Perguntas derivadas de epic:**
-- "O epic descreve [contexto do REC-N]. Qual é o problema específico que esta story endereça?"
+- "O epic descreve [contexto do requisito]. Qual é o problema específico que esta story endereça?"
 - "Que partes do requisito NÃO são cobertas por esta story?"
 
 **Condição de saída:** Problema claramente declarado e separado da solução. Limites de escopo definidos.
@@ -78,22 +78,18 @@ O Oraculo gera o Documento de Story e o salva via CLI, depois cria uma versão p
 
 ## 2. Saturação
 
-A skill Story rastreia 5 slots para determinar quando informação suficiente foi coletada:
+A skill Story rastreia slots alinhados ao template de saída para determinar quando informação suficiente foi coletada:
 
 | Slot | Peso Deep | Peso Light |
 |------|:---------:|:----------:|
-| Declaração do problema | Standard | **High** |
-| Resultado desejado | Standard | **High** |
+| Contexto do problema (Contexto) | Standard | **High** |
+| O que a story entrega | Standard | **High** |
+| Regras de negócio | Standard | Standard |
+| Comportamento esperado | Standard | Standard |
 | Critérios de aceite | Standard | Standard |
-| Limites de escopo | Low | Standard |
-| Premissas-chave | Standard | Standard |
+| Dependências | Low | Standard |
 
 **Regra de saturação:** Todos os slots High completos + todos os slots Standard ao menos parciais → apresenta o draft.
-
-**Definição dos pesos:**
-- **High** — Deve atingir **completo** para saturação. Requer perguntas dedicadas.
-- **Standard** — Deve atingir ao menos **parcial** para saturação.
-- **Low** — Não bloqueia saturação. Uma menção indireta conta como parcial.
 
 ## 3. Níveis de Reasoning
 
@@ -131,21 +127,26 @@ A fase Story opera em dois níveis de reasoning que compartilham a mesma discipl
 Quando uma story é derivada de um epic:
 
 1. **Leitura:** A skill Story lê `.oraculo/epics/<nome-epic>/requirements.md`
-2. **Seleção:** Pergunta ao usuário qual REC-N trabalhar, ou se é algo novo
+2. **Seleção:** Pergunta ao usuário qual história de usuário ou requisito trabalhar, ou se é algo novo
 3. **Herança de contexto:** A declaração de problema, contexto e escopo do epic informam a sessão da story — o usuário não repete o que já foi capturado
-4. **Perguntas adaptadas:** Perguntas de reenquadramento referenciam o contexto do REC-N específico
-5. **Referência no output:** O documento da story inclui metadados `parent_epic` e `parent_rec`
+4. **Perguntas adaptadas:** Perguntas de reenquadramento referenciam o contexto do requisito específico
+5. **Referência no output:** O cabeçalho do documento da story inclui Epic e Requisitos relacionados
 
 ## 5. Output: Template de Story
 
-O Documento de Story tem 4 seções:
+O Documento de Story começa com metadados no cabeçalho (Epic, Requisitos relacionados, Produto) e tem 7 seções:
 
-1. **Motivação** — Problema e contexto (da perspectiva do usuário ou do sistema)
-2. **Requisito** — Uma única story de usuário/sistema com critérios de aceite GIVEN/WHEN/THEN
-3. **Escopo** — O que está dentro, o que está explicitamente fora
-4. **Premissas** — Premissas-chave com níveis de evidência
+1. **Contexto** — Narrativa breve e autocontida da situação
+2. **O que essa historia entrega** — Uma frase clara descrevendo a entrega
+3. **Regras de negocio** — Condições e restrições específicas
+4. **Comportamento esperado** — Comportamento de interface e backend
+5. **Criterios de Aceite** — Given/When/Then com valores concretos
+6. **Dependencias** — Com temporalidade (antes, junto, paralelo)
+7. **Notas tecnicas** — (opcional) NFRs e orientação de implementação
 
-O documento captura O QUÊ e POR QUÊ — nunca COMO. Sem detalhes técnicos de implementação.
+O documento é uma especificação executável. Ele captura O QUÊ, POR QUÊ e COMPORTAMENTO esperado — mas não detalhes de implementação. Jargão de metodologia nunca aparece no output.
+
+Uma seção opcional **Escopo** (dentro/fora) pode ser incluída quando há ambiguidade genuína.
 
 ## 6. Escalação
 

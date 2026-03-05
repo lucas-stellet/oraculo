@@ -135,8 +135,8 @@ oraculo tools approval verdict <id> --verdict <approved|rejected|needs_revision>
 
 Regras:
 
-- Stories sempre pertencem a um epic. O CLI aplica isso. Quando uma story é criada sem um epic explícito, o CLI auto-cria um **epic leve** — um epic mínimo com o nome derivado da story e sem markdown de requisitos. Isso preserva o modelo de dados hierárquico enquanto mantém a UX de story standalone sem atrito.
-- O `requirements.md` de cada nível é a definição de produto — O QUE e POR QUE, nunca COMO.
+- Stories sempre pertencem a um epic. A CLI aplica isso. Quando uma story é criada sem um epic explícito, a CLI auto-cria um **epic leve** — um epic mínimo com o nome derivado da story e sem markdown de requisitos. Isso preserva o modelo de dados hierárquico enquanto mantém a UX de story standalone sem atrito.
+- Epic `requirements.md` captura visão e definição (O QUE e POR QUE). Story `requirements.md` é uma especificação executável (O QUE, POR QUE e COMPORTAMENTO esperado — mas não detalhes de implementação).
 - O banco de dados SQLite é infraestrutura — `.gitignore`.
 - Arquivos Markdown são versionáveis no git.
 

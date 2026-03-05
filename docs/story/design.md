@@ -11,7 +11,7 @@ The user arrives with a work item. Oraculo checks for a parent epic, captures th
 **Parent epic workflow:**
 - If project name was passed as argument (`/oraculo:story gastos-app`):
   - Search for `.oraculo/epics/<epic-name>/requirements.md`
-  - If found: verify `approval_status = approved` — if not approved, block decomposition and inform the user that the parent epic is still pending human review; if approved, read the epic and ask which REC-N to work on (or if it's something new)
+  - If found: verify `approval_status = approved` — if not approved, block decomposition and inform the user that the parent epic is still pending human review; if approved, read the epic and ask which user story or requirement to work on (or if it's something new)
   - If not found: proceed as standalone
 - If no argument: proceed as standalone
 
@@ -32,7 +32,7 @@ Oraculo separates the problem from any proposed solution and defines scope bound
 - "What is explicitly out of scope?"
 
 **Epic-derived questions:**
-- "The epic describes [REC-N context]. What's the specific problem this story addresses?"
+- "The epic describes [requirement context]. What's the specific problem this story addresses?"
 - "What parts of the requirement are NOT covered by this story?"
 
 **Exit condition:** Problem clearly stated and separated from solution. Scope boundaries defined.
@@ -78,22 +78,18 @@ Oraculo generates the Story Document and saves it via CLI, then creates a versio
 
 ## 2. Saturation
 
-The Story skill tracks 5 slots to determine when enough information has been gathered:
+The Story skill tracks slots aligned to the output template to determine when enough information has been gathered:
 
 | Slot | Deep weight | Light weight |
 |------|:-----------:|:------------:|
-| Problem statement | Standard | **High** |
-| Desired outcome | Standard | **High** |
+| Problem context (Contexto) | Standard | **High** |
+| What the story delivers | Standard | **High** |
+| Business rules | Standard | Standard |
+| Expected behavior | Standard | Standard |
 | Acceptance criteria | Standard | Standard |
-| Scope boundaries | Low | Standard |
-| Key assumptions | Standard | Standard |
+| Dependencies | Low | Standard |
 
-**Saturation rule:** All High slots complete + all Standard slots at least partial → present the draft.
-
-**Weight definitions:**
-- **High** — Must reach **complete** for saturation. Requires dedicated questions.
-- **Standard** — Must reach at least **partial** for saturation.
-- **Low** — Does not block saturation. A single indirect mention counts as partial.
+**Saturation rule:** All High slots complete + all Standard slots at least partial -> present the draft.
 
 ## 3. Reasoning Levels
 
@@ -131,21 +127,26 @@ The Story phase operates at two reasoning levels that share the same Socratic di
 When a story is derived from an epic:
 
 1. **Reading:** The Story skill reads `.oraculo/epics/<epic-name>/requirements.md`
-2. **Selection:** Asks the user which REC-N to work on, or if it's something new
+2. **Selection:** Asks the user which user story or requirement to work on, or if it's something new
 3. **Context inheritance:** The epic's problem statement, context, and scope inform the story session — the user doesn't repeat what was already captured
-4. **Adapted questions:** Reframing questions reference the specific REC-N context
-5. **Output reference:** The story document includes `parent_epic` and `parent_rec` metadata
+4. **Adapted questions:** Reframing questions reference the specific requirement context
+5. **Output reference:** The story document header includes Epic and Requisitos relacionados
 
 ## 5. Output: Story Template
 
-The Story Document has 4 sections:
+The Story Document starts with header metadata (Epic, Requisitos relacionados, Produto) and has 7 sections:
 
-1. **Motivation** — Problem and context (from user's or system's perspective)
-2. **Requirement** — Single user/system story with GIVEN/WHEN/THEN acceptance criteria
-3. **Scope** — What's in, what's explicitly out
-4. **Assumptions** — Key assumptions with evidence levels
+1. **Contexto** — Brief, self-contained situation narrative
+2. **O que essa historia entrega** — One clear sentence describing the delivery
+3. **Regras de negocio** — Specific conditions and constraints
+4. **Comportamento esperado** — Interface and backend behavior
+5. **Criterios de Aceite** — Given/When/Then with concrete values
+6. **Dependencias** — With temporality (before, together, parallel)
+7. **Notas tecnicas** — (optional) NFRs and implementation guidance
 
-The document captures WHAT and WHY — never HOW. No technical implementation details.
+The document is an executable specification. It captures WHAT, WHY, and expected BEHAVIOR — but not implementation details. Methodology jargon never appears in the output.
+
+An optional **Escopo** section (inside/outside) may be included when there is genuine ambiguity.
 
 ## 6. Escalation
 

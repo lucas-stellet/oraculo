@@ -80,7 +80,7 @@ O CLAUDE.md e atualizado pelo time de desenvolvimento (humano ou assistido por a
 
 Documentos de requisitos, definicoes de stories e summaries de tasks capturam a inteligencia acumulada de cada feature:
 
-- **Epic requirements** — A definicao de problema validada, criterios de aceitacao, casos de borda
+- **Epic requirements** — A definicao de problema validada, objetivos, escopo, historias de usuario e dependencias
 - **Story requirements** — Escopo e restricoes especificos de implementacao
 - **Completion summaries** — O que foi construido, decisoes tomadas, resultados do QA
 

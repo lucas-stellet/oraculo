@@ -1,3 +1,5 @@
+> **Internal reference only.** These frameworks guide the Socratic conversation. Their names and terminology MUST NOT appear in the generated artifact. The output document uses domain language only.
+
 # Epic Question Bank
 
 ## Setup and Triage
