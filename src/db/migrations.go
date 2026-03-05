@@ -11,6 +11,7 @@ var migrations = []func(*sql.Tx) error{
 	migrateV3,
 	migrateV4,
 	migrateV5,
+	migrateV6,
 }
 
 // migrateV1 creates all core tables, knowledge with FTS5, approvals, and validations.
@@ -260,6 +261,27 @@ func migrateV5(tx *sql.Tx) error {
 	for _, stmt := range stmts {
 		if _, err := tx.Exec(stmt); err != nil {
 			return fmt.Errorf("migration v5: %w\nSQL: %s", err, stmt)
+		}
+	}
+	return nil
+}
+
+func migrateV6(tx *sql.Tx) error {
+	stmts := []string{
+		`ALTER TABLE claude_sessions ADD COLUMN ended_at TEXT`,
+		`CREATE TABLE session_events (
+			id         INTEGER PRIMARY KEY AUTOINCREMENT,
+			session_id TEXT NOT NULL REFERENCES claude_sessions(id),
+			event_type TEXT NOT NULL
+			           CHECK (event_type IN ('task_completed','stop','teammate_idle','session_end')),
+			payload    TEXT DEFAULT '{}',
+			created_at TEXT DEFAULT (datetime('now'))
+		)`,
+		`CREATE INDEX idx_session_events_session ON session_events(session_id)`,
+	}
+	for _, stmt := range stmts {
+		if _, err := tx.Exec(stmt); err != nil {
+			return fmt.Errorf("migration v6: %w\nSQL: %s", err, stmt)
 		}
 	}
 	return nil
