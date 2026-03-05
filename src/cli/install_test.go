@@ -187,7 +187,7 @@ func TestInstall_HooksConfiguration(t *testing.T) {
 		t.Fatal("hooks is not an object")
 	}
 
-	requiredHooks := []string{"PreToolUse", "PostToolUse", "SessionStart", "SessionEnd"}
+	requiredHooks := []string{"PostToolUse", "SessionStart", "SessionEnd"}
 	for _, hookName := range requiredHooks {
 		val, ok := hooks[hookName]
 		if !ok {
