@@ -26,7 +26,7 @@ func TestApprovalFullWorkflow(t *testing.T) {
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetIn(strings.NewReader(content))
-	cmd.SetArgs([]string{"tools", "approval", "request", "--type", "epic-requirements", "--epic", "approval-epic"})
+	cmd.SetArgs([]string{"tools", "approval", "request", "--type", "qa-escalation", "--epic", "approval-epic"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("request: %v\noutput: %s", err, buf.String())
 	}
@@ -42,8 +42,8 @@ func TestApprovalFullWorkflow(t *testing.T) {
 	if requested["Status"] != "pending" {
 		t.Errorf("Status = %v, want %q", requested["Status"], "pending")
 	}
-	if requested["Type"] != "epic-requirements" {
-		t.Errorf("Type = %v, want %q", requested["Type"], "epic-requirements")
+	if requested["Type"] != "qa-escalation" {
+		t.Errorf("Type = %v, want %q", requested["Type"], "qa-escalation")
 	}
 	if requested["Content"] != content {
 		t.Errorf("Content = %v, want %q", requested["Content"], content)
@@ -101,7 +101,7 @@ func TestApprovalRequestAllTypes(t *testing.T) {
 		t.Fatalf("epic init: %v", err)
 	}
 
-	types := []string{"epic-requirements", "story-definition", "qa-escalation", "execution-plan"}
+	types := []string{"qa-escalation", "execution-plan", "design"}
 	for _, at := range types {
 		t.Run(at, func(t *testing.T) {
 			var buf bytes.Buffer
@@ -172,7 +172,7 @@ func TestApprovalRequestWithStory(t *testing.T) {
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetIn(strings.NewReader("# Story Requirements"))
-	cmd.SetArgs([]string{"tools", "approval", "request", "--type", "story-definition", "--epic", "story-epic", "--story", "my-story"})
+	cmd.SetArgs([]string{"tools", "approval", "request", "--type", "design", "--epic", "story-epic", "--story", "my-story"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("request: %v\noutput: %s", err, buf.String())
 	}
@@ -205,7 +205,7 @@ func TestApprovalVerdictNeedsRevision(t *testing.T) {
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetIn(strings.NewReader(originalContent))
-	cmd.SetArgs([]string{"tools", "approval", "request", "--type", "epic-requirements", "--epic", "rev-epic"})
+	cmd.SetArgs([]string{"tools", "approval", "request", "--type", "qa-escalation", "--epic", "rev-epic"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("request: %v\noutput: %s", err, buf.String())
 	}
@@ -251,7 +251,7 @@ func TestApprovalListPending(t *testing.T) {
 		cmd.SetOut(&buf)
 		cmd.SetErr(&buf)
 		cmd.SetIn(strings.NewReader("content"))
-		cmd.SetArgs([]string{"tools", "approval", "request", "--type", "epic-requirements", "--epic", "list-epic"})
+		cmd.SetArgs([]string{"tools", "approval", "request", "--type", "qa-escalation", "--epic", "list-epic"})
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("request %d: %v", i, err)
 		}
@@ -313,7 +313,7 @@ func TestApprovalVerdictOnNonPending(t *testing.T) {
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetIn(strings.NewReader("content"))
-	cmd.SetArgs([]string{"tools", "approval", "request", "--type", "epic-requirements", "--epic", "nonpend-epic"})
+	cmd.SetArgs([]string{"tools", "approval", "request", "--type", "qa-escalation", "--epic", "nonpend-epic"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("request: %v", err)
 	}
@@ -375,7 +375,7 @@ func TestApprovalRequestStoryNotFound(t *testing.T) {
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetIn(strings.NewReader("content"))
-	cmd.SetArgs([]string{"tools", "approval", "request", "--type", "story-definition", "--epic", "notfound-epic", "--story", "nonexistent-story"})
+	cmd.SetArgs([]string{"tools", "approval", "request", "--type", "design", "--epic", "notfound-epic", "--story", "nonexistent-story"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for nonexistent story")

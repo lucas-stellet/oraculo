@@ -153,11 +153,11 @@ func TestStatus_WithData(t *testing.T) {
 	// Create pending approvals.
 	approvalStore := db.NewApprovalStore(database)
 	epicID := epic1.ID
-	_, err = approvalStore.Request(domain.ApprovalEpicRequirements, &epicID, nil, "review reqs")
+	_, err = approvalStore.Request(domain.ApprovalQAEscalation, &epicID, nil, "review reqs")
 	if err != nil {
 		t.Fatalf("request approval: %v", err)
 	}
-	_, err = approvalStore.Request(domain.ApprovalStoryDefinition, &epicID, nil, "review story")
+	_, err = approvalStore.Request(domain.ApprovalDesign, &epicID, nil, "review story")
 	if err != nil {
 		t.Fatalf("request approval: %v", err)
 	}

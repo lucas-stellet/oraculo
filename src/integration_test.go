@@ -53,7 +53,7 @@ func TestIntegration_ApprovalFlow(t *testing.T) {
 
 	go func() {
 		r, err := bridge.Request(ctx, approval.ApprovalRequest{
-			Type:    domain.ApprovalEpicRequirements,
+			Type:    domain.ApprovalQAEscalation,
 			Epic:    epic.Name,
 			Content: "# Requirements\n\nThis is the requirements document.",
 		})

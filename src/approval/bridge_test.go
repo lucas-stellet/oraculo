@@ -40,7 +40,7 @@ func TestBridge_RequestAndDecide(t *testing.T) {
 	go func() {
 		defer close(done)
 		result, reqErr = bridge.Request(ctx, approval.ApprovalRequest{
-			Type:    domain.ApprovalEpicRequirements,
+			Type:    domain.ApprovalQAEscalation,
 			Epic:    "my-epic",
 			Content: "# Requirements\nSome content",
 		})
@@ -83,7 +83,7 @@ func TestBridge_ContextCancellation(t *testing.T) {
 	go func() {
 		defer close(done)
 		_, err := bridge.Request(ctx, approval.ApprovalRequest{
-			Type:    domain.ApprovalEpicRequirements,
+			Type:    domain.ApprovalQAEscalation,
 			Epic:    "my-epic",
 			Content: "content",
 		})
@@ -105,7 +105,7 @@ func TestBridge_Status(t *testing.T) {
 	store := db.NewApprovalStore(database)
 	bridge := approval.NewBridge(store, &stubBroadcaster{})
 
-	appr, _ := store.Request(domain.ApprovalEpicRequirements, nil, nil, "content")
+	appr, _ := store.Request(domain.ApprovalQAEscalation, nil, nil, "content")
 
 	status, err := bridge.Status(appr.ID)
 	if err != nil {

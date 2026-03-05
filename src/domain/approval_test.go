@@ -8,10 +8,9 @@ func TestApprovalType_Valid(t *testing.T) {
 		a    ApprovalType
 		want bool
 	}{
-		{ApprovalEpicRequirements, true},
-		{ApprovalStoryDefinition, true},
 		{ApprovalQAEscalation, true},
 		{ApprovalExecutionPlan, true},
+		{ApprovalDesign, true},
 		{ApprovalType("unknown"), false},
 	}
 	for _, tt := range tests {

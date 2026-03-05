@@ -7,15 +7,12 @@ import "time"
 type ApprovalType string
 
 const (
-	ApprovalEpicRequirements ApprovalType = "epic-requirements"
-	ApprovalStoryDefinition  ApprovalType = "story-definition"
-	ApprovalQAEscalation     ApprovalType = "qa-escalation"
-	ApprovalExecutionPlan    ApprovalType = "execution-plan"
-	ApprovalDesign           ApprovalType = "design"
+	ApprovalQAEscalation  ApprovalType = "qa-escalation"
+	ApprovalExecutionPlan ApprovalType = "execution-plan"
+	ApprovalDesign        ApprovalType = "design"
 )
 
 var validApprovalTypes = map[ApprovalType]bool{
-	ApprovalEpicRequirements: true, ApprovalStoryDefinition: true,
 	ApprovalQAEscalation: true, ApprovalExecutionPlan: true,
 	ApprovalDesign: true,
 }

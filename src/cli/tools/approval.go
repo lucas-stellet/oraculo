@@ -79,7 +79,7 @@ func newApprovalRequestCmd() *cobra.Command {
 			return output.WriteJSON(w, approval)
 		},
 	}
-	cmd.Flags().String("type", "", "Approval type (epic-requirements|story-definition|qa-escalation|execution-plan)")
+	cmd.Flags().String("type", "", "Approval type (qa-escalation|execution-plan|design)")
 	_ = cmd.MarkFlagRequired("type")
 	cmd.Flags().String("epic", "", "Parent epic name (required)")
 	_ = cmd.MarkFlagRequired("epic")

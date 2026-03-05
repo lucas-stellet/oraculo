@@ -93,11 +93,11 @@ func TestListApprovals_PendingFilter(t *testing.T) {
 
 	// Seed approvals via store.
 	approvalStore := db.NewApprovalStore(database)
-	_, err := approvalStore.Request(domain.ApprovalEpicRequirements, nil, nil, "content-1")
+	_, err := approvalStore.Request(domain.ApprovalQAEscalation, nil, nil, "content-1")
 	if err != nil {
 		t.Fatalf("request approval 1: %v", err)
 	}
-	appr2, err := approvalStore.Request(domain.ApprovalStoryDefinition, nil, nil, "content-2")
+	appr2, err := approvalStore.Request(domain.ApprovalDesign, nil, nil, "content-2")
 	if err != nil {
 		t.Fatalf("request approval 2: %v", err)
 	}
@@ -146,7 +146,7 @@ func TestVerdict_ApprovesPendingApproval(t *testing.T) {
 
 	// Seed an approval.
 	approvalStore := db.NewApprovalStore(database)
-	appr, err := approvalStore.Request(domain.ApprovalEpicRequirements, nil, nil, "some content")
+	appr, err := approvalStore.Request(domain.ApprovalQAEscalation, nil, nil, "some content")
 	if err != nil {
 		t.Fatalf("request approval: %v", err)
 	}
@@ -200,7 +200,7 @@ func TestVerdict_InvalidVerdict(t *testing.T) {
 	srv, database := testServerWithDB(t)
 
 	approvalStore := db.NewApprovalStore(database)
-	appr, err := approvalStore.Request(domain.ApprovalEpicRequirements, nil, nil, "content")
+	appr, err := approvalStore.Request(domain.ApprovalQAEscalation, nil, nil, "content")
 	if err != nil {
 		t.Fatalf("request approval: %v", err)
 	}

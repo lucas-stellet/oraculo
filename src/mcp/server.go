@@ -4,7 +4,6 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -25,8 +24,8 @@ type Server struct {
 
 // requestApprovalInput is the typed input for the request_approval tool.
 type requestApprovalInput struct {
-	// Type is the approval gate kind (e.g. "epic-requirements").
-	Type string `json:"type" jsonschema:"Approval type (epic-requirements|story-definition|qa-escalation|execution-plan)"`
+	// Type is the approval gate kind (e.g. "qa-escalation").
+	Type string `json:"type" jsonschema:"Approval type (qa-escalation|execution-plan|design)"`
 	// Content is the document or artifact awaiting human review.
 	Content string `json:"content" jsonschema:"The content to be approved"`
 	// EpicID is an optional numeric epic ID.
@@ -76,7 +75,7 @@ func New(bridge *approval.Bridge, store *db.ApprovalStore, logger *slog.Logger) 
 	sdk.AddTool(inner,
 		&sdk.Tool{
 			Name:        "request_approval",
-			Description: "Submit an artifact for human approval. Blocks until a verdict (approved, rejected, or needs_revision) is recorded.",
+			Description: "Submit an artifact for human approval. Blocks until a verdict (approved, rejected, or needs_revision) is recorded. Use for operational gates only (qa-escalation, execution-plan, design).",
 		},
 		s.handleRequestApproval,
 	)
@@ -84,7 +83,7 @@ func New(bridge *approval.Bridge, store *db.ApprovalStore, logger *slog.Logger) 
 	sdk.AddTool(inner,
 		&sdk.Tool{
 			Name:        "approval_status",
-			Description: "Get the current status of an approval request.",
+			Description: "Get the current status of an operational approval request.",
 		},
 		s.handleApprovalStatus,
 	)
@@ -169,9 +168,3 @@ func (s *Server) handleApprovalStatus(
 	return nil, out, nil
 }
 
-// marshalApproval serialises an approval to a JSON-encoded string for use in
-// MCP text content responses.
-func marshalApproval(a *domain.Approval) string {
-	b, _ := json.Marshal(a)
-	return string(b)
-}
