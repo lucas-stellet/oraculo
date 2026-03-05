@@ -40,7 +40,7 @@ The Trusted Computing Base is the minimal core that the entire system depends on
 
 **Why it matters:** Skills handle Socratic dialogue. Agents handle codebase investigation. Both depend on the CLI for persistence, validation, and structured operations. If the CLI is trustworthy, skills and agents can focus on their interpretive work without worrying about data integrity. If the CLI is not trustworthy, nothing built on top of it can be trusted either.
 
-Approval verdicts — `approved`, `rejected`, `needs_revision` — flow through the TCB. The CLI is the single, authoritative path through which human judgment enters the system, ensuring that no approval can bypass validation or enter the database in an inconsistent state.
+Human judgment flows through the TCB via two mechanisms: document version reviews (epic requirements, story definitions) use verdicts `approved` and `rejected`; operational approval gates (design, execution-plan, qa-escalation) use verdicts `approved`, `rejected`, and `needs_revision`. The CLI is the single, authoritative path through which human judgment enters the system, ensuring that no review or approval can bypass validation or enter the database in an inconsistent state.
 
 ## 4. Design Principles
 

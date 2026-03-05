@@ -90,7 +90,8 @@ Quando um approval gate esta aberto, o orquestrador entra no estado `awaiting_ap
 
 **O que o orquestrador continua fazendo:**
 - Despacha tarefas independentes cujas dependencias ja estao satisfeitas e que nao dependem do resultado da aprovacao
-- Monitora o status da aprovacao por polling: `oraculo tools approval status`
+- Para gates operacionais: monitora o status da aprovacao por polling `oraculo tools approval status`
+- Para reviews de documentos: monitora o status das reviews por polling `oraculo tools review list <version-id> --type <epic|story>`
 
 **Retorno ao estado ativo:**
-Uma vez recebido um veredicto via `oraculo tools approval status`, o orquestrador le o veredicto, aplica o resultado adequado (avancar, abortar ou tentar novamente com comentarios) e transiciona de volta ao estado ativo. As tarefas dependentes sao reavaliadas em relacao ao DAG atualizado.
+Uma vez recebido um veredicto (via `oraculo tools approval status` para gates operacionais, ou `oraculo tools review list` para reviews de documentos), o orquestrador le o veredicto, aplica o resultado adequado (avancar ou abortar para reviews de documentos; avancar, abortar ou tentar novamente com comentarios para gates operacionais) e transiciona de volta ao estado ativo. As tarefas dependentes sao reavaliadas em relacao ao DAG atualizado.

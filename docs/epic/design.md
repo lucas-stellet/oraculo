@@ -117,15 +117,14 @@ Only when all four risks are addressed does the session produce its final artifa
 
 ### 1.7 Artifact Generation
 
-Oraculo generates the Requirements Document and saves it via CLI, then submits it for human review. The workflow has four steps:
+Oraculo generates the Requirements Document and saves it via CLI, then creates a version for human review. The workflow has four steps:
 
 1. **Generate and save** — Oraculo generates the Requirements Document and saves it to `.oraculo/epics/<epic-name>/requirements.md` via `oraculo epic save`.
-2. **Submit for approval** — Oraculo calls `oraculo tools approval request --type epic-requirements`, which registers the artifact in the approval queue and displays it on the dashboard for human review.
-3. **Await verdict** — The agent enters `awaiting_approval` state. Workflow does not advance until a human issues a verdict from the dashboard.
+2. **Create version** — Oraculo calls `oraculo tools epic version <epic-name>`, passing the markdown through stdin. This creates a versioned snapshot and displays it on the dashboard for human review.
+3. **Await verdict** — The agent monitors reviews via `oraculo tools review list <version-id> --type epic`. Workflow does not advance until a human issues a verdict from the dashboard.
 4. **Handle verdict:**
    - `approved` — Requirements are finalized. Oraculo suggests decomposing the epic into stories with `/oraculo:story`.
    - `rejected` — Return to §1.2 (Divergence) to reopen the problem space based on reviewer feedback.
-   - `needs_revision` — Return to §1.5 (Assumption Mapping) or §1.4 (Convergence) with the reviewer's comments to refine the artifact.
 
 ## 2. Output Artifacts
 

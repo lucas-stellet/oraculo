@@ -60,7 +60,7 @@ These principles extend the core Oraculo principles for this specific phase:
 
 - **Assumptions are explicit** — Every critical assumption must be stated and acknowledged. Not all assumptions need scoring — but the dangerous ones must be visible.
 
-- **Gate before generating** — The Story phase has two mandatory checkpoints before the artifact reaches the agent. The **exit gate** is an automatic, internal quality check: if the four risks aren't addressed, the artifact isn't generated. The **approval gate** is a human verdict: once the artifact is produced, it is submitted for review via the dashboard and the workflow enters `awaiting_approval`. The story does not advance to execution until a verdict arrives — `approved` to proceed, `rejected` to return to definition, or `needs_revision` to return with reviewer comments. Both gates are mandatory. Neither can be skipped.
+- **Gate before generating** — The Story phase has two mandatory checkpoints before the artifact reaches the agent. The **exit gate** is an automatic, internal quality check: if the four risks aren't addressed, the artifact isn't generated. The **version review** is a human verdict: once the artifact is produced, a version is created via `oraculo tools story version` and submitted for review via the dashboard. The story does not advance to execution until a verdict arrives — `approved` to proceed or `rejected` to return to definition. Both gates are mandatory. Neither can be skipped.
 
 - **Escalate, don't force** — If the work is too big for a story, suggest an Epic. Don't compress complex work into a simple format.
 

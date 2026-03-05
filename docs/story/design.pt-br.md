@@ -67,15 +67,14 @@ Checkpoint final — avaliar quatro dimensões de risco antes de gerar o artefat
 
 ### 1.4 Geração de Artefatos
 
-O Oraculo gera o Documento de Story e o salva via CLI, depois o submete para revisão humana. O fluxo tem quatro etapas:
+O Oraculo gera o Documento de Story e o salva via CLI, depois cria uma versão para revisão humana. O fluxo tem quatro etapas:
 
 1. **Gerar e salvar** — O Oraculo gera o Documento de Story e o salva em `.oraculo/epics/<nome-epic>/stories/<nome-story>/requirements.md` via `oraculo story save`. Se derivada de um epic, o documento inclui referências ao pai nos comentários do cabeçalho.
-2. **Submeter para aprovação** — O Oraculo chama `oraculo tools approval request --type story-definition`, que registra o artefato na fila de aprovação e o exibe no dashboard para revisão humana.
-3. **Aguardar verdict** — O agente entra em estado `awaiting_approval`. O fluxo não avança até que um humano emita um verdict pelo dashboard.
+2. **Criar versão** — O Oraculo chama `oraculo tools story version <nome-story> --epic <nome-epic>`, passando o markdown via stdin. Isso cria um snapshot versionado e o exibe no dashboard para revisão humana.
+3. **Aguardar verdict** — O agente monitora reviews via `oraculo tools review list <version-id> --type story`. O fluxo não avança até que um humano emita um verdict pelo dashboard.
 4. **Tratar o verdict:**
    - `approved` — A definição da story é finalizada. A story está pronta para execução.
    - `rejected` — Voltar a §1.1 (Reenquadramento) para reabrir o espaço do problema com base no feedback do revisor.
-   - `needs_revision` — Voltar a §1.2 (Verificação de Premissas) ou §1.3 (Portão de Saída) com os comentários do revisor para refinar o artefato.
 
 ## 2. Saturação
 
@@ -164,4 +163,4 @@ Se em qualquer momento durante uma sessão de Story o trabalho se revela do tama
 
 Artefatos de story são salvos em `.oraculo/epics/<nome-epic>/stories/<nome-story>/requirements.md` dentro da aplicação-alvo. O nome da story é derivado do título da story (minúsculas, hifenizado). Se nenhum nome de epic foi fornecido e a story é standalone, a CLI cria um epic leve automaticamente.
 
-O artefato não é considerado final até que `approval_status = approved`. Um documento de story salvo que ainda não recebeu um verdict humano (ou que recebeu `rejected` ou `needs_revision`) não deve ser usado como input para planejamento de execução.
+O artefato não é considerado final até que exista uma version review com verdict `approved`. Um documento de story salvo que ainda não recebeu um verdict humano (ou que recebeu `rejected`) não deve ser usado como input para planejamento de execução.

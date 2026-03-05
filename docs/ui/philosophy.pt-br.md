@@ -48,7 +48,7 @@ A UI nunca escreve diretamente no armazenamento ou no sistema de arquivos. Toda 
 
 ### 4.3 Aprovação É o Momento do Humano
 
-O propósito principal da UI é tornar a revisão humana confortável, bem fundamentada e decisiva. Renderização rica de artefatos em markdown, exibição contextual de decisões relacionadas, diff views para mudanças, e ações claras de aceitar/rejeitar — tudo serve à decisão de aprovação. A UI não apressa o humano. Ela apresenta a informação completa e aguarda. É aqui que a disciplina socrática se torna tangível: o humano vê o raciocínio completo antes de se comprometer.
+O propósito principal da UI é tornar a revisão humana confortável, bem fundamentada e decisiva. Renderização rica de artefatos em markdown, exibição contextual de decisões relacionadas, diff views entre versões de documentos, e ações claras de aceitar/rejeitar — tudo serve à decisão de revisão. Para reviews de documentos (requisitos de epic, definições de story), o dashboard mostra snapshots versionados com diffs entre versões e aceita verdicts `approved`/`rejected`. Para gates operacionais (design, execution-plan, qa-escalation), o dashboard também suporta `needs_revision`. A UI não apressa o humano. Ela apresenta a informação completa e aguarda. É aqui que a disciplina socrática se torna tangível: o humano vê o raciocínio completo antes de se comprometer.
 
 ### 4.4 Tempo Real Sem Acoplamento
 

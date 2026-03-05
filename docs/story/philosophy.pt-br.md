@@ -60,7 +60,7 @@ Estes princípios estendem os princípios centrais do Oraculo para esta fase esp
 
 - **Premissas são explícitas** — Toda premissa crítica deve ser declarada e reconhecida. Nem todas as premissas precisam de pontuação — mas as perigosas devem ser visíveis.
 
-- **Gate antes de gerar** — A fase Story tem dois checkpoints obrigatórios antes que o artefato chegue ao agente. O **exit gate** é uma verificação de qualidade automática e interna: se os quatro riscos não forem endereçados, o artefato não é gerado. O **approval gate** é um verdict humano: uma vez que o artefato é produzido, ele é submetido para revisão pelo dashboard e o fluxo entra em `awaiting_approval`. A story não avança para execução até que um verdict chegue — `approved` para prosseguir, `rejected` para retornar à definição, ou `needs_revision` para retornar com os comentários do revisor. Ambos os gates são obrigatórios. Nenhum pode ser pulado.
+- **Gate antes de gerar** — A fase Story tem dois checkpoints obrigatórios antes que o artefato chegue ao agente. O **exit gate** é uma verificação de qualidade automática e interna: se os quatro riscos não forem endereçados, o artefato não é gerado. A **version review** é um verdict humano: uma vez que o artefato é produzido, uma versão é criada via `oraculo tools story version` e submetida para revisão pelo dashboard. A story não avança para execução até que um verdict chegue — `approved` para prosseguir ou `rejected` para retornar à definição. Ambos os gates são obrigatórios. Nenhum pode ser pulado.
 
 - **Escalar, não forçar** — Se o trabalho é grande demais para uma story, sugerir um Epic. Não comprimir trabalho complexo em um formato simples.
 

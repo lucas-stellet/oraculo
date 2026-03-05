@@ -37,7 +37,11 @@ O binário Go inclui um HTTP server que serve tanto a REST API quanto os assets 
 | `GET /api/knowledge` | `oraculo tools memory search <query>` | Busca na base de conhecimento |
 | `GET /api/knowledge/domains` | `oraculo tools memory domains` | Domínios disponíveis |
 | `GET /api/status` | `oraculo status` (parsed) | Estatísticas agregadas do projeto |
-| `POST /api/approvals/:id/verdict` | (estado interno) | Enviar decisão de aprovação |
+| `GET /api/epics/:name/versions` | `oraculo tools epic versions <name>` | Listar versões do epic |
+| `GET /api/epics/:epic/stories/:story/versions` | `oraculo tools story versions <story> --epic <epic>` | Listar versões da story |
+| `GET /api/reviews/:versionId` | `oraculo tools review list <version-id> --type <epic\|story>` | Listar reviews de uma versão |
+| `POST /api/reviews` | `oraculo tools review create <version-id> --type <type> --verdict <verdict> --comment <comment>` | Enviar review de documento |
+| `POST /api/approvals/:id/verdict` | (estado interno) | Enviar decisão de aprovação operacional |
 
 O servidor gerencia uma única responsabilidade com estado: a **fila de aprovações**. Solicitações de aprovação chegam via chamadas de ferramenta MCP dos agentes e ficam em memória até que o humano responda pelo dashboard. O veredicto é então retransmitido ao agente solicitante.
 
@@ -150,13 +154,14 @@ Todos os dados fluem pelas funções internas do CLI. O HTTP server chama as mes
 
 ### 3.5 Aprovações
 
-**Propósito:** Revisão humana e gate de aprovação para documentos de requisitos, definições de story e escalações de QA.
+**Propósito:** Gate de revisão humana para versões de documentos (requisitos de epic, definições de story) e aprovações operacionais (escalações de QA, design, execution-plan).
 
 **Fontes de dados:**
-- Chamadas MCP `request_approval` preenchem a fila
-- `oraculo tools epic get` / `oraculo tools story get` — Carregam versões atuais dos documentos para diff
+- Para reviews de documentos: `oraculo tools epic versions <nome-epic>` / `oraculo tools story versions <nome-story> --epic <nome-epic>` — Carregam histórico de versões
+- Para gates operacionais: chamadas MCP `request_approval` preenchem a fila
+- Diff entre versões usa as tabelas `epic_versions` / `story_versions`
 
-**Layout:** Coluna esquerda: fila de aprovações ordenada por hora de chegada, com badges de tipo (requirements/story/qa-escalation) e indicadores de tempo de espera. Coluna direita: visualizador rico de markdown com syntax highlighting. Quando uma versão anterior existe, um toggle alterna entre a visualização renderizada e o diff lado a lado. Abaixo do visualizador: campo de comentário inline e três botões de ação (Aprovar, Rejeitar, Precisa de Revisão).
+**Layout:** Coluna esquerda: fila de reviews/aprovações ordenada por hora de chegada, com badges de tipo (epic-version/story-version/qa-escalation/design/execution-plan) e indicadores de tempo de espera. Coluna direita: visualizador rico de markdown com syntax highlighting. Para versões de documentos, um toggle alterna entre a visualização renderizada e o diff lado a lado contra a versão anterior. Abaixo do visualizador: campo de comentário inline e botões de ação. Para reviews de documentos: dois botões (Aprovar, Rejeitar). Para gates operacionais: três botões (Aprovar, Rejeitar, Precisa de Revisão).
 
 **Interações principais:** Selecione um item da fila para carregar seu conteúdo. Alterne o modo diff. Adicione comentários (anexados ao veredicto). Envie o veredicto — o servidor o retransmite ao agente solicitante via callback MCP.
 

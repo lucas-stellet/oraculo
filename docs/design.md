@@ -14,7 +14,7 @@ Stories without an associated epic skip Discover — context comes directly from
 
 Oraculo instigates the user with questions. It explores the idea, identifies risks, and surfaces edge cases. The output is a requirements document validated by the user.
 
-The Discover phase ends in an **approval gate** (`epic-requirements`): the agent calls `oraculo tools approval request --type epic-requirements`, the dashboard displays the requirements document for review, and the agent enters `awaiting_approval`. Plan does not start until a verdict is received.
+The Discover phase ends in a **version review**: the agent calls `oraculo tools epic version <epic-name>` to create a versioned snapshot, then monitors reviews via `oraculo tools review list <version-id> --type epic`. The dashboard displays the requirements document for review. Plan does not start until a verdict is received.
 
 _Mandatory for epics. Skipped when a story is submitted directly with sufficient context._
 
@@ -38,7 +38,7 @@ A dedicated QA agent reviews the implementation. It verifies: tests pass, projec
 
 When the QA agent identifies a critical defect that it cannot resolve autonomously, it escalates via `oraculo tools approval request --type qa-escalation`. This triggers an **approval gate** (`qa-escalation`) that surfaces the issue to a human reviewer through the dashboard. The agent enters `awaiting_approval` until the reviewer delivers a verdict directing the next action.
 
-**Golden rule:** Oraculo never skips the core phases (Plan, Execute, Validate). For epics, Discover is mandatory. Approval gates between phases are mandatory — workflow never advances past a gate without an explicit verdict. The five approval gates are: `epic-requirements`, `story-definition`, `design`, `execution-plan`, and `qa-escalation`.
+**Golden rule:** Oraculo never skips the core phases (Plan, Execute, Validate). For epics, Discover is mandatory. Human review between phases is mandatory — workflow never advances past a review or approval gate without an explicit verdict. Document reviews (epic requirements, story definitions) use the versioning system with `approved`/`rejected` verdicts. Operational gates (`design`, `execution-plan`, `qa-escalation`) use the approvals system with `approved`/`rejected`/`needs_revision` verdicts.
 
 ## 2. Documentation as Project Memory
 
@@ -117,7 +117,7 @@ The persistent context. Project patterns, code conventions, architecture — eve
 
 ### Dashboard
 
-The observation and control surface. A browser-based dashboard that provides visibility into agents, tasks, the DAG, approval gates, and accumulated knowledge. It consumes data through the CLI Trust Layer (never bypasses it) and functions as Mission Control: comprehensive situational awareness with strategic human intervention at approval gates. When an agent enters `awaiting_approval`, the dashboard surfaces the artifact for review and collects the human verdict (`approved`, `rejected`, or `needs_revision`).
+The observation and control surface. A browser-based dashboard that provides visibility into agents, tasks, the DAG, approval gates, and accumulated knowledge. It consumes data through the CLI Trust Layer (never bypasses it) and functions as Mission Control: comprehensive situational awareness with strategic human intervention at approval gates. When an agent enters `awaiting_approval`, the dashboard surfaces the artifact for review and collects the human verdict. For document reviews (epic requirements, story definitions), verdicts are `approved` or `rejected`. For operational gates (design, execution-plan, qa-escalation), verdicts are `approved`, `rejected`, or `needs_revision`.
 
 Real-time updates flow through two sources: **HTTP hooks** push telemetry events (agent lifecycle, tool mutations, task completions, session tracking) via WebSocket as they happen; **MCP** delivers approval gate notifications when an agent blocks waiting for a human verdict. The dashboard never reads files directly or watches the database — all data arrives through the CLI Trust Layer or WebSocket push from the HTTP server.
 
@@ -139,7 +139,7 @@ Oraculo is a team tool, not a solo developer tool.
 
 1. Someone on the team has an idea or identifies a problem
 2. Starts Oraculo with `/oraculo:epic` — questions, refinement, edge cases
-3. **Approval gate** (`epic-requirements`) — dashboard presents requirements for human review; workflow pauses until verdict
+3. **Version review** (`epic requirements`) — dashboard presents the versioned requirements for human review; workflow pauses until verdict
 4. Validated requirements become a plan with tasks in a DAG
 5. **Approval gate** (`design`) — dashboard presents the architectural design document for review; workflow pauses until verdict
 6. Optional **approval gate** (`execution-plan`) — dashboard presents the DAG for review before agents are dispatched
@@ -150,7 +150,7 @@ Oraculo is a team tool, not a solo developer tool.
 
 1. A work item is already defined or the user supplies direct context
 2. Starts Oraculo with `/oraculo:story` — skips Discover, goes straight to Plan
-3. **Approval gate** (`story-definition`) — dashboard presents the story definition for human review; workflow pauses until verdict
+3. **Version review** (`story definition`) — dashboard presents the versioned story definition for human review; workflow pauses until verdict
 4. **Approval gate** (`design`) — dashboard presents the architectural design document for review; workflow pauses until verdict
 5. Agents execute in parallel, following TDD and project standards
 6. QA agent validates independently — critical defects trigger **approval gate** (`qa-escalation`) for human direction; if rejected, returns to the appropriate phase

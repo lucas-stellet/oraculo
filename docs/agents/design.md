@@ -128,16 +128,18 @@ This is a hard architectural constraint: the observation layer cannot degrade ag
 
 ### MCP Tools — Reduced Scope
 
-With HTTP hooks handling telemetry, the MCP server's tool set is reduced to the approval gate workflow only:
+With HTTP hooks handling telemetry, the MCP server's tool set is reduced to approval gates and document versioning:
 
 | MCP Tool | Status | Purpose |
 |---|---|---|
-| `request_approval` | Kept | Interactive approval gate — blocks until human verdict |
+| `request_approval` | Kept | Interactive operational gate — blocks until human verdict (design, execution-plan, qa-escalation) |
 | `approval_status` | Kept | Polling fallback for crash recovery |
+| `create_version` | New | Create a versioned snapshot of epic requirements or story definitions for review |
+| `submit_review` | New | Submit a review verdict for a document version (approved/rejected) |
 | `notify_agent_state` | Removed | Replaced by SubagentStart/Stop HTTP hooks |
 | `register_project` | Removed | Handled by `oraculo install` |
 
-Agents only call MCP tools when they need a human decision. All other communication with the dashboard is automatic.
+Agents call MCP tools when they need a human decision. Document reviews (epic requirements, story definitions) use `create_version` + `submit_review` with verdicts `approved`/`rejected`. Operational gates (design, execution-plan, qa-escalation) use `request_approval` with verdicts `approved`/`rejected`/`needs_revision`. All other communication with the dashboard is automatic.
 
 ## 6. Future Work
 

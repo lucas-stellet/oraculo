@@ -48,7 +48,7 @@ QA agents sao o sistema imunologico. Validam todo output com olhos frescos, sem 
 
 **O Trust Layer e o arbitro final, nao o QA agent.** O problema recursivo de "who watches the watchmen" nao e resolvido adicionando mais vigias. E resolvido pela realidade deterministica. Compilacao, execucao de testes e assercoes de contrato nao tem opinioes. O QA agent produz findings e evidencias; a CLI os verifica. Se o output viola o contrato, e rejeitado — sem debate.
 
-**Um circuit breaker aciona um approval gate no dashboard.** Quando os ciclos de rejeicao do QA excedem o threshold configurado, o sistema nao falha silenciosamente nem instancia mais agentes. O QA agent submete uma approval request `qa-escalation` ao dashboard, entra em `awaiting_approval` e interrompe o despacho naquela tarefa. O humano revisa os achados acumulados e emite um verdict — `approved`, `rejected` ou `needs_revision` — antes de o trabalho ser retomado.
+**Um circuit breaker aciona um approval gate no dashboard.** Quando os ciclos de rejeicao do QA excedem o threshold configurado, o sistema nao falha silenciosamente nem instancia mais agentes. O QA agent submete uma approval request `qa-escalation` ao dashboard, entra em `awaiting_approval` e interrompe o despacho naquela tarefa. O humano revisa os achados acumulados e emite um verdict — `approved`, `rejected` ou `needs_revision` — antes de o trabalho ser retomado. Note que `qa-escalation` e um gate operacional e mantem o verdict `needs_revision`, diferente das reviews de documentos (epic/story) que usam apenas `approved`/`rejected`.
 
 ## 6. Memoria
 

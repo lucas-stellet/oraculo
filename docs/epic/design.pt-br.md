@@ -117,15 +117,14 @@ Apenas quando os quatro riscos estão endereçados a sessão produz seus artefat
 
 ### 1.7 Geração de Artefatos
 
-O Oraculo gera o Documento de Requisitos e o salva via CLI, depois o submete para revisão humana. O fluxo tem quatro etapas:
+O Oraculo gera o Documento de Requisitos e o salva via CLI, depois cria uma versão para revisão humana. O fluxo tem quatro etapas:
 
 1. **Gerar e salvar** — O Oraculo gera o Documento de Requisitos e o salva em `.oraculo/epics/<nome-epic>/requirements.md` via `oraculo epic save`.
-2. **Submeter para aprovação** — O Oraculo chama `oraculo tools approval request --type epic-requirements`, que registra o artefato na fila de aprovação e o exibe no dashboard para revisão humana.
-3. **Aguardar verdict** — O agente entra em estado `awaiting_approval`. O fluxo não avança até que um humano emita um verdict pelo dashboard.
+2. **Criar versão** — O Oraculo chama `oraculo tools epic version <nome-epic>`, passando o markdown via stdin. Isso cria um snapshot versionado e o exibe no dashboard para revisão humana.
+3. **Aguardar verdict** — O agente monitora reviews via `oraculo tools review list <version-id> --type epic`. O fluxo não avança até que um humano emita um verdict pelo dashboard.
 4. **Tratar o verdict:**
    - `approved` — Requisitos são finalizados. O Oraculo sugere decompor o epic em stories com `/oraculo:story`.
    - `rejected` — Voltar a §1.2 (Divergência) para reabrir o espaço do problema com base no feedback do revisor.
-   - `needs_revision` — Voltar a §1.5 (Mapeamento de Premissas) ou §1.4 (Convergência) com os comentários do revisor para refinar o artefato.
 
 ## 2. Artefatos de Saída
 

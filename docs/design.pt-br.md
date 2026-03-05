@@ -14,7 +14,7 @@ No modo reduzido, a fase de Descobrir é pulada — o contexto vem direto do usu
 
 O Oráculo instiga o usuário com perguntas. Explora a ideia, identifica riscos, levanta edge cases. O resultado é um documento de requisitos validado pelo usuário.
 
-A fase Discover termina em um **approval gate** (`epic-requirements`): o agente chama `oraculo tools approval request --type epic-requirements`, o dashboard exibe o documento de requisitos para revisão, e o agente entra em `awaiting_approval`. O Plan não começa até que um verdict seja recebido.
+A fase Discover termina em uma **version review**: o agente chama `oraculo tools epic version <epic-name>` para criar um snapshot versionado, depois monitora reviews via `oraculo tools review list <version-id> --type epic`. O dashboard exibe o documento de requisitos para revisão. O Plan não começa até que um verdict seja recebido.
 
 _Obrigatória para epics. Pulada quando uma story é submetida diretamente com contexto suficiente._
 
@@ -34,7 +34,7 @@ Um agente de QA dedicado revisa a implementação. Ele verifica: testes passam, 
 
 Quando o QA agent identifica um defeito crítico que não consegue resolver de forma autônoma, ele submete uma approval request `qa-escalation` ao dashboard via `oraculo tools approval request --type qa-escalation`. Isso aciona um **approval gate** (`qa-escalation`) que expõe o problema a um revisor humano pelo dashboard. O agente entra em `awaiting_approval` até que o revisor entregue um verdict que direciona a próxima ação.
 
-**Regra de ouro:** O Oráculo nunca pula as fases centrais (Plan, Execute, Validate). Para epics, Discover é obrigatório. Approval gates entre fases são obrigatórios — o fluxo nunca avança além de um gate sem um verdict explícito.
+**Regra de ouro:** O Oráculo nunca pula as fases centrais (Plan, Execute, Validate). Para epics, Discover é obrigatório. Revisão humana entre fases é obrigatória — o fluxo nunca avança além de uma revisão ou gate sem um verdict explícito. Reviews de documentos (requisitos de epic, definições de story) usam o sistema de versionamento com verdicts `approved`/`rejected`. Gates operacionais (`design`, `execution-plan`, `qa-escalation`) usam o sistema de approvals com verdicts `approved`/`rejected`/`needs_revision`.
 
 ## 2. Documentação como Memória do Projeto
 
@@ -84,7 +84,7 @@ O contexto persistente. Padrões do projeto, convenções de código, arquitetur
 
 ### Dashboard
 
-A superfície de observação e controle. Um dashboard baseado em browser que fornece visibilidade sobre agentes, tarefas, o DAG, approval gates e conhecimento acumulado. Consome dados pelo CLI Trust Layer (nunca o contorna) e funciona como Mission Control: consciência situacional abrangente com intervenção humana estratégica nos approval gates. Quando um agente entra em `awaiting_approval`, o dashboard exibe o artefato para revisão e coleta o verdict humano (`approved`, `rejected` ou `needs_revision`).
+A superfície de observação e controle. Um dashboard baseado em browser que fornece visibilidade sobre agentes, tarefas, o DAG, approval gates e conhecimento acumulado. Consome dados pelo CLI Trust Layer (nunca o contorna) e funciona como Mission Control: consciência situacional abrangente com intervenção humana estratégica nos approval gates. Quando um agente entra em `awaiting_approval`, o dashboard exibe o artefato para revisão e coleta o verdict humano. Para reviews de documentos (requisitos de epic, definições de story), os verdicts são `approved` ou `rejected`. Para gates operacionais (design, execution-plan, qa-escalation), os verdicts são `approved`, `rejected` ou `needs_revision`.
 
 **Princípio:** O Oráculo não reinventa ferramentas. Ele orquestra o que o Claude Code já oferece, tirando o máximo de cada capacidade nativa.
 
@@ -104,7 +104,7 @@ O Oráculo é uma ferramenta de time, não de desenvolvedor solo.
 
 1. Alguém do time tem uma ideia ou identifica um problema
 2. Inicia o Oráculo com `/oraculo:epic` — perguntas, refinamento, edge cases
-3. **Approval gate** (`epic-requirements`) — dashboard apresenta os requisitos para revisão humana; fluxo pausa até o verdict
+3. **Version review** (`requisitos do epic`) — dashboard apresenta os requisitos versionados para revisão humana; fluxo pausa até o verdict
 4. Requisitos validados viram um plano com tarefas em DAG
 5. **Approval gate** opcional (`execution-plan`) — dashboard apresenta o DAG para revisão antes dos agentes serem despachados
 6. Agentes executam em paralelo, seguindo TDD e padrões do projeto
@@ -114,7 +114,7 @@ O Oráculo é uma ferramenta de time, não de desenvolvedor solo.
 
 1. Um item de trabalho já está definido ou o usuário fornece contexto direto
 2. Inicia o Oráculo com `/oraculo:story` — pula Discover, vai direto para Plan
-3. **Approval gate** (`story-definition`) — dashboard apresenta a definição da story para revisão humana; fluxo pausa até o verdict
+3. **Version review** (`definição da story`) — dashboard apresenta a definição versionada da story para revisão humana; fluxo pausa até o verdict
 4. Agentes executam em paralelo, seguindo TDD e padrões do projeto
 5. Agente de QA valida independentemente — defeitos críticos acionam **approval gate** (`qa-escalation`) para direcionamento humano; se rejeitado, retorna à fase apropriada
 

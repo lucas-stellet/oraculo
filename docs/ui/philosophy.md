@@ -48,7 +48,7 @@ The UI never writes directly to storage or the filesystem. Every mutation flows 
 
 ### 4.3 Approval Is the Human's Moment
 
-The primary purpose of the UI is to make human review comfortable, informed, and decisive. Rich rendering of markdown artifacts, contextual display of related decisions, diff views for changes, and clear accept/reject actions — everything serves the approval decision. The UI does not rush the human. It presents complete information and waits. This is where the Socratic discipline becomes tangible: the human sees the full reasoning before committing.
+The primary purpose of the UI is to make human review comfortable, informed, and decisive. Rich rendering of markdown artifacts, contextual display of related decisions, diff views between document versions, and clear accept/reject actions — everything serves the review decision. For document reviews (epic requirements, story definitions), the dashboard shows versioned snapshots with diffs between versions and accepts `approved`/`rejected` verdicts. For operational gates (design, execution-plan, qa-escalation), the dashboard also supports `needs_revision`. The UI does not rush the human. It presents complete information and waits. This is where the Socratic discipline becomes tangible: the human sees the full reasoning before committing.
 
 ### 4.4 Real-Time Without Coupling
 
@@ -56,7 +56,7 @@ Live connections provide updates as agents progress, tasks complete, and QA verd
 
 This principle is made structurally true by the **two-channel architecture**. Telemetry flows through HTTP hooks — fire-and-forget POST requests that Claude Code sends automatically on every qualifying system event (session start, agent spawn, tool use, task completion). These hooks are non-blocking by design: if the dashboard server is offline or slow, the hook times out silently and the agent continues without interruption. The observation layer cannot interfere with execution even if the server crashes entirely.
 
-Approval gates use a separate channel — MCP tools over stdio — which intentionally *does* block the agent. This is the one moment where the human's response is required before the system proceeds. The two channels are not interchangeable: telemetry is automatic and non-blocking (HTTP hooks); approvals are explicit and blocking (MCP). Each channel does what it does best, and neither leaks into the other's domain.
+Human review gates use a separate channel — MCP tools over stdio — which intentionally *does* block the agent. This is the one moment where the human's response is required before the system proceeds. For operational gates, the agent calls `request_approval` (blocking MCP). For document reviews, the agent creates a version via CLI and polls for reviews. The two channels are not interchangeable: telemetry is automatic and non-blocking (HTTP hooks); review gates are explicit and blocking. Each channel does what it does best, and neither leaks into the other's domain.
 
 The result: the dashboard is a passive observer by default and an active gatekeeper only at approval moments — never accidentally, never by coupling.
 

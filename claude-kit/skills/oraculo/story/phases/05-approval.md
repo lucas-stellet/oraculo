@@ -26,28 +26,27 @@
 
 ## Execution
 
-Track the request with:
+Track the review with:
 
-`oraculo tools approval status <approval-id>`
+`oraculo tools review list <version-id> --type story`
 
 React to verdicts:
 - `approved`: the story is ready for planning or execution-oriented follow-up
 - `rejected`: return to reframing
-- `needs_revision`: return to assumptions or exit gate based on the feedback
 
 <halt>
-  - Approval request fails — surface the CLI error and stop
-  - No verdict exists yet — remain in awaiting approval
+  - Review list fails — surface the CLI error and stop
+  - No review exists yet — remain in awaiting review
 </halt>
 
 <phase-gate phase="approval">
   Exit conditions:
-    - Story approval status is actively monitored through the CLI
-    - Awaiting-approval state is explicit until a verdict is returned
-    - Approved, rejected, and needs_revision paths are clear
+    - Story review status is actively monitored through the CLI
+    - Awaiting-review state is explicit until a verdict is returned
+    - Approved and rejected paths are clear
 
   Persist via CLI:
-    - Approval is tracked through `oraculo tools approval status`; the session was completed on artifact persistence.
+    - Review is tracked through `oraculo tools review list`; the session was completed on artifact persistence.
 
   If CLI rejects: surface the rejection and resolve it.
   On success: Stop and wait for the human verdict. Do not auto-invoke another command.

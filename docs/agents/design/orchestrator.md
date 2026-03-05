@@ -90,7 +90,8 @@ When an approval gate is open, the orchestrator enters `awaiting_approval` state
 
 **What the orchestrator continues to do:**
 - Dispatches independent tasks whose dependencies are already satisfied and that do not depend on the approval outcome
-- Monitors approval status by polling: `oraculo tools approval status`
+- For operational gates: monitors approval status by polling `oraculo tools approval status`
+- For document reviews: monitors review status by polling `oraculo tools review list <version-id> --type <epic|story>`
 
 **Returning to active state:**
-Once a verdict is received via `oraculo tools approval status`, the orchestrator reads the verdict, applies the appropriate outcome (advance, abort, or retry with comments), and transitions back to active state. Dependent tasks are re-evaluated against the updated DAG.
+Once a verdict is received (via `oraculo tools approval status` for operational gates, or `oraculo tools review list` for document reviews), the orchestrator reads the verdict, applies the appropriate outcome (advance or abort for document reviews; advance, abort, or retry with comments for operational gates), and transitions back to active state. Dependent tasks are re-evaluated against the updated DAG.

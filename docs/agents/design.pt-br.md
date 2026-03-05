@@ -43,7 +43,7 @@ O QA agent valida todo o output de codigo com uma context window completamente l
 
 O QA verifica corretude funcional, conformidade com os padroes, casos de borda, qualidade dos testes e escopo. Ele **nunca corrige codigo** — produz achados estruturados que o orquestrador encaminha para um novo code agent. Essa separacao garante que o QA nunca possa comprometer seus proprios veredictos.
 
-Um circuit breaker limita os ciclos de rejeicao do QA (padrao: 3) antes de o QA agent submeter uma approval request `qa-escalation` ao dashboard. O agent entra em `awaiting_approval` e interrompe o despacho naquela tarefa ate que o humano emita um verdict (`approved`, `rejected` ou `needs_revision`). Todos os achados do QA e resumos de tentativas sao preservados para revisao humana.
+Um circuit breaker limita os ciclos de rejeicao do QA (padrao: 3) antes de o QA agent submeter uma approval request `qa-escalation` ao dashboard. O agent entra em `awaiting_approval` e interrompe o despacho naquela tarefa ate que o humano emita um verdict (`approved`, `rejected` ou `needs_revision`). Note que `qa-escalation` e um gate operacional e mantem `needs_revision`; reviews de documentos (epic/story) usam o sistema de versionamento com apenas `approved`/`rejected`. Todos os achados do QA e resumos de tentativas sao preservados para revisao humana.
 
 Detalhes completos: [`design/qa-agent.md`](design/qa-agent.md)
 

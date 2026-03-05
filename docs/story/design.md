@@ -67,15 +67,14 @@ Final checkpoint — evaluate four risk dimensions before generating the artifac
 
 ### 1.4 Artifact Generation
 
-Oraculo generates the Story Document and saves it via CLI, then submits it for human review. The workflow has four steps:
+Oraculo generates the Story Document and saves it via CLI, then creates a version for human review. The workflow has four steps:
 
 1. **Generate and save** — Oraculo generates the Story Document and saves it to `.oraculo/epics/<epic-name>/stories/<story-name>/requirements.md` via `oraculo story save`. If derived from an epic, the document includes parent references in header comments.
-2. **Submit for approval** — Oraculo calls `oraculo tools approval request --type story-definition`, which registers the artifact in the approval queue and displays it on the dashboard for human review.
-3. **Await verdict** — The agent enters `awaiting_approval` state. Workflow does not advance until a human issues a verdict from the dashboard.
+2. **Create version** — Oraculo calls `oraculo tools story version <story-name> --epic <epic-name>`, passing the markdown through stdin. This creates a versioned snapshot and displays it on the dashboard for human review.
+3. **Await verdict** — The agent monitors reviews via `oraculo tools review list <version-id> --type story`. Workflow does not advance until a human issues a verdict from the dashboard.
 4. **Handle verdict:**
    - `approved` — Story definition is finalized. The story is ready for execution.
    - `rejected` — Return to §1.1 (Reframing) to reopen the problem space based on reviewer feedback.
-   - `needs_revision` — Return to §1.2 (Assumption Check) or §1.3 (Exit Gate) with the reviewer's comments to refine the artifact.
 
 ## 2. Saturation
 
@@ -164,4 +163,4 @@ If at any point during a Story session the work reveals itself to be epic-sized,
 
 Story artifacts are saved to `.oraculo/epics/<epic-name>/stories/<story-name>/requirements.md` inside the target application. The story name is derived from the story title (lowercase, hyphenated). If no epic name was provided and the story is standalone, the CLI creates a lightweight epic automatically.
 
-The artifact is not considered final until `approval_status = approved`. A saved story document that has not yet received a human verdict (or that received `rejected` or `needs_revision`) must not be used as input for execution planning.
+The artifact is not considered final until a version review with verdict `approved` exists. A saved story document that has not yet received a human verdict (or that received `rejected`) must not be used as input for execution planning.

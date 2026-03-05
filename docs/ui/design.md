@@ -43,7 +43,11 @@ The Go binary includes an HTTP server that serves both the REST API and the embe
 | `GET /api/sessions` | `sessions` table (SQLite) | Session history |
 | `GET /api/sessions/:id/agents` | `agents` table (SQLite) | Agents for a session |
 | `GET /api/sessions/:id/tool-events` | `tool_events` table (SQLite) | Tool events for a session |
-| `POST /api/approvals/:id/verdict` | (internal state) | Submit approval decision |
+| `GET /api/epics/:name/versions` | `oraculo tools epic versions <name>` | List epic versions |
+| `GET /api/epics/:epic/stories/:story/versions` | `oraculo tools story versions <story> --epic <epic>` | List story versions |
+| `GET /api/reviews/:versionId` | `oraculo tools review list <version-id> --type <epic\|story>` | List reviews for a version |
+| `POST /api/reviews` | `oraculo tools review create <version-id> --type <type> --verdict <verdict> --comment <comment>` | Submit document review |
+| `POST /api/approvals/:id/verdict` | (internal state) | Submit operational approval decision |
 
 The server manages one stateful concern: the **approval queue**. Approval requests arrive via MCP tool calls from agents and are held in memory until the human responds through the dashboard. The verdict is then relayed back to the requesting agent.
 
@@ -106,22 +110,24 @@ WebSocket provides push updates from server to browser. Two channels feed the We
    | `teammate_idle` | `POST /hooks/teammate-idle` | `TeammateIdle` | Teammate idle |
    | `session_ended` | `POST /hooks/session-end` | `SessionEnd` | Session ended |
 
-2. **MCP** — Approval requests are broadcast immediately when `request_approval` is called.
+2. **MCP + CLI** — Approval requests and version reviews are broadcast when they occur.
 
    | WebSocket event | Origin |
    |---|---|
-   | `approval_requested` | MCP `request_approval` tool |
+   | `approval_requested` | MCP `request_approval` tool (operational gates) |
+   | `version_created` | CLI `epic version` / `story version` (document versioning) |
+   | `review_submitted` | CLI `review create` (document reviews) |
 
 WebSocket message format:
 
 ```json
 {
-  "type": "agent_started" | "agent_stopped" | "tool_used" | "task_completed" | "session_started" | "session_ended" | "approval_requested" | "teammate_idle" | "agent_stopping",
+  "type": "agent_started" | "agent_stopped" | "tool_used" | "task_completed" | "session_started" | "session_ended" | "approval_requested" | "version_created" | "review_submitted" | "teammate_idle" | "agent_stopping",
   "payload": { ... }
 }
 ```
 
-The frontend subscribes to event types per screen. The DAG View subscribes to `task_completed`. The Agent Monitor subscribes to `agent_started` and `agent_stopped`. The Approvals screen subscribes to `approval_requested`. The Activity Feed subscribes to `tool_used`. The Sessions screen subscribes to `session_started` and `session_ended`.
+The frontend subscribes to event types per screen. The DAG View subscribes to `task_completed`. The Agent Monitor subscribes to `agent_started` and `agent_stopped`. The Approvals screen subscribes to `approval_requested`, `version_created`, and `review_submitted`. The Activity Feed subscribes to `tool_used`. The Sessions screen subscribes to `session_started` and `session_ended`.
 
 ### 2.5 Data Flow
 
@@ -207,13 +213,14 @@ Most data flows through CLI internals. The HTTP server calls the same Go functio
 
 ### 3.6 Approvals
 
-**Purpose:** Human review and approval gate for requirements documents, story definitions, and QA escalations.
+**Purpose:** Human review gate for document versions (epic requirements, story definitions) and operational approvals (QA escalations, design, execution-plan).
 
 **Data sources:**
-- MCP `request_approval` calls populate the queue
-- `oraculo tools epic get` / `oraculo tools story get` — Load current document versions for diff
+- For document reviews: `oraculo tools epic versions <epic-name>` / `oraculo tools story versions <story-name> --epic <epic-name>` — Load version history
+- For operational gates: MCP `request_approval` calls populate the queue
+- Diff between versions uses `epic_versions` / `story_versions` tables
 
-**Layout:** Left column: approval queue sorted by arrival time, with type badges (requirements/story/qa-escalation) and age indicators. Right column: rich markdown viewer with syntax highlighting. When a previous version exists, a toggle switches between rendered view and side-by-side diff. Below the viewer: inline comment field, and three action buttons (Approve, Reject, Needs Revision).
+**Layout:** Left column: review/approval queue sorted by arrival time, with type badges (epic-version/story-version/qa-escalation/design/execution-plan) and age indicators. Right column: rich markdown viewer with syntax highlighting. For document versions, a toggle switches between rendered view and side-by-side diff against the previous version. Below the viewer: inline comment field and action buttons. For document reviews: two buttons (Approve, Reject). For operational gates: three buttons (Approve, Reject, Needs Revision).
 
 **Key interactions:** Select a queue item to load its content. Toggle diff mode. Add comments (attached to the verdict). Submit verdict — the server relays it back to the requesting agent via MCP callback.
 
@@ -360,7 +367,7 @@ Summary of how each screen obtains its data under the two-channel architecture:
 | DAG View | CLI: `task list` (includes `depends_on`) | WebSocket push from `TaskCompleted` hook |
 | Agent Monitor | `agents` table (SQLite) + WebSocket | WebSocket push from `SubagentStart`/`SubagentStop` hooks |
 | Activity Feed | `tool_events` table (SQLite) + WebSocket | WebSocket push from `PostToolUse` hook |
-| Approvals | `approvals` table (SQLite) + WebSocket | WebSocket push from MCP `request_approval` |
+| Approvals | `approvals` table + `epic_versions`/`story_versions` tables (SQLite) + WebSocket | WebSocket push from MCP `request_approval` (operational gates) and `version_created`/`review_submitted` (document reviews) |
 | QA Dashboard | CLI: `task list`, `task get` + WebSocket | Hybrid: initial load via CLI, updates via WebSocket |
 | Knowledge Base | CLI: `memory search`, `memory domains` | On-demand (user triggers search) |
 | Sessions | `sessions` table (SQLite) | REST API + WebSocket push on session start/end |
