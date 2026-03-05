@@ -79,6 +79,9 @@ func runInstall(cmd *cobra.Command) error {
 
 	// Step 4: Write config.
 	lang, _ := cmd.Flags().GetString("lang")
+	if lang == "" {
+		lang = "pt-BR"
+	}
 	cfg := &config.Config{Port: port, PreferredLanguage: lang}
 	if err := config.Write(cfg); err != nil {
 		return fmt.Errorf("write config: %w", err)

@@ -291,7 +291,7 @@ func TestInstall_PreferredLanguage(t *testing.T) {
 	}
 }
 
-func TestInstall_NoLang(t *testing.T) {
+func TestInstall_NoLang_DefaultsPtBR(t *testing.T) {
 	setupInstallDir(t)
 
 	_, err := installCmd(t)
@@ -309,8 +309,12 @@ func TestInstall_NoLang(t *testing.T) {
 		t.Fatalf("parse config.json: %v", err)
 	}
 
-	if _, ok := cfg["preferred_language"]; ok {
-		t.Error("expected 'preferred_language' to be absent when --lang is not provided")
+	lang, ok := cfg["preferred_language"]
+	if !ok {
+		t.Fatal("config.json missing 'preferred_language' field")
+	}
+	if lang != "pt-BR" {
+		t.Errorf("preferred_language = %v, want pt-BR", lang)
 	}
 }
 
