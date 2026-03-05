@@ -34,7 +34,7 @@ Generate a story document with header metadata (Epic, Requisitos relacionados, P
 - dependencias (with temporality: before, together, parallel)
 - notas tecnicas (optional — NFRs and implementation guidance)
 
-If the story comes from an epic, the header must include the parent epic title and which specific requirements it implements.
+If the story comes from an epic, the header field `Epic:` must use the epic **ID** (the CLI identifier, e.g., `gastos-pessoais`), not the display title. The `Requisitos relacionados:` field references the specific requirement codes (e.g., `REC-1`).
 
 Save it with:
 
@@ -42,9 +42,13 @@ Save it with:
 
 Pass the markdown through stdin.
 
-Then submit it for approval:
+Then create a version for human review:
 
-`oraculo tools approval request --type story-definition --epic <epic-name> --story <story-name>`
+`oraculo tools story version <story-name> --epic <epic-name>`
+
+Pass the markdown through stdin. Then monitor the review with:
+
+`oraculo tools review list <version-id> --type story`
 
 <halt>
   - The document requires invented facts to feel complete — return to the missing phase
@@ -55,11 +59,12 @@ Then submit it for approval:
   Exit conditions:
     - Story artifact generated from validated session outputs
     - Story saved through `oraculo tools story save`
-    - Story submitted through `oraculo tools approval request`
+    - Version created through `oraculo tools story version`
     - Story name and epic context are explicit and stable
 
   Persist via CLI:
-    - `oraculo tools phase complete artifact --session=$SESSION_ID`
+    - Collect the phase outputs into a JSON object with key: `version_id` (the ID returned by `oraculo tools story version`)
+    - `echo '<json>' | oraculo tools phase complete artifact --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and resolve the persistence issue.
   On success: Read `phases/05-approval.md`
