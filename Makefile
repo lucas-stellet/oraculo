@@ -13,7 +13,7 @@ install: build
 	install -m 755 $(BINARY) $(DESTDIR)$(PREFIX)/bin/$(BINARY)
 
 test:
-	go test ./... -count=1
+	go test -v -count=1 ./...
 
 vet:
 	go vet ./...
