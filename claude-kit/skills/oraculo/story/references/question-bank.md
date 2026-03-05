@@ -63,3 +63,18 @@
 - "What other stories, systems, or APIs does this depend on?"
 - "What must be ready before this can start?"
 - "What can be worked on in parallel?"
+
+## Question Quality Anti-Patterns
+
+### Compound Questions (never do this)
+
+- BAD: "What are the business rules? What is a valid value? What is the character limit?" → Three questions packed into one turn. Ask each in a separate turn.
+- BAD: "Does the system support X? Or could Y happen?" → Two inquiries disguised as one. Split into separate turns.
+- GOOD: "What business rules govern this behavior?" → Single atomic question. Follow up based on the answer.
+
+### Passive Confirmation Options (never do this)
+
+- BAD: "Does this capture what you had in mind?" with options ["Yes, looks good", "No, needs changes"] → Passive yes/no that closes inquiry.
+- BAD: "Do you recognize these as the main risks?" with options ["Yes, those are the risks", "No"] → Agreement/disagreement, not exploration.
+- GOOD: "Which of these risks concerns you most?" with options ["Data cascade scope", "Session invalidation", "Reversibility", "Other"] → Each option opens a different direction.
+- GOOD: "How would you adjust this problem statement?" with options ["Narrow the scope to X", "Add constraint Y", "Reframe around Z", "Other"] → Competing interpretations, not confirmation.
