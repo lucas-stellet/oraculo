@@ -431,3 +431,69 @@ func TestStoryDelete_EpicNotFound(t *testing.T) {
 		t.Errorf("error = %q, want %q", result["error"], "not_found")
 	}
 }
+
+// ---------- Story Version ----------
+
+func TestStoryVersion(t *testing.T) {
+	setupTestDir(t)
+
+	_, _ = executeCmd(t, "tools", "epic", "init", "my-epic")
+	_, _ = executeCmd(t, "tools", "story", "init", "login", "--epic", "my-epic")
+
+	content := "# Story v1\n\nFirst version."
+	var buf bytes.Buffer
+	cmd := cli.NewRoot("test")
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetIn(strings.NewReader(content))
+	cmd.SetArgs([]string{"tools", "story", "version", "login", "--epic", "my-epic"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("version: %v\noutput: %s", err, buf.String())
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
+	}
+	if result["ID"] == nil || result["ID"].(float64) < 1 {
+		t.Errorf("expected valid ID, got %v", result["ID"])
+	}
+	if result["Number"] != float64(1) {
+		t.Errorf("Number = %v, want 1", result["Number"])
+	}
+	if result["StoryID"] == nil {
+		t.Error("expected StoryID to be set")
+	}
+}
+
+func TestStoryVersions(t *testing.T) {
+	setupTestDir(t)
+
+	_, _ = executeCmd(t, "tools", "epic", "init", "my-epic")
+	_, _ = executeCmd(t, "tools", "story", "init", "login", "--epic", "my-epic")
+
+	for _, content := range []string{"v1", "v2"} {
+		var buf bytes.Buffer
+		cmd := cli.NewRoot("test")
+		cmd.SetOut(&buf)
+		cmd.SetErr(&buf)
+		cmd.SetIn(strings.NewReader(content))
+		cmd.SetArgs([]string{"tools", "story", "version", "login", "--epic", "my-epic"})
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("version: %v", err)
+		}
+	}
+
+	out, err := executeCmd(t, "tools", "story", "versions", "login", "--epic", "my-epic")
+	if err != nil {
+		t.Fatalf("versions: %v\noutput: %s", err, out)
+	}
+
+	var versions []map[string]any
+	if err := json.Unmarshal([]byte(out), &versions); err != nil {
+		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
+	}
+	if len(versions) != 2 {
+		t.Fatalf("len = %d, want 2", len(versions))
+	}
+}

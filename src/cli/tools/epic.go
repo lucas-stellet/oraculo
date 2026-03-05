@@ -12,6 +12,70 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newEpicVersionCmd creates a new version of epic requirements (reads content from stdin).
+func newEpicVersionCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version <name>",
+		Short: "Create a new version of epic requirements (reads stdin)",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			name := args[0]
+			w := cmd.OutOrStdout()
+
+			database := dbFromContext(cmd.Context())
+			epicStore := db.NewEpicStore(database)
+			epic, err := epicStore.GetByName(name)
+			if err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+
+			content, err := io.ReadAll(cmd.InOrStdin())
+			if err != nil {
+				output.WriteError(w, fmt.Errorf("read stdin: %w", err))
+				return err
+			}
+
+			versionStore := db.NewVersionStore(database)
+			version, err := versionStore.CreateEpicVersion(epic.ID, string(content))
+			if err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+			return output.WriteJSON(w, version)
+		},
+	}
+}
+
+// newEpicVersionsCmd lists all versions of an epic.
+func newEpicVersionsCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "versions <name>",
+		Short: "List all versions of an epic",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			name := args[0]
+			w := cmd.OutOrStdout()
+
+			database := dbFromContext(cmd.Context())
+			epicStore := db.NewEpicStore(database)
+			epic, err := epicStore.GetByName(name)
+			if err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+
+			versionStore := db.NewVersionStore(database)
+			versions, err := versionStore.ListEpicVersions(epic.ID)
+			if err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+			return output.WriteJSON(w, versions)
+		},
+	}
+}
+
 // newEpicCmd returns the "epic" parent command with all subcommands.
 func newEpicCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -25,6 +89,8 @@ func newEpicCmd() *cobra.Command {
 		newEpicListCmd(),
 		newEpicUpdateCmd(),
 		newEpicDeleteCmd(),
+		newEpicVersionCmd(),
+		newEpicVersionsCmd(),
 	)
 	return cmd
 }

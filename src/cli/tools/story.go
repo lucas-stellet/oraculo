@@ -25,6 +25,8 @@ func newStoryCmd() *cobra.Command {
 		newStoryListCmd(),
 		newStoryUpdateCmd(),
 		newStoryDeleteCmd(),
+		newStoryVersionCmd(),
+		newStoryVersionsCmd(),
 	)
 	return cmd
 }
@@ -216,6 +218,82 @@ func newStoryUpdateCmd() *cobra.Command {
 	cmd.Flags().String("epic", "", "Parent epic name (required)")
 	_ = cmd.MarkFlagRequired("epic")
 	cmd.Flags().String("description", "", "New story description")
+	return cmd
+}
+
+func newStoryVersionCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "version <name>",
+		Short: "Create a new version of story definition (reads stdin)",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			name := args[0]
+			w := cmd.OutOrStdout()
+
+			database, _, epicID, err := resolveEpic(cmd)
+			if err != nil {
+				return err
+			}
+
+			storyStore := db.NewStoryStore(database)
+			story, err := storyStore.GetByName(epicID, name)
+			if err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+
+			content, err := io.ReadAll(cmd.InOrStdin())
+			if err != nil {
+				output.WriteError(w, fmt.Errorf("read stdin: %w", err))
+				return err
+			}
+
+			versionStore := db.NewVersionStore(database)
+			version, err := versionStore.CreateStoryVersion(story.ID, string(content))
+			if err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+			return output.WriteJSON(w, version)
+		},
+	}
+	cmd.Flags().String("epic", "", "Parent epic name (required)")
+	_ = cmd.MarkFlagRequired("epic")
+	return cmd
+}
+
+func newStoryVersionsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "versions <name>",
+		Short: "List all versions of a story",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			name := args[0]
+			w := cmd.OutOrStdout()
+
+			database, _, epicID, err := resolveEpic(cmd)
+			if err != nil {
+				return err
+			}
+
+			storyStore := db.NewStoryStore(database)
+			story, err := storyStore.GetByName(epicID, name)
+			if err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+
+			versionStore := db.NewVersionStore(database)
+			versions, err := versionStore.ListStoryVersions(story.ID)
+			if err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+			return output.WriteJSON(w, versions)
+		},
+	}
+	cmd.Flags().String("epic", "", "Parent epic name (required)")
+	_ = cmd.MarkFlagRequired("epic")
 	return cmd
 }
 

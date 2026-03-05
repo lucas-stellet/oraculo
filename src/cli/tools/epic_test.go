@@ -282,3 +282,130 @@ func TestEpicDelete_NotFound(t *testing.T) {
 		t.Errorf("error = %q, want %q", result["error"], "not_found")
 	}
 }
+
+// ---------- Epic Version ----------
+
+func TestEpicVersion(t *testing.T) {
+	setupTestDir(t)
+
+	_, err := executeCmd(t, "tools", "epic", "init", "my-epic")
+	if err != nil {
+		t.Fatalf("epic init: %v", err)
+	}
+
+	content := "# Epic Requirements v1\n\nFirst version."
+	var buf bytes.Buffer
+	cmd := cli.NewRoot("test")
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetIn(strings.NewReader(content))
+	cmd.SetArgs([]string{"tools", "epic", "version", "my-epic"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("version: %v\noutput: %s", err, buf.String())
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
+	}
+	if result["ID"] == nil || result["ID"].(float64) < 1 {
+		t.Errorf("expected valid ID, got %v", result["ID"])
+	}
+	if result["Number"] != float64(1) {
+		t.Errorf("Number = %v, want 1", result["Number"])
+	}
+	if result["EpicID"] == nil {
+		t.Error("expected EpicID to be set")
+	}
+}
+
+func TestEpicVersionMultiple(t *testing.T) {
+	setupTestDir(t)
+
+	_, _ = executeCmd(t, "tools", "epic", "init", "my-epic")
+
+	// First version
+	var buf1 bytes.Buffer
+	cmd1 := cli.NewRoot("test")
+	cmd1.SetOut(&buf1)
+	cmd1.SetErr(&buf1)
+	cmd1.SetIn(strings.NewReader("version 1 content"))
+	cmd1.SetArgs([]string{"tools", "epic", "version", "my-epic"})
+	if err := cmd1.Execute(); err != nil {
+		t.Fatalf("version 1: %v", err)
+	}
+
+	// Second version
+	var buf2 bytes.Buffer
+	cmd2 := cli.NewRoot("test")
+	cmd2.SetOut(&buf2)
+	cmd2.SetErr(&buf2)
+	cmd2.SetIn(strings.NewReader("version 2 content"))
+	cmd2.SetArgs([]string{"tools", "epic", "version", "my-epic"})
+	if err := cmd2.Execute(); err != nil {
+		t.Fatalf("version 2: %v", err)
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(buf2.Bytes(), &result); err != nil {
+		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf2.String())
+	}
+	if result["Number"] != float64(2) {
+		t.Errorf("Number = %v, want 2", result["Number"])
+	}
+}
+
+func TestEpicVersions(t *testing.T) {
+	setupTestDir(t)
+
+	_, _ = executeCmd(t, "tools", "epic", "init", "my-epic")
+
+	// Create two versions
+	for _, content := range []string{"v1", "v2"} {
+		var buf bytes.Buffer
+		cmd := cli.NewRoot("test")
+		cmd.SetOut(&buf)
+		cmd.SetErr(&buf)
+		cmd.SetIn(strings.NewReader(content))
+		cmd.SetArgs([]string{"tools", "epic", "version", "my-epic"})
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("version: %v", err)
+		}
+	}
+
+	out, err := executeCmd(t, "tools", "epic", "versions", "my-epic")
+	if err != nil {
+		t.Fatalf("versions: %v\noutput: %s", err, out)
+	}
+
+	var versions []map[string]any
+	if err := json.Unmarshal([]byte(out), &versions); err != nil {
+		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
+	}
+	if len(versions) != 2 {
+		t.Fatalf("len = %d, want 2", len(versions))
+	}
+}
+
+func TestEpicVersion_NotFound(t *testing.T) {
+	setupTestDir(t)
+
+	var buf bytes.Buffer
+	cmd := cli.NewRoot("test")
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetIn(strings.NewReader("content"))
+	cmd.SetArgs([]string{"tools", "epic", "version", "nonexistent"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for nonexistent epic")
+	}
+
+	var result map[string]string
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
+	}
+	if result["error"] != "not_found" {
+		t.Errorf("error = %q, want %q", result["error"], "not_found")
+	}
+}
