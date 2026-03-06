@@ -23,4 +23,4 @@ clean:
 	rm -f $(BINARY)
 
 web-dev:
-	corepack pnpm --dir $(DASHBOARD_DIR) dev
+	cd $(DASHBOARD_DIR) && bun run dev
