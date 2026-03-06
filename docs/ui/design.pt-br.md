@@ -102,29 +102,29 @@ Todos os dados fluem pelas funções internas do CLI. O HTTP server chama as mes
 
 ## 3. Telas
 
-### 3.1 Home/Dashboard
+### 3.1 Landing (Epic Selection)
 
-**Propósito:** Visão geral do projeto de relance — o que existe, o que está em andamento, o que precisa de atenção.
+**Propósito:** Ponto de entrada do dashboard. O usuário escolhe em qual épico quer trabalhar. Todas as demais telas ficam escopadas ao épico selecionado.
 
 **Fontes de dados:**
-- `oraculo tools epic list` — Contagem e nomes dos épicos
-- `oraculo tools story list --epic <epic>` — Contagem de stories por épico
-- `oraculo tools task list --epic <epic> --story <story>` — Distribuição de status das tarefas
+- `oraculo tools epic list` — Todos os épicos com fase, contagem de stories e status agregado das tarefas
 
-**Layout:** Quatro cards de resumo no topo (total de épicos, total de stories, percentual de conclusão de tarefas, agentes ativos). Abaixo, uma tabela de épicos com barras de progresso inline mostrando conclusão de stories/tarefas. Um painel lateral mostra o indicador de fase atual (Discover/Plan/Execute/Validate) para o épico mais recentemente ativo.
+**Layout:** Título de página "Select an Epic" com subtítulo "Choose an Epic to view its stories, tasks, and agent activity." Abaixo, um grid responsivo de cards de épico. Cada card mostra: nome do épico, badge de fase (`Discover` / `Plan` / `Execute` / `Validate`), barra de progresso com conclusão de tarefas, linha de estatísticas (quantidade de stories, quantidade de tarefas, percentual concluído), badge de status (`completed` / `in_progress` / `pending`) e ação principal para abrir o épico. A tela também inclui uma ação clara para criar um novo épico.
 
-**Interações principais:** Clique em qualquer linha de épico para navegar ao Epic Explorer. Clique na contagem de agentes ativos para ir ao Agent Monitor.
+**Interações principais:** Clique em um card ou em sua ação principal para selecionar o épico. O dropdown de épico na sidebar é atualizado e a navegação segue para a tela de Stories daquele épico. Ao criar um novo épico, a UI chama o backend, que deve materializar a pasta do épico no workspace e persistir o registro no banco através da mesma trust layer do CLI.
 
-### 3.2 Epic Explorer
+**Quando nenhum épico está selecionado:** O dropdown da sidebar mostra "Select Epic...". Os itens de navegação dependentes de contexto (Stories até Knowledge Base) ficam desabilitados ou visualmente atenuados. Settings permanece sempre acessível.
 
-**Propósito:** Navegar pela hierarquia Épico > Story > Tarefa e ler documentos de requisitos.
+### 3.2 Stories
+
+**Propósito:** Navegar pela hierarquia Story > Tarefa dentro do épico selecionado e ler documentos de requisitos.
 
 **Fontes de dados:**
 - `oraculo tools epic list` + `oraculo tools epic get <name>` — Metadados do épico e markdown
 - `oraculo tools story list --epic <epic>` + `oraculo tools story get <name> --epic <epic>` — Metadados da story e markdown
 - `oraculo tools task list --epic <epic> --story <story>` — Lista de tarefas com status
 
-**Layout:** Divisão master-detail. Painel esquerdo: árvore colapsável mostrando Épicos > Stories > Tarefas. Painel direito: visualizador de markdown que renderiza o documento de requisitos da entidade selecionada ou o detalhe da tarefa. Badges de fase (pending, in_progress, completed, failed) aparecem ao lado de cada nó da árvore.
+**Layout:** Divisão master-detail. Painel esquerdo: árvore colapsável mostrando Stories > Tarefas do épico selecionado. Painel direito: visualizador de markdown que renderiza o documento de requisitos da entidade selecionada ou o detalhe da tarefa. Badges de fase (pending, in_progress, completed, failed) aparecem ao lado de cada nó da árvore.
 
 **Interações principais:** Selecione um nó da árvore para carregar seu conteúdo no visualizador. Expanda/colapse níveis. Filtre a árvore por status. Link de qualquer tarefa para sua posição na DAG View.
 
@@ -203,8 +203,8 @@ Todos os dados fluem pelas funções internas do CLI. O HTTP server chama as mes
 **Shell:** Barra lateral esquerda persistente com links de ícone + rótulo para cada tela. A sidebar colapsa para ícones apenas em viewports estreitos. A barra superior mostra o nome do projeto atual e um dropdown de troca de projeto (para o modo multi-projeto).
 
 **Ordem da sidebar:**
-1. Home/Dashboard
-2. Epic Explorer
+1. Landing (Epic Selection)
+2. Stories
 3. DAG View
 4. Agent Monitor
 5. Aprovações (com badge de contagem não lida)
@@ -212,7 +212,7 @@ Todos os dados fluem pelas funções internas do CLI. O HTTP server chama as mes
 7. Knowledge Base
 8. Configurações
 
-**Comportamento responsivo:** A sidebar colapsa abaixo de 1024px de largura de viewport. Visualizações master-detail (Epic Explorer, Aprovações) empilham verticalmente em telas estreitas. A DAG View permanece em largura total com scroll horizontal.
+**Comportamento responsivo:** A sidebar colapsa abaixo de 1024px de largura de viewport. Visualizações master-detail (Stories, Aprovações) empilham verticalmente em telas estreitas. A DAG View permanece em largura total com scroll horizontal.
 
 **Tema:** Modos claro e escuro. A direção visual default é `Mission Control`: base `Slate`, acento `Blue`, superfícies frias e contraste alto para leitura prolongada. Duas direções alternativas ficam documentadas no design system para usos específicos: `Operations Warm` (base `Stone`, acento `Orange`) para fluxos mais editoriais de revisão, e `Signal Green` (base `Zinc`, acento `Green`) para monitoramento e QA. Cores semânticas de status permanecem separadas do acento primário: azul para em andamento, verde para concluído, vermelho para falhou, âmbar para atenção/aprovação pendente.
 
@@ -292,8 +292,8 @@ Resumo de como cada tela obtém seus dados:
 
 | Tela | Fonte primária | Mecanismo de atualização |
 |---|---|---|
-| Home/Dashboard | CLI: `epic list`, `story list`, `task list` | Polling no mount + WebSocket `task_updated` |
-| Epic Explorer | CLI: `epic get`, `story get`, `task list` | File watcher em `.oraculo/epics/**/*.md` |
+| Landing (Epic Selection) | CLI/API: `epic list` com agregados de stories/tarefas/fase | Polling no mount + WebSocket para invalidação leve |
+| Stories | CLI: `story list`, `story get`, `task list` | File watcher em `.oraculo/epics/**/*.md` |
 | DAG View | CLI: `task list` (inclui `depends_on`) | WebSocket `task_updated` |
 | Agent Monitor | WebSocket: eventos `agent_state` | Somente push (sem polling) |
 | Aprovações | MCP: `request_approval` | Somente push (sem polling) |
@@ -305,7 +305,7 @@ Resumo de como cada tela obtém seus dados:
 
 Capacidades adiadas para iterações futuras:
 
-- **Edição inline** — Editar o markdown de requisitos diretamente no visualizador do Epic Explorer e salvar de volta via `oraculo tools epic save` / `oraculo tools story save`.
+- **Edição inline** — Editar o markdown de requisitos diretamente no visualizador de Stories e salvar de volta via `oraculo tools epic save` / `oraculo tools story save`.
 - **Visualização de timeline** — Visualização estilo Gantt da execução de tarefas ao longo do tempo, usando os timestamps `started_at` e `completed_at`.
 - **Streaming de logs dos agentes** — Transmitir stdout/stderr dos agentes em tempo real para o Agent Monitor, além dos eventos estruturados de estado.
 - **Sistema de notificações** — Notificações desktop para solicitações de aprovação, escalações de QA e conclusão de épicos.
