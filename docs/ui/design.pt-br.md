@@ -214,7 +214,58 @@ Todos os dados fluem pelas funções internas do CLI. O HTTP server chama as mes
 
 **Comportamento responsivo:** A sidebar colapsa abaixo de 1024px de largura de viewport. Visualizações master-detail (Epic Explorer, Aprovações) empilham verticalmente em telas estreitas. A DAG View permanece em largura total com scroll horizontal.
 
-**Tema:** Modos claro e escuro. As cores seguem uma base neutra com destaques semânticos de status: azul para em andamento, verde para concluído, vermelho para falhou, âmbar para aprovação pendente.
+**Tema:** Modos claro e escuro. A direção visual default é `Mission Control`: base `Slate`, acento `Blue`, superfícies frias e contraste alto para leitura prolongada. Duas direções alternativas ficam documentadas no design system para usos específicos: `Operations Warm` (base `Stone`, acento `Orange`) para fluxos mais editoriais de revisão, e `Signal Green` (base `Zinc`, acento `Green`) para monitoramento e QA. Cores semânticas de status permanecem separadas do acento primário: azul para em andamento, verde para concluído, vermelho para falhou, âmbar para atenção/aprovação pendente.
+
+### 4.1 Foundations do Design System
+
+O dashboard adota um design system explícito antes da implementação tela por tela. Ele define foundations, tokens e componentes-base reutilizáveis para evitar decisões visuais ad-hoc conforme novas telas forem sendo adicionadas.
+
+**Tipografia:**
+- `Space Grotesk` — família de destaque para títulos de página, títulos de seção e métricas de alto contraste
+- `IBM Plex Sans` — família base para navegação, corpo, labels, botões, tabelas e leitura contínua
+- `IBM Plex Mono` — família operacional para IDs, timestamps, paths, counters técnicos e telemetria
+
+**Pesos e uso:**
+- `Space Grotesk 700` — títulos de tela e valores de métrica em destaque
+- `Space Grotesk 600` — títulos de seção e títulos principais de card
+- `IBM Plex Sans 400` — body text, descrições e preview de markdown
+- `IBM Plex Sans 500` — labels, botões, tabs e cabeçalhos de tabela
+- `IBM Plex Sans 600` — active nav, selected states e ênfase curta
+- `IBM Plex Mono 500` — valores operacionais e strings técnicas
+
+**Tokens tipográficos iniciais:**
+- `display-lg` — `40/48`, `Space Grotesk 700`, uso em títulos de tela
+- `heading-md` — `24/32`, `Space Grotesk 600`, uso em títulos de seção
+- `body-md` — `16/24`, `IBM Plex Sans 400`, uso em texto corrido da interface
+- `label-sm` — `14/20`, `IBM Plex Sans 500`, uso em labels e metadata curta
+- `mono-sm` — `13/18`, `IBM Plex Mono 500`, uso em IDs, timestamps e paths
+
+**Escalas e superfícies:**
+- Spacing base em `8 / 12 / 16 / 24 / 32 / 40`
+- Radius base em degraus pequenos, médios e amplos para controlar densidade sem cair em visual “pill” por padrão
+- `background` como tom mais profundo do canvas, nunca usado para enfatizar interação
+- `card` como superfície padrão de leitura, com borda fina e respiro generoso
+- `secondary` como surface de apoio para metadata, estados inset e agrupamentos discretos
+
+**Semântica e iconografia:**
+- O acento primário nunca substitui cores semânticas de status
+- Status continuam explícitos em `pending`, `in_progress`, `completed` e `failed`
+- Iconografia deve permanecer outline, com labels em `IBM Plex Sans 500` e uso disciplinado de cor semântica
+
+**Inventário inicial de componentes:**
+- `sidebar item`
+- `topbar slot`
+- `metric card`
+- `status badge`
+- `table shell`
+- `markdown panel`
+
+Componentes futuros previstos:
+- `DAG node`
+- `approval queue item`
+- `diff viewer`
+- `agent activity card`
+- `knowledge result card`
 
 ## 5. Stack Tecnológica
 
@@ -224,6 +275,7 @@ Todos os dados fluem pelas funções internas do CLI. O HTTP server chama as mes
 | Framework | Next.js | Export estático gera bundle otimizado de HTML/CSS/JS |
 | Biblioteca de componentes | shadcn/ui | Componentes de alta qualidade e composíveis; sem dependência em runtime |
 | Estilização | Tailwind CSS | Utility-first para iteração rápida de UI, dark mode embutido |
+| Tipografia | Space Grotesk + IBM Plex Sans + IBM Plex Mono | Separa hierarquia de display, legibilidade de interface e telemetria operacional |
 | Renderização de grafos | D3.js ou dagre | Computação de layout do DAG e renderização SVG para o grafo de dependências |
 | Renderização de markdown | react-markdown + remark-gfm | Renderiza documentos de requisitos com markdown estilo GitHub |
 | **Backend (runtime)** | | |

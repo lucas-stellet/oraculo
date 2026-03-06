@@ -334,7 +334,58 @@ CREATE TABLE tool_events (
 
 **Responsive behavior:** The sidebar collapses below 1024px viewport width. Master-detail views (Stories, Approvals) stack vertically on narrow screens. The DAG View remains full-width with horizontal scroll.
 
-**Theme:** Light and dark modes. Colors follow a neutral base with status-semantic accents: blue for in-progress, green for completed, red for failed, amber for pending approval.
+**Theme:** Light and dark modes. The default visual direction is `Mission Control`: `Slate` base, `Blue` accent, cool surfaces, and high contrast tuned for sustained reading. Two alternative directions are documented in the design system for specific workflows: `Operations Warm` (`Stone` base, `Orange` accent) for more editorial review flows, and `Signal Green` (`Zinc` base, `Green` accent) for monitoring and QA. Status-semantic colors remain distinct from the primary accent: blue for in-progress, green for completed, red for failed, amber for attention/pending approval.
+
+### 4.1 Design System Foundations
+
+The dashboard adopts an explicit design system before screen-by-screen implementation. It defines foundations, tokens, and reusable base components so new screens do not accumulate ad-hoc visual decisions.
+
+**Typography:**
+- `Space Grotesk` — display family for page titles, section titles, and high-emphasis metrics
+- `IBM Plex Sans` — base family for navigation, body copy, labels, buttons, tables, and continuous reading
+- `IBM Plex Mono` — operational family for IDs, timestamps, paths, technical counters, and telemetry
+
+**Weights and use:**
+- `Space Grotesk 700` — screen titles and highlighted metric values
+- `Space Grotesk 600` — section titles and primary card titles
+- `IBM Plex Sans 400` — body text, descriptions, and markdown preview
+- `IBM Plex Sans 500` — labels, buttons, tabs, and table headers
+- `IBM Plex Sans 600` — active nav, selected states, and short emphasis
+- `IBM Plex Mono 500` — operational values and technical strings
+
+**Initial type tokens:**
+- `display-lg` — `40/48`, `Space Grotesk 700`, used for screen titles
+- `heading-md` — `24/32`, `Space Grotesk 600`, used for section headings
+- `body-md` — `16/24`, `IBM Plex Sans 400`, used for primary UI body copy
+- `label-sm` — `14/20`, `IBM Plex Sans 500`, used for labels and short metadata
+- `mono-sm` — `13/18`, `IBM Plex Mono 500`, used for IDs, timestamps, and paths
+
+**Scales and surfaces:**
+- Base spacing scale of `8 / 12 / 16 / 24 / 32 / 40`
+- Base radius scale in small, medium, and large steps to control density without defaulting to pill shapes
+- `background` as the deepest canvas tone, never used to imply interaction
+- `card` as the default reading surface, with a thin border and generous internal spacing
+- `secondary` as the supporting surface for metadata, inset states, and restrained grouping
+
+**Semantics and iconography:**
+- The primary accent must never replace semantic status colors
+- Status remains explicit through `pending`, `in_progress`, `completed`, and `failed`
+- Iconography stays outline-based, paired with `IBM Plex Sans 500` labels and disciplined semantic color usage
+
+**Initial component inventory:**
+- `sidebar item`
+- `topbar slot`
+- `metric card`
+- `status badge`
+- `table shell`
+- `markdown panel`
+
+Planned future components:
+- `DAG node`
+- `approval queue item`
+- `diff viewer`
+- `agent activity card`
+- `knowledge result card`
 
 ## 5. Technology Stack
 
@@ -344,6 +395,7 @@ CREATE TABLE tool_events (
 | Framework | Next.js | Static export generates optimized HTML/CSS/JS bundle |
 | Component library | shadcn/ui | High-quality, composable components; no runtime dependency |
 | Styling | Tailwind CSS | Utility-first for rapid UI iteration, dark mode built-in |
+| Typography | Space Grotesk + IBM Plex Sans + IBM Plex Mono | Separates display hierarchy, interface legibility, and operational telemetry |
 | Graph rendering | D3.js or dagre | DAG layout computation and SVG rendering for the dependency graph |
 | Markdown rendering | react-markdown + remark-gfm | Render requirements documents with GitHub-flavored markdown |
 | **Backend (runtime)** | | |
