@@ -3,8 +3,9 @@ BUILD   := ./apps/backend/cmd/oraculo
 PREFIX  ?= $(HOME)/.local
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
+DASHBOARD_DIR := ./apps/dashboard
 
-.PHONY: build install test vet clean
+.PHONY: build install test vet clean web-dev
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(BUILD)
@@ -20,3 +21,6 @@ vet:
 
 clean:
 	rm -f $(BINARY)
+
+web-dev:
+	corepack pnpm --dir $(DASHBOARD_DIR) dev
