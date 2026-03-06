@@ -1,0 +1,4 @@
+copy: []
+post_hooks: [
+  "go mod tidy",
+]
