@@ -26,10 +26,27 @@
 ## Execution
 
 Review the graph and identify:
-- which tasks can start immediately
-- which chain defines the critical path
+- which tasks can start immediately (zero in-degree)
+- which chain defines the critical path (longest sequential chain)
 - which dependencies can be removed because they are not real
 - where file-conflict constraints require sequencing despite conceptual independence
+
+### False Dependency Detection
+
+For each dependency edge, verify it meets at least one criterion:
+- Task B reads output that Task A produces (data dependency)
+- Task B modifies files that Task A also modifies (file conflict)
+- Task B's correctness depends on Task A's side effects (state dependency)
+
+If none apply, the edge is false — remove it. Pure functions (parsers,
+validators, engines) typically have ZERO dependencies on setup/infrastructure
+tasks unless they read from the storage layer.
+
+### Execution Wave Visualization
+
+Present the optimized graph as execution waves:
+- Wave N: tasks that can start once all Wave N-1 tasks complete
+- Report: total waves, max parallelism, critical path length
 
 The output should make the execution order and concurrency model obvious.
 

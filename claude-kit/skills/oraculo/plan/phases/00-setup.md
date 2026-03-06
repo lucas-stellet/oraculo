@@ -15,6 +15,8 @@
 <critical>
   Do not decompose unapproved requirements.
   Planning starts from validated requirements, not from conversational drift.
+  When transitioning to next phase, MUST visibly Read next phase file before
+  asking questions from that phase.
 </critical>
 
 <anti-patterns>
@@ -33,6 +35,9 @@ Confirm:
 - the artifact is the latest approved input
 - the planning target is explicit
 - the scope is stable enough for task decomposition
+
+When the input is an epic with multiple defined stories, ask the user whether
+to plan the full epic scope or a single story before proceeding.
 
 Initialize the planning session once the target is clear:
 

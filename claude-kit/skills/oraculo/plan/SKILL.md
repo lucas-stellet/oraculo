@@ -30,6 +30,7 @@ disable-model-invocation: true
 
 ## Bootstrap
 
+0. Read `.oraculo/config.json` for `preferred_language`.
 1. Call `oraculo tools approval list --pending`.
 2. Surface any relevant pending approval before starting.
 3. Call `oraculo tools session status --type plan --epic "$ARGUMENTS"` when an epic context is known.
@@ -38,14 +39,18 @@ disable-model-invocation: true
    - Read the file for `current_phase`.
    - Tell the user you are resuming from that phase.
 5. If no active session exists:
-   - Start with `phases/00-setup.md`.
+   - Read `phases/00-setup.md` immediately and explicitly (same turn as bootstrap checks above).
    - Create the session through the CLI when setup is complete.
 
 ## Rules
 
+- Communicate in `preferred_language` from config.
 - Read exactly one phase file at a time.
 - Keep the output DAG-oriented and deterministic.
 - Do not dispatch execution agents from this command.
+- Never auto-invoke downstream commands (`/oraculo:execute`, etc.).
 - Persist validated phase outputs with `oraculo tools phase complete`.
-- Use only existing `epic`, `story`, `task`, `session`, `phase`, and `approval` CLI contracts.
-- When asking the user any question, ALWAYS use the `AskUserQuestion` tool. Never write questions as plain text. Offer 2–4 directional options per question; the user can always select "Other" for free-form input. Use `multiSelect: true` when multiple answers can apply simultaneously (e.g., listing risks, forces, or concerns). When presenting concrete artifacts for comparison (task lists, problem framings, story definitions), populate the `markdown` field on each option to trigger the side-by-side preview UI — only available on single-select questions.
+- Use only existing `epic`, `story`, `task`, `session`, `phase`, `design`, and `approval` CLI contracts.
+- When asking the user any question, ALWAYS use the `AskUserQuestion` tool. Never write questions as plain text. Offer 2–4 directional options per question; the user can always select "Other" for free-form input. Use `multiSelect: true` when multiple answers can apply simultaneously. When presenting concrete artifacts for comparison (task lists, DAG shapes), populate the `markdown` field on each option to trigger the side-by-side preview UI — only available on single-select questions.
+- One atomic question per turn: exactly one `AskUserQuestion` call with one coherent inquiry — no "and"-joined questions, "or"-chains, semicolons, or dash-separated sub-questions.
+- No passive confirmation options: "Yes, that captures it well", "Agreed, let's continue", "That's correct, proceed" close inquiry instead of opening — every option must propose a direction.
