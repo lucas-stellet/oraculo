@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/lucas/oraculo/src/db"
+	"github.com/lucas/oraculo/src/domain"
 	"github.com/lucas/oraculo/src/output"
 	"github.com/spf13/cobra"
 )
@@ -24,6 +25,7 @@ func newStoryCmd() *cobra.Command {
 		newStoryGetCmd(),
 		newStoryListCmd(),
 		newStoryUpdateCmd(),
+		newStoryUpdateStatusCmd(),
 		newStoryDeleteCmd(),
 		newStoryVersionCmd(),
 		newStoryVersionsCmd(),
@@ -218,6 +220,49 @@ func newStoryUpdateCmd() *cobra.Command {
 	cmd.Flags().String("epic", "", "Parent epic name (required)")
 	_ = cmd.MarkFlagRequired("epic")
 	cmd.Flags().String("description", "", "New story description")
+	return cmd
+}
+
+func newStoryUpdateStatusCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "update-status <name>",
+		Short: "Update a story's approval status",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			name := args[0]
+			statusStr, _ := cmd.Flags().GetString("status")
+			w := cmd.OutOrStdout()
+
+			status := domain.ApprovalStatus(statusStr)
+			if !status.Valid() {
+				err := fmt.Errorf("invalid status %q: must be one of none, pending, approved, rejected, needs_revision", statusStr)
+				output.WriteError(w, err)
+				return err
+			}
+
+			database, _, epicID, err := resolveEpic(cmd)
+			if err != nil {
+				return err
+			}
+
+			store := db.NewStoryStore(database)
+			if err := store.UpdateApprovalStatus(epicID, name, status); err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+
+			story, err := store.GetByName(epicID, name)
+			if err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+			return output.WriteJSON(w, story)
+		},
+	}
+	cmd.Flags().String("epic", "", "Parent epic name (required)")
+	_ = cmd.MarkFlagRequired("epic")
+	cmd.Flags().String("status", "", "Approval status: none|pending|approved|rejected|needs_revision (required)")
+	_ = cmd.MarkFlagRequired("status")
 	return cmd
 }
 

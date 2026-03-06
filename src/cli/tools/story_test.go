@@ -432,6 +432,67 @@ func TestStoryDelete_EpicNotFound(t *testing.T) {
 	}
 }
 
+// ---------- Story Update Status ----------
+
+func TestStoryUpdateStatus(t *testing.T) {
+	setupTestDir(t)
+
+	_, _ = executeCmd(t, "tools", "epic", "init", "my-epic")
+	_, _ = executeCmd(t, "tools", "story", "init", "login", "--epic", "my-epic")
+
+	out, err := executeCmd(t, "tools", "story", "update-status", "login", "--epic", "my-epic", "--status", "approved")
+	if err != nil {
+		t.Fatalf("update-status: %v\noutput: %s", err, out)
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal([]byte(out), &result); err != nil {
+		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
+	}
+	if result["ApprovalStatus"] != "approved" {
+		t.Errorf("ApprovalStatus = %v, want %q", result["ApprovalStatus"], "approved")
+	}
+}
+
+func TestStoryUpdateStatus_InvalidStatus(t *testing.T) {
+	setupTestDir(t)
+
+	_, _ = executeCmd(t, "tools", "epic", "init", "my-epic")
+	_, _ = executeCmd(t, "tools", "story", "init", "login", "--epic", "my-epic")
+
+	out, err := executeCmd(t, "tools", "story", "update-status", "login", "--epic", "my-epic", "--status", "bogus")
+	if err == nil {
+		t.Fatal("expected error for invalid status")
+	}
+
+	var result map[string]string
+	if err := json.Unmarshal([]byte(out), &result); err != nil {
+		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
+	}
+	if !strings.Contains(result["message"], "invalid status") {
+		t.Errorf("message = %q, expected to contain 'invalid status'", result["message"])
+	}
+}
+
+func TestStoryUpdateStatus_NotFound(t *testing.T) {
+	setupTestDir(t)
+
+	_, _ = executeCmd(t, "tools", "epic", "init", "my-epic")
+
+	out, err := executeCmd(t, "tools", "story", "update-status", "nonexistent", "--epic", "my-epic", "--status", "approved")
+	if err == nil {
+		t.Fatal("expected error for nonexistent story")
+	}
+
+	var result map[string]string
+	if err := json.Unmarshal([]byte(out), &result); err != nil {
+		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
+	}
+	if result["error"] != "not_found" {
+		t.Errorf("error = %q, want %q", result["error"], "not_found")
+	}
+}
+
 // ---------- Story Version ----------
 
 func TestStoryVersion(t *testing.T) {

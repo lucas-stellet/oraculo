@@ -12,6 +12,7 @@ var migrations = []func(*sql.Tx) error{
 	migrateV4,
 	migrateV5,
 	migrateV6,
+	migrateV7,
 }
 
 // migrateV1 creates all core tables, knowledge with FTS5, approvals, and validations.
@@ -283,6 +284,14 @@ func migrateV6(tx *sql.Tx) error {
 		if _, err := tx.Exec(stmt); err != nil {
 			return fmt.Errorf("migration v6: %w\nSQL: %s", err, stmt)
 		}
+	}
+	return nil
+}
+
+func migrateV7(tx *sql.Tx) error {
+	_, err := tx.Exec(`ALTER TABLE validations ADD COLUMN findings TEXT DEFAULT ''`)
+	if err != nil {
+		return fmt.Errorf("migration v7: %w", err)
 	}
 	return nil
 }
