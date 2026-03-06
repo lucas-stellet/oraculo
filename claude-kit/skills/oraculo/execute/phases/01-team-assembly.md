@@ -40,6 +40,11 @@ Give each agent:
 - TDD instructions (mandatory, always included)
 - instruction: if you have questions before or during the task, use the `AskUserQuestion` tool — never ask as plain text
 
+<critical>
+  For multi-story epics, you MUST call `oraculo tools story get <story>` for EVERY story before dispatching its agents.
+  Do not derive story requirements from design docs or epic context — always use the full story artifact.
+</critical>
+
 Follow the prompt template in references/agent-dispatch.md section "Prompt Template".
 
 Use the persisted DAG and known file conflicts to decide what can run in parallel.

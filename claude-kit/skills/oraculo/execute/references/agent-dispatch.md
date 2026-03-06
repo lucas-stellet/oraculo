@@ -25,6 +25,35 @@ Parallelize only when:
 
 When a task fails, prefer a fresh agent with explicit failure context instead of reusing stale reasoning.
 
+### Retry Prompt Additions
+
+When constructing a retry prompt, use the standard Prompt Template above and add these sections after `## Rules`:
+
+```
+## Previous Failure Context
+{failure_reason}
+
+### What went wrong
+{orchestrator_analysis_of_failure}
+
+### Guidance
+{suggested_alternative_approach}
+
+## File State
+The previous agent may have left partial files on disk. Before starting:
+1. Check which files in your scope already exist
+2. Read any existing files to understand what was attempted
+3. Decide: fix in place or delete and start fresh
+4. If starting fresh, delete the partial files before writing new ones
+Do NOT assume the filesystem is clean.
+```
+
+### How to fill retry slots
+
+- `{failure_reason}`: the `--reason` string from `oraculo tools task fail`
+- `{orchestrator_analysis_of_failure}`: your analysis of root cause based on the failure signal
+- `{suggested_alternative_approach}`: concrete guidance for an alternative approach that avoids the same failure
+
 ## No Direct Agent Coordination
 
 Agents do not coordinate directly with each other. Oraculo coordinates through the DAG and task state.
