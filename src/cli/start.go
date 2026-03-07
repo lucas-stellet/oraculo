@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"syscall"
 	"time"
@@ -80,7 +81,8 @@ func runStartAll(cmd *cobra.Command, _ []string) error {
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
 
-	staticPath := "./apps/dashboard/out"
+	// Resolve dashboard path relative to executable
+	staticPath := dashboardStaticPath()
 	logger.Info("server.config", "port", port, "static_path", staticPath)
 	srv := server.New(database, bridge, hub, broadcaster, staticPath)
 	mcpSrv := mcpserver.New(bridge, db.NewApprovalStore(database), logger)
@@ -124,6 +126,17 @@ func openBrowser(url string) error {
 		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
 	return cmd.Start()
+}
+
+// dashboardStaticPath returns the absolute path to the dashboard static files.
+// It resolves the path relative to the executable's directory.
+func dashboardStaticPath() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return "./apps/dashboard/out"
+	}
+	dir := filepath.Dir(exe)
+	return filepath.Join(dir, "apps", "dashboard", "out")
 }
 
 // runStartMCP starts only the MCP server on stdio.
@@ -174,7 +187,7 @@ func runStartHTTP(cmd *cobra.Command, _ []string) error {
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
 
-	staticPath := "./apps/dashboard/out"
+	staticPath := dashboardStaticPath()
 	srv := server.New(database, bridge, hub, broadcaster, staticPath)
 
 	g, ctx := errgroup.WithContext(ctx)
