@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -80,19 +79,17 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 		mux.HandleFunc("GET /logs", logs.ServeSSE)
 	}
 
-	// Static files for dashboard
+	// Static files for dashboard (embedded)
 	if staticPath != "" {
 		slog.Info("server.static.enabled", "path", staticPath)
-		if _, err := os.Stat(staticPath); err != nil {
-			slog.Error("server.static.path_not_found", "path", staticPath, "error", err)
-		}
-		fs := http.FileServer(http.Dir(staticPath))
-		mux.Handle("GET /", fs)
-		mux.Handle("GET /_next/", fs)
-		mux.Handle("GET /_next/*", fs)
 	} else {
-		slog.Info("server.static.disabled", "reason", "staticPath empty")
+		slog.Info("server.static.embedded")
 	}
+	// Use embedded assets if available, fallback to filesystem
+	fs := http.FileServer(http.FS(DashboardAssets))
+	mux.Handle("GET /", fs)
+	mux.Handle("GET /_next/", fs)
+	mux.Handle("GET /_next/*", fs)
 
 	return &Server{mux: mux, database: database, lastActivity: time.Now(), staticPath: staticPath}
 }
