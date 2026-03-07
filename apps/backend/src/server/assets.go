@@ -7,7 +7,7 @@ import (
 )
 
 // dashboardAssets contains the raw embedded Next.js static files.
-//go:embed dashboard_assets
+//go:embed all:dashboard_assets
 var dashboardAssets embed.FS
 
 // DashboardAssets is the embedded filesystem with the "dashboard_assets" prefix stripped,
