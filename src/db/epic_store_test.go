@@ -147,3 +147,145 @@ func TestEpicStore_UpdateApprovalStatus(t *testing.T) {
 		t.Errorf("ApprovalStatus = %q, want %q", epic.ApprovalStatus, domain.ApprovalPending)
 	}
 }
+
+func TestEpicStore_ListSummaries_Empty(t *testing.T) {
+	database := testDB(t)
+	store := NewEpicStore(database)
+
+	summaries, err := store.ListSummaries()
+	if err != nil {
+		t.Fatalf("ListSummaries: %v", err)
+	}
+	if len(summaries) != 0 {
+		t.Fatalf("expected 0 summaries, got %d", len(summaries))
+	}
+}
+
+func TestEpicStore_ListSummaries_NoSessions(t *testing.T) {
+	database := testDB(t)
+	store := NewEpicStore(database)
+
+	store.Create("my-epic", "desc")
+
+	summaries, err := store.ListSummaries()
+	if err != nil {
+		t.Fatalf("ListSummaries: %v", err)
+	}
+	if len(summaries) != 1 {
+		t.Fatalf("expected 1 summary, got %d", len(summaries))
+	}
+	s := summaries[0]
+	if s.Name != "my-epic" {
+		t.Errorf("Name = %q, want %q", s.Name, "my-epic")
+	}
+	if s.Phase != "discover" {
+		t.Errorf("Phase = %q, want %q", s.Phase, "discover")
+	}
+	if s.PhaseStatus != "pending" {
+		t.Errorf("PhaseStatus = %q, want %q", s.PhaseStatus, "pending")
+	}
+	if s.StoryCount != 0 {
+		t.Errorf("StoryCount = %d, want 0", s.StoryCount)
+	}
+}
+
+func TestEpicStore_ListSummaries_WithActiveSession(t *testing.T) {
+	database := testDB(t)
+	epicStore := NewEpicStore(database)
+	sessionStore := NewSessionStore(database)
+
+	epic, _, _ := epicStore.Create("my-epic", "desc")
+	sessionStore.Create(domain.SessionEpic, &epic.ID)
+
+	summaries, err := epicStore.ListSummaries()
+	if err != nil {
+		t.Fatalf("ListSummaries: %v", err)
+	}
+	s := summaries[0]
+	if s.Phase != "discover" {
+		t.Errorf("Phase = %q, want %q", s.Phase, "discover")
+	}
+	if s.PhaseStatus != "active" {
+		t.Errorf("PhaseStatus = %q, want %q", s.PhaseStatus, "active")
+	}
+}
+
+func TestEpicStore_ListSummaries_WithCompletedSession(t *testing.T) {
+	database := testDB(t)
+	epicStore := NewEpicStore(database)
+	sessionStore := NewSessionStore(database)
+
+	epic, _, _ := epicStore.Create("my-epic", "desc")
+	sess, _, _ := sessionStore.Create(domain.SessionPlan, &epic.ID)
+	sessionStore.Close(sess.ID, domain.SessionCompleted)
+
+	summaries, err := epicStore.ListSummaries()
+	if err != nil {
+		t.Fatalf("ListSummaries: %v", err)
+	}
+	s := summaries[0]
+	if s.Phase != "plan" {
+		t.Errorf("Phase = %q, want %q", s.Phase, "plan")
+	}
+	if s.PhaseStatus != "completed" {
+		t.Errorf("PhaseStatus = %q, want %q", s.PhaseStatus, "completed")
+	}
+}
+
+func TestEpicStore_ListSummaries_WithStoriesAndTasks(t *testing.T) {
+	database := testDB(t)
+	epicStore := NewEpicStore(database)
+	storyStore := NewStoryStore(database)
+	taskStore := NewTaskStore(database)
+
+	epic, _, _ := epicStore.Create("my-epic", "desc")
+	story, _, _ := storyStore.Create(epic.ID, "story-1", "desc")
+	storyStore.Create(epic.ID, "story-2", "desc")
+
+	taskStore.Create(story.ID, "task-1", "desc", nil)
+	taskStore.Create(story.ID, "task-2", "desc", nil)
+	taskStore.Start(story.ID, "task-2")
+	taskStore.Complete(story.ID, "task-2", domain.TaskResult{Summary: "done"})
+
+	summaries, err := epicStore.ListSummaries()
+	if err != nil {
+		t.Fatalf("ListSummaries: %v", err)
+	}
+	s := summaries[0]
+	if s.StoryCount != 2 {
+		t.Errorf("StoryCount = %d, want 2", s.StoryCount)
+	}
+	if s.TaskCount != 2 {
+		t.Errorf("TaskCount = %d, want 2", s.TaskCount)
+	}
+	if s.CompletedTaskCount != 1 {
+		t.Errorf("CompletedTaskCount = %d, want 1", s.CompletedTaskCount)
+	}
+}
+
+func TestEpicStore_ListSummaries_ActiveSessionTakesPriority(t *testing.T) {
+	database := testDB(t)
+	epicStore := NewEpicStore(database)
+	sessionStore := NewSessionStore(database)
+
+	epic, _, _ := epicStore.Create("my-epic", "desc")
+
+	// Completed plan session
+	sess1, _, _ := sessionStore.Create(domain.SessionPlan, &epic.ID)
+	sessionStore.Close(sess1.ID, domain.SessionCompleted)
+
+	// Active execute session
+	sessionStore.Create(domain.SessionExecute, &epic.ID)
+
+	summaries, err := epicStore.ListSummaries()
+	if err != nil {
+		t.Fatalf("ListSummaries: %v", err)
+	}
+	s := summaries[0]
+	if s.Phase != "execute" {
+		t.Errorf("Phase = %q, want %q (active session should take priority)", s.Phase, "execute")
+	}
+	if s.PhaseStatus != "active" {
+		t.Errorf("PhaseStatus = %q, want %q", s.PhaseStatus, "active")
+	}
+}

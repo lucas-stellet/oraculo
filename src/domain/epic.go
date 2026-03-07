@@ -12,3 +12,22 @@ type Epic struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
+
+// EpicSummary extends Epic with aggregated data for dashboard display.
+type EpicSummary struct {
+	Epic
+	Phase              string `json:"phase"`
+	PhaseStatus        string `json:"phase_status"`
+	StoryCount         int    `json:"story_count"`
+	TaskCount          int    `json:"task_count"`
+	CompletedTaskCount int    `json:"completed_task_count"`
+}
+
+// SessionTypeToPhase maps session types to dashboard phase labels.
+var SessionTypeToPhase = map[SessionType]string{
+	SessionEpic:     "discover",
+	SessionStory:    "discover",
+	SessionPlan:     "plan",
+	SessionExecute:  "execute",
+	SessionValidate: "validate",
+}
