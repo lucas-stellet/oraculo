@@ -8,3 +8,4 @@ _plans
 .oraculo/
 /oraculo.claude/worktrees/
 /oraculo
+src/server/dashboard_assets
