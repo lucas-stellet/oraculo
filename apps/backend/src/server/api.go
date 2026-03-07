@@ -20,18 +20,46 @@ type APIHandler struct {
 	hub       *ws.Hub
 }
 
-// handleListEpics returns all epics.
+// handleListEpics returns all epics with aggregated summary data.
 // GET /api/epics
 func (a *APIHandler) handleListEpics(w http.ResponseWriter, r *http.Request) {
-	epics, err := a.epics.List()
+	summaries, err := a.epics.ListSummaries()
 	if err != nil {
 		writeAPIError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if epics == nil {
-		epics = []domain.Epic{}
+	writeJSON(w, summaries)
+}
+
+// handleCreateEpic creates a new epic.
+// POST /api/epics
+// Body: {"name":"...","description":"..."}
+func (a *APIHandler) handleCreateEpic(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
 	}
-	writeJSON(w, epics)
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if body.Name == "" {
+		writeAPIError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	epic, created, err := a.epics.Create(body.Name, body.Description)
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if !created {
+		writeAPIError(w, http.StatusConflict, "epic already exists")
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	writeJSON(w, epic)
 }
 
 // handleListApprovals returns all approvals, optionally filtered by pending status.
