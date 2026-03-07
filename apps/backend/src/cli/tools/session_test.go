@@ -59,10 +59,10 @@ func TestSessionInit_Description(t *testing.T) {
 
 	var found bool
 	for _, e := range epics {
-		if e["Name"] == "desc-epic" {
+		if e["name"] == "desc-epic" {
 			found = true
-			if e["Description"] != "A raw idea about improving auth" {
-				t.Errorf("Description = %v, want %q", e["Description"], "A raw idea about improving auth")
+			if e["description"] != "A raw idea about improving auth" {
+				t.Errorf("description = %v, want %q", e["description"], "A raw idea about improving auth")
 			}
 			break
 		}
