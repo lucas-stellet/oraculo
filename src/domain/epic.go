@@ -5,12 +5,12 @@ import "time"
 
 // Epic represents a product engineering initiative.
 type Epic struct {
-	ID             int
-	Name           string
-	Description    string
-	ApprovalStatus ApprovalStatus
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID             int            `json:"id"`
+	Name           string         `json:"name"`
+	Description    string         `json:"description"`
+	ApprovalStatus ApprovalStatus `json:"approval_status"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
 }
 
 // EpicSummary extends Epic with aggregated data for dashboard display.

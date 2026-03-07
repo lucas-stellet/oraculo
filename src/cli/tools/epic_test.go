@@ -222,8 +222,8 @@ func TestEpicUpdate(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
 	}
-	if result["Description"] != "new desc" {
-		t.Errorf("Description = %v, want %q", result["Description"], "new desc")
+	if result["description"] != "new desc" {
+		t.Errorf("description = %v, want %q", result["description"], "new desc")
 	}
 }
 
