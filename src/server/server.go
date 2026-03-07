@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -21,10 +22,11 @@ type Server struct {
 	database     *db.DB
 	lastActivity time.Time
 	mu           sync.Mutex
+	staticPath   string
 }
 
 // New constructs a Server wired with all stores, bridge, and hub.
-func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Broadcaster) *Server {
+func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Broadcaster, staticPath string) *Server {
 	var logger *slog.Logger
 	if logs != nil {
 		logger = slog.New(logs)
@@ -66,6 +68,7 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 
 	// API endpoints
 	mux.HandleFunc("GET /api/epics", api.handleListEpics)
+	mux.HandleFunc("POST /api/epics", api.handleCreateEpic)
 	mux.HandleFunc("GET /api/approvals", api.handleListApprovals)
 	mux.HandleFunc("POST /api/approvals/{id}/verdict", api.handleVerdict)
 
@@ -77,7 +80,21 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 		mux.HandleFunc("GET /logs", logs.ServeSSE)
 	}
 
-	return &Server{mux: mux, database: database, lastActivity: time.Now()}
+	// Static files for dashboard
+	if staticPath != "" {
+		slog.Info("server.static.enabled", "path", staticPath)
+		if _, err := os.Stat(staticPath); err != nil {
+			slog.Error("server.static.path_not_found", "path", staticPath, "error", err)
+		}
+		fs := http.FileServer(http.Dir(staticPath))
+		mux.Handle("GET /", fs)
+		mux.Handle("GET /_next/", fs)
+		mux.Handle("GET /_next/*", fs)
+	} else {
+		slog.Info("server.static.disabled", "reason", "staticPath empty")
+	}
+
+	return &Server{mux: mux, database: database, lastActivity: time.Now(), staticPath: staticPath}
 }
 
 // LastActivity returns the time of the last HTTP request.

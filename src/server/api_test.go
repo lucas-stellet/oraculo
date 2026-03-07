@@ -23,7 +23,7 @@ func testServerWithDB(t *testing.T) (*server.Server, *db.DB) {
 	database := dbtest.Open(t)
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
-	return server.New(database, bridge, hub, nil), database
+	return server.New(database, bridge, hub, nil, ""), database
 }
 
 func TestListEpics_Empty(t *testing.T) {
@@ -34,7 +34,7 @@ func TestListEpics_Empty(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d, want 200", rec.Code)
 	}
-	var result []domain.Epic
+	var result []domain.EpicSummary
 	if err := json.NewDecoder(rec.Body).Decode(&result); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestListEpics_WithData(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d, want 200", rec.Code)
 	}
-	var result []domain.Epic
+	var result []domain.EpicSummary
 	if err := json.NewDecoder(rec.Body).Decode(&result); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
@@ -179,7 +179,7 @@ func TestLogsEndpoint_ReturnsSSE(t *testing.T) {
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
 	logs := applog.NewBroadcaster(io.Discard)
-	srv := server.New(database, bridge, hub, logs)
+	srv := server.New(database, bridge, hub, logs, "")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // cancel immediately so ServeSSE returns after replay
