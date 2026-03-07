@@ -2,9 +2,12 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -76,7 +79,10 @@ func runStartAll(cmd *cobra.Command, _ []string) error {
 
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
-	srv := server.New(database, bridge, hub, broadcaster)
+
+	staticPath := "./apps/dashboard/out"
+	logger.Info("server.config", "port", port, "static_path", staticPath)
+	srv := server.New(database, bridge, hub, broadcaster, staticPath)
 	mcpSrv := mcpserver.New(bridge, db.NewApprovalStore(database), logger)
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -85,11 +91,39 @@ func runStartAll(cmd *cobra.Command, _ []string) error {
 		logger.Info("server.started", "port", port)
 		return srv.ListenAndServe(ctx, port, 0)
 	})
+
+	// Open browser after server starts
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		url := fmt.Sprintf("http://localhost:%d", port)
+		if err := openBrowser(url); err != nil {
+			logger.Error("browser.open_failed", "url", url, "error", err)
+		} else {
+			logger.Info("browser.opened", "url", url)
+		}
+	}()
+
 	g.Go(func() error { return mcpSrv.RunStdio(ctx) })
 
 	err = g.Wait()
 	logger.Info("server.stopping")
 	return err
+}
+
+// openBrowser opens the given URL in the default browser.
+func openBrowser(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "linux":
+		cmd = exec.Command("xdg-open", url)
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", url)
+	default:
+		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
+	}
+	return cmd.Start()
 }
 
 // runStartMCP starts only the MCP server on stdio.
@@ -139,7 +173,9 @@ func runStartHTTP(cmd *cobra.Command, _ []string) error {
 
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
-	srv := server.New(database, bridge, hub, broadcaster)
+
+	staticPath := "./apps/dashboard/out"
+	srv := server.New(database, bridge, hub, broadcaster, staticPath)
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return hub.Run(ctx) })

@@ -38,7 +38,7 @@ func TestIntegration_ApprovalFlow(t *testing.T) {
 	approvalStore := db.NewApprovalStore(database)
 	bridge := approval.NewBridge(approvalStore, hub)
 	broadcaster := applog.NewBroadcaster(io.Discard)
-	srv := server.New(database, bridge, hub, broadcaster)
+	srv := server.New(database, bridge, hub, broadcaster, "")
 
 	// 2. Start the HTTP server as a test server.
 	httpSrv := httptest.NewServer(srv)
