@@ -183,6 +183,17 @@ func runStartHTTP(cmd *cobra.Command, _ []string) error {
 		return srv.ListenAndServe(ctx, port, defaultIdleTimeout)
 	})
 
+	// Open browser after server starts
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		url := fmt.Sprintf("http://localhost:%d", port)
+		if err := openBrowser(url); err != nil {
+			logger.Error("browser.open_failed", "url", url, "error", err)
+		} else {
+			logger.Info("browser.opened", "url", url)
+		}
+	}()
+
 	err = g.Wait()
 	logger.Info("server.stopping")
 	return err
