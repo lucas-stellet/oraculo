@@ -89,6 +89,11 @@ func hookSessionStart(cmd *cobra.Command) error {
 	healthURL := fmt.Sprintf("http://localhost:%d/health", port)
 	online := isServerHealthy(healthURL)
 
+	if online {
+		url := fmt.Sprintf("http://localhost:%d", port)
+		fmt.Fprintf(cmd.OutOrStdout(), "Oraculo dashboard available at: %s\n", url)
+	}
+
 	if !online {
 		fmt.Fprintf(cmd.ErrOrStderr(), "warning: Oraculo HTTP server offline — auto-starting on port %d\n", port)
 		if err := SpawnDaemon(); err != nil {
