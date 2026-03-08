@@ -1,0 +1,154 @@
+package cli
+
+import (
+	"context"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/lucas/oraculo/apps/backend/src/applog"
+	"github.com/lucas/oraculo/apps/backend/src/approval"
+	"github.com/lucas/oraculo/apps/backend/src/config"
+	"github.com/lucas/oraculo/apps/backend/src/db"
+	mcpserver "github.com/lucas/oraculo/apps/backend/src/mcp"
+	"github.com/lucas/oraculo/apps/backend/src/server"
+	"github.com/lucas/oraculo/apps/backend/src/ws"
+)
+
+const defaultIdleTimeout = 15 * time.Minute
+
+func newStartCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "start",
+		Short: "Start Oraculo services",
+		Long:  "Start Oraculo services. Without subcommand, starts both MCP and HTTP servers.",
+		RunE:  runStartAll,
+	}
+	cmd.AddCommand(newStartMCPCmd())
+	cmd.AddCommand(newStartHTTPCmd())
+	return cmd
+}
+
+func newStartMCPCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "mcp",
+		Short: "Start MCP server on stdio (managed by Claude Code)",
+		RunE:  runStartMCP,
+	}
+}
+
+func newStartHTTPCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "http",
+		Short: "Start HTTP + WebSocket server as daemon",
+		RunE:  runStartHTTP,
+	}
+}
+
+// runStartAll starts both MCP and HTTP servers (backwards compatible).
+func runStartAll(cmd *cobra.Command, _ []string) error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	database, err := db.Open()
+	if err != nil {
+		return err
+	}
+	defer database.Close()
+
+	cfg, err := config.Read()
+	if err != nil {
+		return err
+	}
+
+	port := cfg.Port
+	if port == 0 {
+		port = 3100
+	}
+
+	broadcaster := applog.NewBroadcaster(os.Stderr)
+	logger := slog.New(broadcaster)
+
+	hub := ws.NewHub()
+	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
+	srv := server.New(database, bridge, hub, broadcaster)
+	mcpSrv := mcpserver.New(bridge, db.NewApprovalStore(database), logger)
+
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error { return hub.Run(ctx) })
+	g.Go(func() error {
+		logger.Info("server.started", "port", port)
+		return srv.ListenAndServe(ctx, port, 0)
+	})
+	g.Go(func() error { return mcpSrv.RunStdio(ctx) })
+
+	err = g.Wait()
+	logger.Info("server.stopping")
+	return err
+}
+
+// runStartMCP starts only the MCP server on stdio.
+func runStartMCP(cmd *cobra.Command, _ []string) error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	database, err := db.Open()
+	if err != nil {
+		return err
+	}
+	defer database.Close()
+
+	broadcaster := applog.NewBroadcaster(os.Stderr)
+	logger := slog.New(broadcaster)
+
+	hub := ws.NewHub()
+	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
+	mcpSrv := mcpserver.New(bridge, db.NewApprovalStore(database), logger)
+
+	return mcpSrv.RunStdio(ctx)
+}
+
+// runStartHTTP starts the HTTP + WebSocket server as a daemon with idle timeout.
+func runStartHTTP(cmd *cobra.Command, _ []string) error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	database, err := db.Open()
+	if err != nil {
+		return err
+	}
+	defer database.Close()
+
+	cfg, err := config.Read()
+	if err != nil {
+		return err
+	}
+
+	port := cfg.Port
+	if port == 0 {
+		port = 3100
+	}
+
+	broadcaster := applog.NewBroadcaster(os.Stderr)
+	logger := slog.New(broadcaster)
+
+	hub := ws.NewHub()
+	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
+	srv := server.New(database, bridge, hub, broadcaster)
+
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error { return hub.Run(ctx) })
+	g.Go(func() error {
+		logger.Info("server.started", "port", port, "idle_timeout", defaultIdleTimeout)
+		return srv.ListenAndServe(ctx, port, defaultIdleTimeout)
+	})
+
+	err = g.Wait()
+	logger.Info("server.stopping")
+	return err
+}

@@ -298,7 +298,7 @@ Error example:
 ## 6. Go Project Structure
 
 ```
-cmd/oraculo/
+apps/backend/cmd/oraculo/
 ├── main.go
 ├── cmd/
 │   ├── root.go                 # Cobra root command
@@ -342,7 +342,7 @@ cmd/oraculo/
 
 **Architecture notes:**
 
-- `cmd/tools/tools.go` contains a Cobra `PersistentPreRun` that handles auto-bootstrapping (create `.oraculo/` and DB if missing) for all tools subcommands.
-- `internal/` packages contain pure business logic, no CLI concerns. Both `tools` commands and `status` command use the same internal packages.
-- Validation of preconditions (epic exists, story belongs to epic, valid status transition) lives in `internal/` packages, not in command handlers.
+- `apps/backend/cmd/tools/tools.go` contains a Cobra `PersistentPreRun` that handles auto-bootstrapping (create `.oraculo/` and DB if missing) for all tools subcommands.
+- `apps/backend/internal/` packages contain pure business logic, no CLI concerns. Both `tools` commands and `status` command use the same internal packages.
+- Validation of preconditions (epic exists, story belongs to epic, valid status transition) lives in `apps/backend/internal/` packages, not in command handlers.
 - Command handlers are thin: parse flags → call internal logic → format output.

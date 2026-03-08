@@ -296,7 +296,7 @@ Exemplo de erro:
 ## 6. Estrutura do Projeto Go
 
 ```
-cmd/oraculo/
+apps/backend/cmd/oraculo/
 ├── main.go
 ├── cmd/
 │   ├── root.go                 # Comando root Cobra
@@ -340,7 +340,7 @@ cmd/oraculo/
 
 **Notas de arquitetura:**
 
-- `cmd/tools/tools.go` contém um `PersistentPreRun` do Cobra que lida com auto-bootstrapping (criar `.oraculo/` e DB se ausentes) para todos os subcomandos tools.
-- Pacotes em `internal/` contêm lógica de negócio pura, sem preocupações de CLI. Tanto os comandos `tools` quanto o comando `status` usam os mesmos pacotes internos.
-- Validação de pré-condições (epic existe, story pertence ao epic, transição de status válida) vive nos pacotes `internal/`, não nos handlers de comando.
+- `apps/backend/cmd/tools/tools.go` contém um `PersistentPreRun` do Cobra que lida com auto-bootstrapping (criar `.oraculo/` e DB se ausentes) para todos os subcomandos tools.
+- Pacotes em `apps/backend/internal/` contêm lógica de negócio pura, sem preocupações de CLI. Tanto os comandos `tools` quanto o comando `status` usam os mesmos pacotes internos.
+- Validação de pré-condições (epic existe, story pertence ao epic, transição de status válida) vive nos pacotes `apps/backend/internal/`, não nos handlers de comando.
 - Handlers de comando são finos: parse de flags → chamar lógica interna → formatar saída.
