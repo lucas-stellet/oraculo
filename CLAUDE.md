@@ -123,3 +123,7 @@ claude-kit/
 ```
 
 Only `SKILL.md` files appear as slash commands. Reference files inside skill directories are internal — they don't pollute the command list.
+
+## Package Manager
+
+**ALWAYS use `bun`** — never npm, yarn, or pnpm. This applies to installing dependencies, running scripts, and any other package manager operation across the entire project.
