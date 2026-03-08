@@ -9,3 +9,5 @@ _plans
 /oraculo.claude/worktrees/
 /oraculo
 apps/backend/src/server/dashboard_assets
+apps/dashboard/node_modules
+apps/dashboard/out
