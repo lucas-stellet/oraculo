@@ -91,7 +91,13 @@ func hookSessionStart(cmd *cobra.Command) error {
 
 	if online {
 		url := fmt.Sprintf("http://localhost:%d", port)
-		fmt.Fprintf(cmd.OutOrStdout(), "Oraculo dashboard available at: %s\n", url)
+		hookOutput := map[string]any{
+			"hookSpecificOutput": map[string]string{
+				"hookEventName":     "SessionStart",
+				"additionalContext": fmt.Sprintf("Oraculo dashboard available at: %s", url),
+			},
+		}
+		json.NewEncoder(cmd.OutOrStdout()).Encode(hookOutput)
 	}
 
 	if !online {
