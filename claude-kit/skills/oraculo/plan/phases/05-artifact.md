@@ -26,8 +26,13 @@
 ## Execution
 
 Persist the plan by creating task records with:
-- `oraculo tools task init <name> --epic <epic-name> --story <story-name> ...`
-- `--depends-on` for each real dependency edge
+- `oraculo tools task init <name> --epic <epic-name> --story <story-name> --depends-on <dep1>,<dep2>`
+
+Each task record must include:
+- **Behavioral name**: reflects deliverable behavior, not vague layers (never "backend", "frontend", "setup")
+- **Description**: clear enough for a code agent to implement without asking questions
+- **Requirements mapping**: which story business rules and acceptance criteria this task covers
+- **Dependencies**: only real sequencing constraints via `--depends-on`
 
 Use the approved requirements as the source of truth while creating tasks.
 

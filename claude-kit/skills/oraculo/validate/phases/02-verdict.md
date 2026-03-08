@@ -25,14 +25,41 @@
 
 ## Execution
 
-Map verdicts explicitly:
+### Verdict Persistence
+
+Persist every QA verdict via CLI:
+
+`oraculo tools validation save <story> --epic <epic> --verdict approved|rejected --findings '{"blocker":<n>,"major":<n>,"minor":<n>}'`
+
+Update the story status accordingly:
+
+`oraculo tools story update-status <story> --epic <epic> --status approved|rejected`
+
+### Approval Path
+
+If QA approves, make the approval explicit via the commands above.
+
+### Rejection Routing
+
+Map rejected verdicts to the correct skill based on root cause:
 - implementation bug or missing implementation detail -> `/oraculo:execute`
 - missing decomposition or wrong task structure -> `/oraculo:plan`
 - wrong story definition or misunderstood requirement -> `/oraculo:story`
 - wrong epic problem definition -> `/oraculo:epic`
 
-If QA approves, make the approval explicit.
+Rejection **exits** validate. The fix happens in the routed skill externally. Validate is re-invoked as a new session after the fix. There is NO internal fix→re-QA loop.
+
+When presenting a rejection verdict to the user, use `AskUserQuestion` to confirm the routing destination before exiting.
+
+### Escalation
+
 If QA rejects repeatedly and human judgment is required, use `qa-escalation`.
+
+### Knowledge Persistence
+
+Persist failure patterns as codebase knowledge so future validations benefit:
+
+`oraculo tools memory store --domain validate --category pattern --finding "<description of the failure pattern>"`
 
 <halt>
   - The root cause is unclear — do not route until the finding is understood

@@ -25,13 +25,27 @@
 
 ## Execution
 
+### Story-Level QA
+
 Dispatch QA with exactly:
 - the diff
 - the story's Regras de negocio, Comportamento esperado, and Criterios de Aceite sections
 - test results
 - explicit QA criteria
 
+Use the prompt template from `references/qa-dispatch.md` and fill all slots before dispatching.
+
 Tell QA to return structured findings and a verdict, not code changes.
+
+### Epic-Level QA
+
+When validating an epic:
+1. Enumerate stories: `oraculo tools story list --epic <epic>`
+2. Dispatch one QA agent per story (parallelizable when stories are independent)
+3. Each QA agent uses the template from `references/qa-dispatch.md`
+4. Collect per-story verdicts — do not issue a blanket epic verdict
+
+### Escalation
 
 If repeated failures on the same work require human intervention, prepare:
 

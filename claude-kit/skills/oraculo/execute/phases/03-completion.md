@@ -30,6 +30,11 @@ Confirm:
 - implementation summaries exist
 - the work is coherent enough for independent QA
 
+Persist lessons learned from the execution:
+- For each notable failure, retry, or unexpected outcome, call `oraculo tools knowledge add --topic <topic> --insight <insight>`
+- Focus on actionable patterns: what failed, why, and what worked on retry
+- Skip trivial outcomes (task completed as expected)
+
 Then recommend the next command explicitly:
 
 `/oraculo:validate`

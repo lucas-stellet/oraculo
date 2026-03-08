@@ -38,5 +38,5 @@ Check whether the implementation stayed within the intended task and did not add
 
 Use explicit severity:
 - blocker: must be fixed before approval
-- important: significant issue that should be fixed before approval
-- minor: useful improvement but not necessarily a release blocker
+- major: significant issue that should be fixed before approval
+- minor: useful improvement but not a release blocker

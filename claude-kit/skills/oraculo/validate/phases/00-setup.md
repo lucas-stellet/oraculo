@@ -25,8 +25,21 @@
 
 ## Execution
 
+Load implementation context using these CLI commands:
+
+1. Confirm tasks completed:
+   `oraculo tools task list --epic <epic> --story <story>`
+2. Load story specs:
+   `oraculo tools story get <story> --epic <epic>`
+3. Load diff:
+   `git diff <base>..HEAD -- <story-files>`
+4. Load test results:
+   Run the project's test command (e.g., `go test ./...`, `npm test`)
+5. For epic-level validation, enumerate stories:
+   `oraculo tools story list --epic <epic>`
+
 Confirm:
-- the implementation wave has completed
+- the implementation wave has completed (all tasks `completed`)
 - the relevant diff, specs, and test results are available
 - validation scope is explicit
 

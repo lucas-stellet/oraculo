@@ -30,6 +30,21 @@
 Read project config to load additional skills for the design agent:
 `oraculo tools config get` (or read .oraculo/config.json directly)
 
+### Greenfield Detection
+
+Before dispatching research agents, check if the project has existing source code:
+- Look for standard entry points: `src/`, `app/`, `lib/`, `packages/`, `cmd/`
+- Check for dependency manifests: `package.json`, `go.mod`, `mix.exs`, `Cargo.toml`, `pyproject.toml`, `Gemfile`
+
+If no source code or dependency manifest is found, the project is **greenfield**:
+- Skip the Codebase Research Agent entirely (no code to analyze)
+- Still dispatch the Web Research Agent (external knowledge is always valuable)
+- Note in the design doc: "Greenfield project — all architectural decisions are foundational"
+
+If source code exists, dispatch both agents as normal.
+
+### Research Agents (non-greenfield)
+
 Dispatch two research agents IN PARALLEL:
 
 **Codebase Research Agent** — investigates existing project:
@@ -39,6 +54,8 @@ Dispatch two research agents IN PARALLEL:
 - Test patterns (how existing tests are structured)
 - Additional skills: skills.design_agent from config (+ implicit codebase-analysis)
 
+### Research Agent (always)
+
 **Web Research Agent** — researches external knowledge:
 - Libraries or tools the project doesn't have but may need for these tasks
 - Current best practices for the project's tech stack
@@ -46,7 +63,7 @@ Dispatch two research agents IN PARALLEL:
 - Known pitfalls to avoid
 - Context: tech stack, story requirements, task list
 
-Wait for both agents to return findings.
+Wait for research agent(s) to return findings.
 
 Synthesize findings into an architectural design document following the template
 in references/design-patterns.md.

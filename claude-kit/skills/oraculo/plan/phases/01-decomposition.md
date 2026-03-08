@@ -41,6 +41,12 @@ Use task slices such as:
   - A single task still contains multiple independent behaviors — split it before proceeding
 </halt>
 
+## User Review
+
+Present the task list to the user via `AskUserQuestion` before completing
+the phase. The user may merge, split, add, or remove tasks. Incorporate
+feedback and re-validate that tasks still map to requirements.
+
 <phase-gate phase="decomposition">
   Exit conditions:
     - Requirements decomposed into concrete task candidates
