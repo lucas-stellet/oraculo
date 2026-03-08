@@ -1,5 +1,5 @@
 BINARY  := oraculo
-BUILD   := ./cmd/oraculo
+BUILD   := ./apps/backend/cmd/oraculo
 PREFIX  ?= $(HOME)/.local
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
@@ -13,8 +13,8 @@ build:
 		cd $(DASHBOARD_DIR) && bun run build; \
 	fi
 	@# Copy static files to embedded directory
-	@mkdir -p src/server/dashboard_assets
-	@cp -r $(DASHBOARD_DIR)/out/* src/server/dashboard_assets/
+	@mkdir -p apps/backend/src/server/dashboard_assets
+	@cp -r $(DASHBOARD_DIR)/out/* apps/backend/src/server/dashboard_assets/
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(BUILD)
 
 install: build
@@ -28,7 +28,7 @@ vet:
 
 clean:
 	rm -f $(BINARY)
-	rm -rf src/server/dashboard_assets
+	rm -rf apps/backend/src/server/dashboard_assets
 
 web-dev:
 	cd $(DASHBOARD_DIR) && bun run dev
