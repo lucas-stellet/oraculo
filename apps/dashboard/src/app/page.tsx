@@ -28,7 +28,7 @@ export default function LandingPage() {
   }
 
   function handleOpen(epic: EpicSummary) {
-    console.log("Open epic:", epic.name);
+    window.location.href = `/epics/${epic.id}`;
   }
 
   return (

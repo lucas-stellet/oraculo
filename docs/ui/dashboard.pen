@@ -1262,6 +1262,62 @@
           "children": [
             {
               "type": "frame",
+              "id": "eL19K",
+              "name": "Logo Area",
+              "width": "fill_container",
+              "height": 48,
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#ffffff0d"
+              },
+              "gap": 10,
+              "padding": [
+                0,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "klhVe",
+                  "name": "Logo Mark",
+                  "width": 28,
+                  "height": 28,
+                  "fill": "#2563eb",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "TGan1",
+                      "name": "logoIcon",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "scan-eye",
+                      "iconFontFamily": "lucide",
+                      "fill": "#ffffff"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "ymFeA",
+                  "name": "logoText",
+                  "fill": "#f5f9ff",
+                  "content": "ORACULO",
+                  "fontFamily": "Space Grotesk",
+                  "fontSize": 15,
+                  "fontWeight": "700",
+                  "letterSpacing": 2.5
+                }
+              ]
+            },
+            {
+              "type": "frame",
               "id": "2hYB0",
               "name": "Context Switcher",
               "width": "fill_container",
@@ -2177,6 +2233,62 @@
           "fill": "#18181b",
           "layout": "vertical",
           "children": [
+            {
+              "type": "frame",
+              "id": "RUpOf",
+              "name": "Logo Area",
+              "width": "fill_container",
+              "height": 48,
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#ffffff0d"
+              },
+              "gap": 10,
+              "padding": [
+                0,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "KNUd5",
+                  "name": "Logo Mark",
+                  "width": 28,
+                  "height": 28,
+                  "fill": "#2563eb",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "kTlo0",
+                      "name": "logoIcon",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "scan-eye",
+                      "iconFontFamily": "lucide",
+                      "fill": "#ffffff"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "aZJ5v",
+                  "name": "logoText",
+                  "fill": "#f5f9ff",
+                  "content": "ORACULO",
+                  "fontFamily": "Space Grotesk",
+                  "fontSize": 15,
+                  "fontWeight": "700",
+                  "letterSpacing": 2.5
+                }
+              ]
+            },
             {
               "type": "frame",
               "id": "576Db",
@@ -3359,6 +3471,47 @@
           "layout": "vertical",
           "alignItems": "center",
           "children": [
+            {
+              "type": "frame",
+              "id": "W9Bgi",
+              "name": "Collapsed Logo",
+              "width": "fill_container",
+              "height": 48,
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#ffffff0d"
+              },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "xCVPV",
+                  "name": "Collapsed Logo Mark",
+                  "width": 28,
+                  "height": 28,
+                  "fill": "#2563eb",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "go1Q6",
+                      "name": "logoIcon",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "scan-eye",
+                      "iconFontFamily": "lucide",
+                      "fill": "#ffffff"
+                    }
+                  ]
+                }
+              ]
+            },
             {
               "type": "frame",
               "id": "nSIUQ",

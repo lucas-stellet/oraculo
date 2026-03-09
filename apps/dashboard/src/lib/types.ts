@@ -9,6 +9,8 @@ export type TaskStatus = "pending" | "in_progress" | "completed" | "failed";
 
 export type Phase = "discover" | "plan" | "execute" | "validate";
 
+export type StoryStatus = "pending" | "in_progress" | "completed" | "failed";
+
 export interface Epic {
   id: number;
   name: string;
@@ -24,4 +26,24 @@ export interface EpicSummary extends Epic {
   story_count: number;
   task_count: number;
   completed_task_count: number;
+}
+
+export interface Story {
+  id: number;
+  epic_id: number;
+  name: string;
+  status: StoryStatus;
+  task_count: number;
+  completed_task_count: number;
+  running_status: string;
+  last_activity: string;
+}
+
+export interface StoryTask {
+  id: number;
+  story_id: number;
+  name: string;
+  status: TaskStatus;
+  agent: string | null;
+  duration: string | null;
 }
