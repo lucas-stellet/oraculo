@@ -66,7 +66,64 @@ A UI não é uma aplicação separada. Ela vive dentro do mesmo binário que o C
 
 O humano nunca deveria precisar iniciar o dashboard manualmente. Quando uma sessão começa, o dashboard sobe automaticamente — o servidor fica ativo, o browser abre, e a interface está pronta antes de o humano fazer sua primeira pergunta. O humano executa um comando, e o dashboard já está lá, esperando. Esse é o Pit of Success aplicado à UI: a configuração correta é a configuração padrão. Sem aba de terminal separada, sem inicialização manual do servidor, sem "lembre-se de abrir o dashboard primeiro." O sistema cuida de si mesmo para que o humano possa focar no trabalho.
 
-## 5. Relação com as Outras Camadas
+## 5. Observabilidade Baseada em Hooks
+
+### 5.1 Telemetria Automática via HTTP Hooks
+
+O dashboard recebe dados em tempo real através do sistema nativo de hooks do Claude Code. Quando `oraculo install` configura um projeto, ele registra HTTP hooks em `.claude/settings.json` que disparam automaticamente em cada evento qualificável — sem necessidade de instrumentação dos agentes. Os agentes não chamam ferramentas especiais nem emitem logs estruturados para alimentar o dashboard. O Claude Code dispara os hooks; o dashboard os recebe.
+
+Os hooks cobertos pelo canal HTTP:
+
+| Hook | Evento |
+|---|---|
+| `SubagentStart` | Um agente foi criado |
+| `SubagentStop` | Um agente completou ou falhou |
+| `PostToolUse` (apenas ferramentas de mutação) | Um arquivo foi editado, escrito ou um comando shell executado |
+| `TaskCompleted` | Uma tarefa foi marcada como completa |
+| `Stop` | Um agente está parando |
+| `TeammateIdle` | Um teammate ficou ocioso |
+| `SessionEnd` | A sessão do Claude Code encerrou |
+
+`SessionStart` é tratado por um command hook (`oraculo hook session-start`) em vez de um HTTP hook. Isso ocorre porque o início da sessão requer um health check e deve imprimir um aviso se o servidor estiver offline — HTTP hooks não produzem saída visível ao usuário.
+
+### 5.2 Degradação Graciosa
+
+Cada HTTP hook opera sob uma política de degradação graciosa. Quando o servidor está online, ele persiste o evento no SQLite e transmite para clientes WebSocket conectados. Quando o servidor está offline, o Claude Code registra um aviso não-bloqueante e o agente continua. Hooks usam timeout de 5 segundos; se o servidor não responder a tempo, o hook é abandonado e o agente prossegue.
+
+Isso significa que o dashboard pode ficar offline, reiniciar ou ficar atrasado a qualquer momento sem afetar a operação do sistema. Quando o servidor retorna, eventos futuros retomam. Eventos históricos que ocorreram enquanto o servidor estava offline não são replayados — o dashboard mostra o que observou, não uma reconstrução completa da sessão. Para estado autoritativo, o CLI permanece a fonte de verdade.
+
+### 5.3 O Que o Dashboard Observa
+
+HTTP hooks entregam metadados, não conteúdo. O hook `PostToolUse` registra *qual* ferramenta executou e *qual arquivo* foi afetado — não o que foi escrito, não o diff, não o texto do comando. Esta é uma decisão deliberada de privacidade e armazenamento: o dashboard mostra a forma da atividade dos agentes sem se tornar um sistema de vigilância de conteúdo de código.
+
+As três novas tabelas SQLite que suportam observabilidade baseada em hooks:
+
+- **`sessions`** — Uma linha por sessão do Claude Code, rastreando modelo, diretório de trabalho e tempo de vida
+- **`agents`** — Uma linha por evento de início de agente, rastreando nome, tipo, status e duração
+- **`tool_events`** — Uma linha por uso de ferramenta de mutação, rastreando qual ferramenta e qual arquivo (apenas metadados)
+
+Essas tabelas são populadas exclusivamente por HTTP hooks e lidas exclusivamente pela REST API do dashboard. São telemetria append-only — o CLI não escreve nelas, e o dashboard não as expõe como estado editável.
+
+### 5.4 Resumo da Arquitetura de Dois Canais
+
+```
+Canal 1: HTTP Hooks (telemetria automática)
+═══════════════════════════════════════════
+Claude Code ──POST──> HTTP server ──> SQLite + broadcast WebSocket
+                      (fire-and-forget, 200 body vazio)
+
+Canal 2: MCP (gates de aprovação interativos)
+═══════════════════════════════════════════
+Claude Code ──stdio──> MCP server ──> SQLite + canal Go (bloqueia)
+                                          │
+Dashboard ──POST /api/approvals/:id/verdict──> UPDATE SQLite + desbloqueia
+                                          │
+                       MCP server <── canal Go ──> Claude Code (retoma)
+```
+
+Ambos os canais escrevem no mesmo banco SQLite e compartilham o mesmo mecanismo de broadcast WebSocket. Ambos rodam dentro do mesmo binário Go. A distinção é comportamental: HTTP hooks são telemetria não-bloqueante; chamadas MCP são gates de workflow bloqueantes. O dashboard consome ambos — observando através do stream de hooks, agindo através da API de aprovações.
+
+## 6. Relação com as Outras Camadas
 
 A UI ocupa a camada mais externa da arquitetura do Oraculo. Ela depende de todas as camadas abaixo, mas nada depende dela.
 
@@ -78,7 +135,7 @@ A UI ocupa a camada mais externa da arquitetura do Oraculo. Ela depende de todas
 
 **Tanto humanos quanto agentes passam pelo mesmo CLI.** A UI torna os dados do CLI visuais e interativos. É uma lente diferente sobre a mesma fonte de verdade — não um caminho paralelo de dados.
 
-## 6. O Que a UI Não É
+## 7. O Que a UI Não É
 
 A UI **não é uma ferramenta de gestão de projetos**. Ela não substitui Jira, Linear ou qualquer tracker externo. Ela mostra o estado interno do Oraculo — épicos, stories, tarefas, atividade de agentes — para os humanos que estão trabalhando ativamente com o sistema.
 

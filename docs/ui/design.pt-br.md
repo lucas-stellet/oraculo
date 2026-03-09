@@ -127,7 +127,7 @@ Formato das mensagens WebSocket:
 }
 ```
 
-O frontend se inscreve em tipos de evento por tela. A DAG View se inscreve em `task_completed`. O Agent Monitor se inscreve em `agent_started` e `agent_stopped`. A tela de Aprovações se inscreve em `approval_requested`, `version_created` e `review_submitted`. O Activity Feed se inscreve em `tool_used`. A tela de Sessions se inscreve em `session_started` e `session_ended`.
+O frontend se inscreve em tipos de evento por tela. A DAG View se inscreve em `task_completed`. O Agent Monitor se inscreve em `agent_started` e `agent_stopped`. A tela de Aprovações se inscreve em `approval_requested`, `version_created` e `review_submitted`. A tela de Sessions se inscreve em `session_started` e `session_ended`.
 
 ### 2.5 Fluxo de Dados
 
@@ -155,18 +155,38 @@ A maior parte dos dados flui pelas funções internas do CLI. O HTTP server cham
 
 **Quando nenhum épico está selecionado:** O dropdown de épico na sidebar mostra "Select Epic...", os itens de navegação (Stories até Knowledge Base) ficam visualmente atenuados/desabilitados, e Settings permanece sempre acessível.
 
+### 3.1.1 Home / Overview
+
+**Propósito:** Visão geral do épico selecionado, mostrando todas as stories em formato de grid para navegação rápida.
+
+**Fontes de dados:**
+- `oraculo tools story list --epic <epic>` — Todas as stories do épico com status e progresso
+- `oraculo tools task list --epic <epic> --story <story>` — Progresso de tarefas por story
+
+**Layout:** Grid de cards de story. Cada card mostra: nome da story (título), badge de status, barra de progresso de tarefas, contagem de tarefas (completas/total), link para abrir a página dedicada da story. No topo da página, um cabeçalho com o nome do épico e fase atual.
+
+**Interações principais:** Clique em um card de story para navegar à sua página dedicada com tabs (Tasks, Design, Requirements, QA). Filtre stories por status. A página Home é a view padrão ao selecionar um épico.
+
 ### 3.2 Stories
 
-**Propósito:** Navegar pela hierarquia Story > Tarefa dentro do épico selecionado e ler documentos de requisitos.
+**Propósito:** Listar todas as stories do épico selecionado em formato de lista ou grid. Cada story é uma página dedicada com seus documentos e tarefas.
 
 **Fontes de dados:**
 - `oraculo tools story list --epic <epic>` — Stories do épico selecionado
-- `oraculo tools story get <name> --epic <epic>` — Markdown de requisitos da story
+- `oraculo tools story get <name> --epic <epic>` — Markdown de requisitos da story (página dedicada)
 - `oraculo tools task list --epic <epic> --story <story>` — Tarefas com status
 
-**Layout:** Divisão master-detail. Painel esquerdo: árvore de Stories dentro do épico selecionado. Cada story expande para mostrar suas tarefas com badges de status (pending, in_progress, completed, failed). Painel direito: visualizador de markdown renderizando os requisitos da story selecionada ou detalhe da tarefa.
+**Layout (lista/grid de stories):** Grid ou lista vertical de cards de story. Cada card mostra: nome da story (título), badge de status (pending, in_progress, completed, failed), barra de progresso de tarefas, contagem de tarefas completas/total. Clique no card navega para a página dedicada da story.
 
-**Interações principais:** Selecione um nó da árvore para carregar seu conteúdo no visualizador. Expanda/colapse stories. Filtre por status. Link de qualquer tarefa para sua posição na DAG View.
+**Página dedicada da story:** Ao clicar em uma story, abre-se uma página exclusiva com:
+- **Breadcrumb no topo:** Epic → Story → [tab atual]
+- **Tabs horizontais:** [Tasks] [Design] [Requirements] [QA]
+  - **Tab Tasks:** Lista de tarefas da story com status, ações e links para DAG View
+  - **Tab Design:** Visualização de documentos de design associados
+  - **Tab Requirements:** Markdown de requisitos da story (renderização completa)
+  - **Tab QA:** Veredictos de QA, histórico de validações, tentativas
+
+**Interações principais:** Clique em uma story para abrir sua página dedicada. Navegue entre tabs para acessar diferentes documentos e visões. Use o breadcrumb para navegar de volta ao épico ou à lista de stories.
 
 ### 3.3 DAG View
 
@@ -197,21 +217,7 @@ A maior parte dos dados flui pelas funções internas do CLI. O HTTP server cham
 
 **Interações principais:** Clique em um card de agente para ver seu histórico completo da sessão atual. Clique em uma referência de tarefa no feed para navegar à DAG View. Filtre o feed por tipo de agente ou tipo de evento.
 
-### 3.5 Activity Feed
-
-**Propósito:** Visibilidade em tempo real sobre mutações de ferramenta realizadas pelos agentes — quais arquivos foram editados e quais comandos foram executados.
-
-**Fontes de dados:**
-- Tabela `tool_events` (SQLite) — Histórico de eventos de ferramentas de mutação, populada pelo hook `PostToolUse`
-- Eventos WebSocket `tool_used` — Push do hook `PostToolUse` (apenas Bash|Edit|Write|NotebookEdit)
-
-**Mecanismo de atualização:** Somente push via WebSocket. Apenas ferramentas de mutação são rastreadas; ferramentas somente leitura (Read, Glob, Grep, WebFetch) são excluídas para reduzir ruído. Apenas metadados são armazenados — sem conteúdo, sem diffs, sem texto de comando.
-
-**Layout:** Feed cronológico reverso de eventos de ferramenta. Cada evento mostra: timestamp, nome do agente, nome da ferramenta (com ícone), caminho do arquivo (para Edit/Write/NotebookEdit) ou indicador Bash. Filtros por tipo de ferramenta e por agente.
-
-**Interações principais:** Clique em um caminho de arquivo para abrir o detalhe da tarefa associada. Filtre por tipo de ferramenta (Bash, Edit, Write, NotebookEdit) ou por agente. Exporte o log de atividade.
-
-### 3.6 Aprovações
+### 3.5 Aprovações
 
 **Propósito:** Gate de revisão humana para versões de documentos (requisitos de epic, definições de story) e aprovações operacionais (escalações de QA, design, execution-plan).
 
@@ -224,7 +230,7 @@ A maior parte dos dados flui pelas funções internas do CLI. O HTTP server cham
 
 **Interações principais:** Selecione um item da fila para carregar seu conteúdo. Alterne o modo diff. Adicione comentários (anexados ao veredicto). Envie o veredicto — o servidor o retransmite ao agente solicitante via callback MCP.
 
-### 3.7 QA Dashboard
+### 3.6 QA Dashboard
 
 **Propósito:** Acompanhar resultados de validação em todo o projeto.
 
@@ -239,7 +245,7 @@ A maior parte dos dados flui pelas funções internas do CLI. O HTTP server cham
 
 **Interações principais:** Clique em uma linha de veredicto para ver os achados completos do QA. Ordene/filtre por veredicto, story ou data. Link para a tarefa relacionada na DAG View.
 
-### 3.8 Knowledge Base
+### 3.7 Knowledge Base
 
 **Propósito:** Navegar e buscar o conhecimento acumulado do projeto a partir da tabela de conhecimento.
 
@@ -253,7 +259,7 @@ A maior parte dos dados flui pelas funções internas do CLI. O HTTP server cham
 
 **Interações principais:** Busca com type-ahead dispara `memory search` com debounce. Filtre por domínio (da resposta de `memory domains`) e categoria (`pattern`, `convention`, `constraint`, `dependency`, `test`, `architecture`). Ordene por confiança ou recência.
 
-### 3.9 Sessions
+### 3.8 Sessions
 
 **Propósito:** Histórico e observabilidade de sessões do Claude Code. Mostra quais sessões foram rastreadas, quais modelos foram usados, e a atividade associada de agentes e ferramentas.
 
@@ -302,7 +308,7 @@ CREATE TABLE tool_events (
 
 **Interações principais:** Filtre por status (active/ended), modelo ou data. Visualize detalhes de agentes e ferramentas por sessão.
 
-### 3.10 Configurações
+### 3.9 Configurações
 
 **Propósito:** Configuração do projeto e preferências do dashboard.
 
@@ -312,27 +318,28 @@ CREATE TABLE tool_events (
 
 ## 4. Navegação e Layout
 
-**Shell:** Barra lateral esquerda persistente com links de ícone + rótulo para cada tela. A sidebar colapsa para ícones apenas em viewports estreitos. O header da sidebar contém o nome da marca ("Oraculo") e um dropdown seletor de épico.
+**Shell:** Barra lateral esquerda persistente com links de ícone + rótulo para cada tela. A sidebar colapsa para ícones apenas em viewports estreitos. O header da sidebar contém o nome da marca ("Oraculo") e um dropdown seletor de épico no topo.
 
-**Dropdown de épico:** Localizado no header da sidebar, substituindo o subtítulo do projeto. Mostra o nome do épico atualmente selecionado com um indicador chevron. Clicar abre um dropdown para alternar entre épicos. Quando nenhum épico está selecionado, exibe "Select Epic..." e os itens de navegação abaixo ficam visualmente atenuados.
+**Dropdown de épico (Context Switcher):** Localizado no topo da sidebar, sempre visível. Mostra o épico atual com um chevron. Clicar abre um dropdown para alternar entre épicos. Quando nenhum épico está selecionado, exibe "Selecionar Épico..." e os itens de navegação abaixo ficam visualmente atenuados.
 
 **Ordem da sidebar:**
-1. Stories (ícone: folder-tree)
-2. DAG View (ícone: git-branch)
-3. Agent Monitor (ícone: bot)
-4. Activity Feed (ícone: activity)
-5. Aprovações (ícone: shield-alert, com badge de contagem não lida)
-6. QA Dashboard (ícone: shield-check)
-7. Knowledge Base (ícone: brain)
-8. Sessions (ícone: layers)
+1. 🏠 Home / Overview (ícone: home) ← Visão geral do épico (todas stories em grid)
+2. 📋 Stories (ícone: folder-tree) ← Lista vertical ou grid de stories
+3. 🕸️ DAG View (ícone: git-branch)
+4. 🤖 Agent Monitor (ícone: bot)
+5. 📄 Approvals (ícone: shield-alert, com badge de contagem não lida)
+6. 🧪 QA Dashboard (ícone: shield-check)
+7. 🧠 Knowledge Base (ícone: brain)
 — separador —
-9. Configurações (ícone: settings)
+8. Configurações (ícone: settings)
 
-**Quando um épico está selecionado:** Todos os itens de navegação (1-7) ficam ativos, e a view padrão é Stories. Alternar épicos via dropdown navega para Stories do novo épico. Agent Monitor, Activity Feed e Sessions mostram dados da sessão atual independente do épico selecionado.
+**Navegação plana (não nested):** Cada story é uma página dedicada. Clique em uma story na lista/grid abre sua página dedicada. Dentro da página da story: tabs horizontais [Tasks] [Design] [Requirements] [QA]. Breadcrumb no topo: Epic → Story → [tab atual].
+
+**Quando um épico está selecionado:** Todos os itens de navegação (1-7) ficam ativos. A view padrão é Home/Overview. Alternar épicos via dropdown navega para Home do novo épico. Agent Monitor e Sessions mostram dados da sessão atual independente do épico selecionado.
 
 **Quando nenhum épico está selecionado (Landing):** Os itens de navegação 1-7 ficam cinza/desabilitados. Apenas Configurações é interativo. A área de conteúdo principal mostra o grid de seleção de épico.
 
-**Comportamento responsivo:** A sidebar colapsa abaixo de 1024px de largura de viewport. Visualizações master-detail (Stories, Aprovações) empilham verticalmente em telas estreitas. A DAG View permanece em largura total com scroll horizontal.
+**Comportamento responsivo:** A sidebar colapsa abaixo de 1024px de largura de viewport. Visualizações master-detail empilham verticalmente em telas estreitas. A DAG View permanece em largura total com scroll horizontal.
 
 **Tema:** Modos claro e escuro. A direção visual default é `Mission Control`: base `Slate`, acento `Blue`, superfícies frias e contraste alto para leitura prolongada. Duas direções alternativas ficam documentadas no design system para usos específicos: `Operations Warm` (base `Stone`, acento `Orange`) para fluxos mais editoriais de revisão, e `Signal Green` (base `Zinc`, acento `Green`) para monitoramento e QA. Cores semânticas de status permanecem separadas do acento primário: azul para em andamento, verde para concluído, vermelho para falhou, âmbar para atenção/aprovação pendente.
 
@@ -415,10 +422,10 @@ Resumo de como cada tela obtém seus dados sob a arquitetura de dois canais:
 | Tela | Fonte primária | Mecanismo de atualização |
 |---|---|---|
 | Landing | CLI: `epic list` | Polling no mount (sem mudança) |
-| Stories | CLI: `story list`, `story get`, `task list` | Polling + WebSocket `task_completed` |
+| Home / Overview | CLI: `story list --epic`, `task list` | Polling + WebSocket `task_completed` |
+| Stories (página dedicada) | CLI: `story get`, `task list` | Polling + WebSocket `task_completed` |
 | DAG View | CLI: `task list` (inclui `depends_on`) | Push WebSocket do hook `TaskCompleted` |
 | Agent Monitor | Tabela `agents` (SQLite) + WebSocket | Push WebSocket dos hooks `SubagentStart`/`SubagentStop` |
-| Activity Feed | Tabela `tool_events` (SQLite) + WebSocket | Push WebSocket do hook `PostToolUse` |
 | Aprovações | Tabela `approvals` + tabelas `epic_versions`/`story_versions` (SQLite) + WebSocket | Push WebSocket do MCP `request_approval` (gates operacionais) e `version_created`/`review_submitted` (reviews de documentos) |
 | QA Dashboard | CLI: `task list`, `task get` + WebSocket | Híbrido: carga inicial via CLI, atualizações via WebSocket |
 | Knowledge Base | CLI: `memory search`, `memory domains` | Sob demanda (usuário dispara a busca) |
@@ -431,7 +438,9 @@ Resumo de como cada tela obtém seus dados sob a arquitetura de dois canais:
 |---|---|---|
 | Agent Monitor | Eventos MCP `notify_agent_state` (exigia instrumentação do agente) | HTTP hooks automáticos `SubagentStart`/`SubagentStop` |
 | DAG View | File watcher em `.oraculo/oraculo.db-wal` | Hook `TaskCompleted` via push WebSocket |
-| Activity Feed | Não existia | Novo — hook `PostToolUse` (apenas metadados de mutação) |
+| Home / Overview | Não existia | Novo — visão geral do épico com grid de stories |
+| Stories | Tree view master-detail | Página dedicada por story com tabs (Tasks, Design, Requirements, QA) |
+| Navegação | Lista nested de stories/tarefas | Navegação plana, cada story é uma página |
 | Sessions | Não existia | Novo — tabela `sessions` via hooks `session-start`/`session-end` |
 | Aprovações | MCP `request_approval` | Sem mudança — MCP permanece para gates bloqueantes |
 
