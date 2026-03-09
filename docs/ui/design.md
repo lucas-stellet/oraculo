@@ -144,31 +144,65 @@ Most data flows through CLI internals. The HTTP server calls the same Go functio
 
 ### 3.1 Landing (Epic Selection)
 
-**Purpose:** Entry point for the dashboard. The user selects which Epic to work with. All other screens are scoped to the selected Epic.
+**Purpose:** Entry point for the dashboard when no Epic is selected. The user selects which Epic to work with. All other screens are scoped to the selected Epic.
 
 **Data sources:**
 - `oraculo tools epic list` — All epics with phase, story count, task status
 
 **Layout:** A page title "Select an Epic" with subtitle "Choose an Epic to view its stories, tasks, and agent activity." Below, a responsive grid of Epic cards. Each card shows: Epic name (header, semibold), phase badge (Discover / Plan / Execute / Validate), progress bar showing task completion, stats row (story count, task count, completion percentage), status badge (completed / in_progress / pending), and an "Open" button.
 
-**Key interactions:** Click a card or its "Open" button to select the Epic. The sidebar's Epic dropdown updates and the view navigates to Stories for that Epic. The sidebar nav items become active once an Epic is selected.
+**Key interactions:** Click a card or its "Open" button to select the Epic. The sidebar's Epic dropdown updates and the view navigates to Home / Overview for that Epic. The sidebar nav items become active once an Epic is selected.
 
-**When no Epic is selected:** Sidebar Epic dropdown shows "Select Epic...", nav items (Stories through Knowledge Base) are visually muted/disabled, and Settings remains always accessible.
+**When no Epic is selected:** Sidebar Epic dropdown shows "Select Epic...", nav items (Home / Overview through Sessions) are visually muted/disabled, and Settings remains always accessible.
 
-### 3.2 Stories
+### 3.2 Home / Overview
 
-**Purpose:** Navigate the Story > Task hierarchy within the selected Epic and read requirements documents.
+**Purpose:** Epic-level dashboard showing all stories at a glance. This is the default view when an Epic is selected.
+
+**Data sources:**
+- `oraculo tools story list --epic <epic>` — Stories for the selected Epic
+- `oraculo tools task list --epic <epic> --story <story>` — Task status for each story
+
+**Layout:** Grid of story cards. Each card shows: story name, status badge (pending, in_progress, completed, failed), task completion progress bar, task count, and agent assignment (if any). Summary metrics at top: total stories, completion percentage, tasks by status.
+
+**Key interactions:** Click a story card to open its Story Detail Page. Filter by status. Sort by name, status, or creation date.
+
+### 3.3 Stories
+
+**Purpose:** Navigate stories within the selected Epic. Each story opens a dedicated detail page with its tasks and documents.
 
 **Data sources:**
 - `oraculo tools story list --epic <epic>` — Stories for the selected Epic
 - `oraculo tools story get <name> --epic <epic>` — Story requirements markdown
 - `oraculo tools task list --epic <epic> --story <story>` — Tasks with status
 
-**Layout:** Master-detail split. Left panel: tree view of Stories within the selected Epic. Each story expands to show its tasks with status badges (pending, in_progress, completed, failed). Right panel: markdown viewer rendering the selected story's requirements or task detail.
+**Layout:** Grid or vertical list of story cards. Each card shows: story name, status badge (pending, in_progress, completed, failed), task completion progress bar, and task count.
 
-**Key interactions:** Select a tree node to load its content in the viewer. Expand/collapse stories. Filter by status. Link from any task to its DAG View position.
+**Key interactions:** Click a story card to open its dedicated detail page. Filter by status. Sort by name, status, or creation date.
 
-### 3.3 DAG View
+### 3.4 Story Detail Page
+
+**Purpose:** Dedicated workspace for a single story, providing access to all its documents and tasks through a tabbed interface.
+
+**Data sources:**
+- `oraculo tools story get <name> --epic <epic>` — Story requirements markdown
+- `oraculo tools task list --epic <epic> --story <story>` — Tasks with status and dependencies
+- `oraculo tools task get <name> --epic <epic> --story <story>` — Individual task detail with result
+
+**Layout:** Breadcrumb navigation at top: `Epic Name → Story Name → [current tab]`. Below the breadcrumb, horizontal tabs:
+
+| Tab | Content |
+|---|---|
+| **Tasks** | List of tasks with status badges, progress indicators, and agent assignments |
+| **Design** | Design document markdown (if present) |
+| **Requirements** | Story requirements/definition markdown |
+| **QA** | QA verdicts, test results, and validation history |
+
+**Key interactions:** Click tabs to switch views. Click a task to see its full detail and logs. Link from task to DAG View position. Show version history toggle for documents (Requirements, Design).
+
+**Navigation:** Accessed by clicking a story card from the Stories list. Breadcrumb allows navigation back to Epic overview (click Epic name) or Stories list (click Story name).
+
+### 3.5 DAG View
 
 **Purpose:** Visualize task dependency graphs for a story's execution plan.
 
@@ -183,7 +217,7 @@ Most data flows through CLI internals. The HTTP server calls the same Go functio
 
 **Note:** This is unique to Oraculo. The graph is computed client-side from the task list JSON — no additional CLI command is needed. The `depends_on` field in each task provides the edge list.
 
-### 3.4 Agent Monitor
+### 3.6 Agent Monitor
 
 **Purpose:** Real-time visibility into what agents are doing right now.
 
@@ -197,7 +231,7 @@ Most data flows through CLI internals. The HTTP server calls the same Go functio
 
 **Key interactions:** Click an agent card to see its full history for the current session. Click a task reference in the feed to navigate to the DAG View. Filter feed by agent type or event type.
 
-### 3.5 Activity Feed
+### 3.7 Activity Feed
 
 **Purpose:** Real-time visibility into tool mutations performed by agents — which files were edited and which commands were executed.
 
@@ -211,7 +245,7 @@ Most data flows through CLI internals. The HTTP server calls the same Go functio
 
 **Key interactions:** Click a file path to open the associated task detail. Filter by tool type (Bash, Edit, Write, NotebookEdit) or by agent. Export activity log.
 
-### 3.6 Approvals
+### 3.8 Approvals
 
 **Purpose:** Human review gate for document versions (epic requirements, story definitions) and operational approvals (QA escalations, design, execution-plan).
 
@@ -224,7 +258,7 @@ Most data flows through CLI internals. The HTTP server calls the same Go functio
 
 **Key interactions:** Select a queue item to load its content. Toggle diff mode. Add comments (attached to the verdict). Submit verdict — the server relays it back to the requesting agent via MCP callback.
 
-### 3.7 QA Dashboard
+### 3.9 QA Dashboard
 
 **Purpose:** Track validation outcomes across the project.
 
@@ -239,7 +273,7 @@ Most data flows through CLI internals. The HTTP server calls the same Go functio
 
 **Key interactions:** Click a verdict row to see the full QA findings. Sort/filter by verdict, story, or date. Link to the related task in DAG View.
 
-### 3.8 Knowledge Base
+### 3.10 Knowledge Base
 
 **Purpose:** Browse and search accumulated project wisdom from the knowledge table.
 
@@ -253,7 +287,7 @@ Most data flows through CLI internals. The HTTP server calls the same Go functio
 
 **Key interactions:** Type-ahead search triggers `memory search` with debounce. Filter by domain (from `memory domains` response) and category (`pattern`, `convention`, `constraint`, `dependency`, `test`, `architecture`). Sort by confidence or recency.
 
-### 3.9 Sessions
+### 3.11 Sessions
 
 **Purpose:** History and observability of Claude Code sessions. Shows which sessions were tracked, which models were used, and the associated agent and tool activity.
 
@@ -302,7 +336,7 @@ CREATE TABLE tool_events (
 
 **Key interactions:** Filter by status (active/ended), model, or date. View agent and tool details per session.
 
-### 3.10 Settings
+### 3.12 Settings
 
 **Purpose:** Project configuration and dashboard preferences.
 
@@ -312,23 +346,29 @@ CREATE TABLE tool_events (
 
 ## 4. Navigation and Layout
 
-**Shell:** Persistent left sidebar with icon + label links for each screen. The sidebar collapses to icon-only on narrow viewports. The sidebar header contains the brand name ("Oraculo") and an Epic dropdown selector.
+**Shell:** Persistent left sidebar with icon + label links for each screen. The sidebar collapses to icon-only on narrow viewports. The sidebar header contains the brand name ("Oraculo") and an Epic dropdown selector (Context Switcher).
 
-**Epic dropdown:** Located in the sidebar header, replacing the project subtitle. Shows the currently selected Epic name with a chevron indicator. Clicking opens a dropdown to switch between Epics. When no Epic is selected, displays "Select Epic..." and nav items below are visually muted.
+**Epic dropdown (Context Switcher):** Located at the top of the sidebar, above all navigation items. Shows the currently selected Epic name with a chevron indicator. Clicking opens a dropdown to switch between Epics. When no Epic is selected, displays "Select Epic..." and nav items below are visually muted.
 
 **Sidebar order:**
-1. Stories (icon: folder-tree)
-2. DAG View (icon: git-branch)
-3. Agent Monitor (icon: bot)
-4. Activity Feed (icon: activity)
-5. Approvals (icon: shield-alert, with unread count badge)
-6. QA Dashboard (icon: shield-check)
-7. Knowledge Base (icon: brain)
-8. Sessions (icon: layers)
+1. 🏠 Home / Overview — Epic overview (all stories in grid)
+2. 📋 Stories — Vertical list or grid of stories
+3. 🕸️ DAG View — Task dependency graph
+4. 🤖 Agent Monitor — Real-time agent activity
+5. 📄 Approvals — Review queue with unread count badge
+6. 🧪 QA Dashboard — Validation outcomes
+7. 🧠 Knowledge Base — Accumulated project wisdom
+8. 🔍 Sessions — Session history and observability
 — separator —
-9. Settings (icon: settings)
+9. ⚙️ Settings — Project and dashboard preferences
 
-**When an Epic is selected:** All nav items (1-7) are active, and the default view is Stories. Switching Epics via the dropdown navigates to Stories of the new Epic. Agent Monitor, Activity Feed, and Sessions show data from the current session regardless of the selected Epic.
+**Navigation model:**
+- **Home / Overview** is the default landing page when an Epic is selected. Shows all stories in a grid with status and progress indicators.
+- **Stories** displays a list or grid of all stories in the current Epic. Each story is a dedicated page.
+- **Story Detail Page** is accessed by clicking a story. Uses horizontal tabs: [Tasks] [Design] [Requirements] [QA]. Breadcrumb navigation: `Epic → Story → [tab]`.
+- **Aprovals** is centralized — all approval types (document versions, QA escalations, operational gates) appear in a single queue.
+
+**When an Epic is selected:** All nav items (1-8) are active. Default view is Home / Overview. Switching Epics via the dropdown navigates to Home / Overview of the new Epic. Agent Monitor, Activity Feed, and Sessions show data from the current session regardless of the selected Epic.
 
 **When no Epic is selected (Landing):** Nav items 1-7 are grayed/disabled. Only Settings is interactive. The main content area shows the Epic selection grid.
 
@@ -415,7 +455,9 @@ Summary of how each screen obtains its data under the two-channel architecture:
 | Screen | Primary source | Update mechanism |
 |---|---|---|
 | Landing | CLI: `epic list` | Polling on mount (unchanged) |
-| Stories | CLI: `story list`, `story get`, `task list` | Polling + WebSocket `task_completed` |
+| Home / Overview | CLI: `story list`, `task list` | Polling + WebSocket `task_completed` |
+| Stories | CLI: `story list` | Polling |
+| Story Detail Page | CLI: `story get`, `task list` | Polling + WebSocket `task_completed` |
 | DAG View | CLI: `task list` (includes `depends_on`) | WebSocket push from `TaskCompleted` hook |
 | Agent Monitor | `agents` table (SQLite) + WebSocket | WebSocket push from `SubagentStart`/`SubagentStop` hooks |
 | Activity Feed | `tool_events` table (SQLite) + WebSocket | WebSocket push from `PostToolUse` hook |

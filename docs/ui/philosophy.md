@@ -72,6 +72,18 @@ The UI is not a separate application. It lives inside the same binary as the CLI
 
 The human should never need to start the dashboard manually. When a session begins, the dashboard starts automatically — the server comes up, the browser opens, and the interface is ready before the human asks their first question. The human runs a command, and the dashboard is already there, waiting. This is the Pit of Success applied to the UI: the correct setup is the default setup. No separate terminal tab, no manual server start, no "remember to launch the dashboard first." The system takes care of itself so the human can focus on the work. Each project gets a dedicated port in the 3100-3199 range, persisted in `.oraculo/config`, so the dashboard URL is stable and bookmarkable across sessions.
 
+### 4.8 Flat Navigation, Clear Context
+
+The UI uses a **flat navigation model** with explicit context switching. The Epic dropdown (Context Switcher) at the top of the sidebar establishes which Epic all subsequent views are scoped to. Navigation items below are not nested — each screen is a peer, accessible in one click.
+
+**Stories are dedicated pages.** Clicking a story opens its own detail page with horizontal tabs for Tasks, Design, Requirements, and QA. This keeps documents and tasks organized per story, without nested trees or complex hierarchies.
+
+**Breadcrumbs show where you are.** Every Story Detail Page displays a breadcrumb trail: `Epic → Story → [tab]`. This makes navigation reversible and context explicit — the human always knows which Epic and Story they are viewing.
+
+**Approvals are centralized.** All approval types — document versions (epic requirements, story definitions) and operational gates (design, execution-plan, qa-escalation) — appear in a single queue. The human does not navigate to different screens to review different artifact types.
+
+**Why it matters:** Nested navigation creates hidden depth — users lose track of where they are and how to get back. Flat navigation with breadcrumbs makes the information architecture visible and reversible. Centralized approvals reduce cognitive load — one queue, one mental model for all review decisions.
+
 ## 5. Hook-Based Observability
 
 ### 5.1 Automatic Telemetry via HTTP Hooks
