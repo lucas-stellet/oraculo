@@ -1,4 +1,4 @@
-// src/cli/hook_session.go
+// apps/backend/src/cli/hook_session.go
 package cli
 
 import (

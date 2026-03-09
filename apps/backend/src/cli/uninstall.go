@@ -1,4 +1,4 @@
-// src/cli/uninstall.go
+// apps/backend/src/cli/uninstall.go
 package cli
 
 import (

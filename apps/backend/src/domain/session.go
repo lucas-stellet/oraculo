@@ -1,4 +1,4 @@
-// src/domain/session.go
+// apps/backend/src/domain/session.go
 package domain
 
 import "time"

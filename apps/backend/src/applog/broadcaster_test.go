@@ -1,4 +1,4 @@
-// src/applog/broadcaster_test.go
+// apps/backend/src/applog/broadcaster_test.go
 package applog_test
 
 import (

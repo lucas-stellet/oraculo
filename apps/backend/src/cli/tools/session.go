@@ -1,4 +1,4 @@
-// src/cli/tools/session.go
+// apps/backend/src/cli/tools/session.go
 package tools
 
 import (

@@ -1,4 +1,4 @@
-// src/cli/tools/validation.go
+// apps/backend/src/cli/tools/validation.go
 package tools
 
 import (

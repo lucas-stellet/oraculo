@@ -1,4 +1,4 @@
-// src/cli/tools/phase.go
+// apps/backend/src/cli/tools/phase.go
 package tools
 
 import (

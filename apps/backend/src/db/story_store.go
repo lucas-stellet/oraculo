@@ -1,4 +1,4 @@
-// src/db/story_store.go
+// apps/backend/src/db/story_store.go
 package db
 
 import (

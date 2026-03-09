@@ -1,4 +1,4 @@
-// src/domain/status.go
+// apps/backend/src/domain/status.go
 package domain
 
 // ApprovalStatus represents the approval state of an epic or story.

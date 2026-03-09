@@ -1,4 +1,4 @@
-// src/domain/status_test.go
+// apps/backend/src/domain/status_test.go
 package domain
 
 import "testing"

@@ -1,4 +1,4 @@
-// src/cli/logs.go
+// apps/backend/src/cli/logs.go
 package cli
 
 import (

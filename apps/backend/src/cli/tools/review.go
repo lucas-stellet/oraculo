@@ -1,4 +1,4 @@
-// src/cli/tools/review.go
+// apps/backend/src/cli/tools/review.go
 package tools
 
 import (

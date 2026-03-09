@@ -1,4 +1,4 @@
-// cmd/oraculo/main.go
+// apps/backend/cmd/oraculo/main.go
 package main
 
 import (

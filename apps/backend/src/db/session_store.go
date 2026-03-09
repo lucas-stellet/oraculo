@@ -1,4 +1,4 @@
-// src/db/session_store.go
+// apps/backend/src/db/session_store.go
 package db
 
 import (

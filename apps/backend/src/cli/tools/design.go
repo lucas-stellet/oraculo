@@ -1,4 +1,4 @@
-// src/cli/tools/design.go
+// apps/backend/src/cli/tools/design.go
 package tools
 
 import (

@@ -1,4 +1,4 @@
-// src/cli/root.go
+// apps/backend/src/cli/root.go
 package cli
 
 import (

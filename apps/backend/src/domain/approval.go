@@ -1,4 +1,4 @@
-// src/domain/approval.go
+// apps/backend/src/domain/approval.go
 package domain
 
 import "time"

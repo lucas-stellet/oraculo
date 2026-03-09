@@ -8,6 +8,7 @@ _plans
 .oraculo/
 /oraculo.claude/worktrees/
 /oraculo
-apps/backend/src/server/dashboard_assets
+apps/backend/src/server/dashboard_assets/*
+!apps/backend/src/server/dashboard_assets/.gitkeep
 apps/dashboard/node_modules
 apps/dashboard/out

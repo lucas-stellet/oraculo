@@ -1,4 +1,4 @@
-// src/cli/tools/epic.go
+// apps/backend/src/cli/tools/epic.go
 package tools
 
 import (

@@ -1,4 +1,4 @@
-// src/cli/tools/approval.go
+// apps/backend/src/cli/tools/approval.go
 package tools
 
 import (

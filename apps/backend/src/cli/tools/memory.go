@@ -1,4 +1,4 @@
-// src/cli/tools/memory.go
+// apps/backend/src/cli/tools/memory.go
 package tools
 
 import (

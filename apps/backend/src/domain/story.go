@@ -1,4 +1,4 @@
-// src/domain/story.go
+// apps/backend/src/domain/story.go
 package domain
 
 import "time"

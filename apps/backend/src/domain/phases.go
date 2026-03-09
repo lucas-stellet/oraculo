@@ -1,4 +1,4 @@
-// src/domain/phases.go
+// apps/backend/src/domain/phases.go
 package domain
 
 // Phases defines the ordered sequence for each session type.

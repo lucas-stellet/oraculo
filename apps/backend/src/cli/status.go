@@ -1,4 +1,4 @@
-// src/cli/status.go
+// apps/backend/src/cli/status.go
 package cli
 
 import (

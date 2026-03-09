@@ -1,4 +1,4 @@
-// src/cli/hook.go
+// apps/backend/src/cli/hook.go
 package cli
 
 import "github.com/spf13/cobra"

@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 
 	"github.com/lucas/oraculo/apps/backend/src/approval"
@@ -19,16 +18,6 @@ type APIHandler struct {
 	approvals *db.ApprovalStore
 	bridge    *approval.Bridge
 	hub       *ws.Hub
-}
-
-// broadcast sends an event to all connected WebSocket clients.
-func (a *APIHandler) broadcast(event string, payload any) {
-	msg, err := json.Marshal(map[string]any{"event": event, "data": payload})
-	if err != nil {
-		return
-	}
-	a.hub.Broadcast(msg)
-	slog.Info("api.broadcast", "event", event)
 }
 
 // handleListEpics returns all epics with aggregated summary data.
@@ -68,8 +57,6 @@ func (a *APIHandler) handleCreateEpic(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusConflict, "epic already exists")
 		return
 	}
-
-	a.broadcast("epic_created", epic)
 
 	w.WriteHeader(http.StatusCreated)
 	writeJSON(w, epic)

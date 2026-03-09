@@ -1,4 +1,4 @@
-// src/cli/tools/tools.go
+// apps/backend/src/cli/tools/tools.go
 package tools
 
 import (

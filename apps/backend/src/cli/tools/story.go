@@ -1,4 +1,4 @@
-// src/cli/tools/story.go
+// apps/backend/src/cli/tools/story.go
 package tools
 
 import (

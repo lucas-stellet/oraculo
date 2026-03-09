@@ -1,4 +1,4 @@
-// src/output/json.go
+// apps/backend/src/output/json.go
 package output
 
 import (

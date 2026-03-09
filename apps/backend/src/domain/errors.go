@@ -1,4 +1,4 @@
-// src/domain/errors.go
+// apps/backend/src/domain/errors.go
 package domain
 
 import "errors"

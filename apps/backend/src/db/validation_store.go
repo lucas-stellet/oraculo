@@ -1,4 +1,4 @@
-// src/db/validation_store.go
+// apps/backend/src/db/validation_store.go
 package db
 
 import (

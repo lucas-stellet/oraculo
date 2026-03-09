@@ -1,4 +1,4 @@
-// src/output/table.go
+// apps/backend/src/output/table.go
 package output
 
 import (
