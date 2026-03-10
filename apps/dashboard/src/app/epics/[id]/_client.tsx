@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { deriveStoryStatus } from "@/lib/utils";
 import type { Story } from "@/lib/types";
+import { useWebSocket } from "@/lib/ws";
+import type { WSEvent } from "@/lib/ws";
 
 type DerivedStatus = "pending" | "in_progress" | "completed" | "failed";
 
@@ -68,6 +70,13 @@ export default function EpicOverviewPage() {
   useEffect(() => {
     api.listStories(epicName).then(setStories).catch(() => setStories([]));
   }, [epicName]);
+
+  const handleWS = useCallback((evt: WSEvent) => {
+    if (evt.event !== "task_started" && evt.event !== "task_completed") return;
+    api.listStories(epicName).then(setStories).catch(() => {});
+  }, [epicName]);
+
+  useWebSocket(handleWS);
 
   const completedStories = stories.filter(
     (s) => deriveStoryStatus(s) === "completed"
