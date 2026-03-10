@@ -24,15 +24,15 @@ func TestDashboardStaticFiles(t *testing.T) {
 	}
 }
 
-func TestDashboard404(t *testing.T) {
+func TestDashboardSPAFallback(t *testing.T) {
 	srv := New(nil, nil, nil, nil, "")
 
-	// Test non-existent path returns 404
+	// Unknown paths fall back to the root shell (SPA behavior)
 	req := httptest.NewRequest("GET", "/nonexistent", nil)
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusNotFound {
-		t.Errorf("expected status 404, got %d", rec.Code)
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected status 200 (SPA fallback), got %d", rec.Code)
 	}
 }
