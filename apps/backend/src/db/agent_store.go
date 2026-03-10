@@ -8,13 +8,14 @@ import (
 
 // Agent represents a running or completed agent within a session.
 type Agent struct {
-	ID        int
-	SessionID string
-	Name      string
-	Type      string
-	Status    string
-	StartedAt time.Time
-	StoppedAt *time.Time
+	ID        int        `json:"id"`
+	SessionID string     `json:"session_id"`
+	Name      string     `json:"name"`
+	Type      string     `json:"type"`
+	Status    string     `json:"status"`
+	StartedAt time.Time  `json:"started_at"`
+	StoppedAt *time.Time `json:"stopped_at"`
+	TaskID    *int       `json:"task_id"`
 }
 
 // AgentStore provides persistence operations for agents backed by SQLite.
@@ -30,13 +31,14 @@ func NewAgentStore(db *DB) *AgentStore {
 // scanAgent reads an Agent from a row scanner, parsing SQLite TEXT timestamps.
 func scanAgent(row interface{ Scan(...any) error }) (*Agent, error) {
 	var (
-		a                    Agent
-		startedAt            string
-		stoppedAt            sql.NullString
+		a         Agent
+		startedAt string
+		stoppedAt sql.NullString
+		taskID    sql.NullInt64
 	)
 	if err := row.Scan(
 		&a.ID, &a.SessionID, &a.Name, &a.Type, &a.Status,
-		&startedAt, &stoppedAt,
+		&startedAt, &stoppedAt, &taskID,
 	); err != nil {
 		return nil, err
 	}
@@ -51,16 +53,30 @@ func scanAgent(row interface{ Scan(...any) error }) (*Agent, error) {
 		}
 		a.StoppedAt = &t
 	}
+	if taskID.Valid {
+		id := int(taskID.Int64)
+		a.TaskID = &id
+	}
 	return &a, nil
 }
 
 // Start inserts a new agent with status "active" and started_at set to now.
-func (s *AgentStore) Start(sessionID, name, agentType string) (*Agent, error) {
+// taskID is optional; pass nil to create an agent not associated with any task.
+func (s *AgentStore) Start(sessionID, name, agentType string, taskID *int) (*Agent, error) {
 	now := time.Now().UTC().Format(sqliteTimeFmt)
-	res, err := s.db.conn.Exec(
-		"INSERT INTO agents (session_id, name, type, status, started_at) VALUES (?, ?, ?, 'active', ?)",
-		sessionID, name, agentType, now,
-	)
+	var res sql.Result
+	var err error
+	if taskID != nil {
+		res, err = s.db.conn.Exec(
+			"INSERT INTO agents (session_id, name, type, status, started_at, task_id) VALUES (?, ?, ?, 'active', ?, ?)",
+			sessionID, name, agentType, now, *taskID,
+		)
+	} else {
+		res, err = s.db.conn.Exec(
+			"INSERT INTO agents (session_id, name, type, status, started_at) VALUES (?, ?, ?, 'active', ?)",
+			sessionID, name, agentType, now,
+		)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("start agent: %w", err)
 	}
@@ -94,7 +110,7 @@ func (s *AgentStore) Stop(id int, status string) (*Agent, error) {
 // ListBySession returns all agents for the given session.
 func (s *AgentStore) ListBySession(sessionID string) ([]Agent, error) {
 	rows, err := s.db.conn.Query(
-		"SELECT id, session_id, name, type, status, started_at, stopped_at FROM agents WHERE session_id = ? ORDER BY started_at",
+		"SELECT id, session_id, name, type, status, started_at, stopped_at, task_id FROM agents WHERE session_id = ? ORDER BY started_at",
 		sessionID,
 	)
 	if err != nil {
@@ -119,7 +135,7 @@ func (s *AgentStore) ListBySession(sessionID string) ([]Agent, error) {
 // getByID retrieves an agent by its primary key.
 func (s *AgentStore) getByID(id int) (*Agent, error) {
 	row := s.db.conn.QueryRow(
-		"SELECT id, session_id, name, type, status, started_at, stopped_at FROM agents WHERE id = ?",
+		"SELECT id, session_id, name, type, status, started_at, stopped_at, task_id FROM agents WHERE id = ?",
 		id,
 	)
 	agent, err := scanAgent(row)

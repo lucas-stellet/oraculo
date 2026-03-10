@@ -41,7 +41,7 @@ func (h *HookHandler) handleAgentStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.logger.Info("hook.agent_started", "agent", body.AgentName, "type", body.AgentType)
-	agent, err := h.agents.Start(body.SessionID, body.AgentName, body.AgentType)
+	agent, err := h.agents.Start(body.SessionID, body.AgentName, body.AgentType, nil)
 	if err != nil {
 		h.logger.Warn("hook.agent_started.error", "err", err)
 		writeAPIError(w, http.StatusInternalServerError, err.Error())
