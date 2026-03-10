@@ -35,18 +35,18 @@ func TestApprovalFullWorkflow(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &requested); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
 	}
-	approvalID, ok := requested["ID"].(string)
+	approvalID, ok := requested["id"].(string)
 	if !ok || approvalID == "" {
-		t.Fatalf("expected non-empty approval ID, got: %v", requested["ID"])
+		t.Fatalf("expected non-empty approval ID, got: %v", requested["id"])
 	}
-	if requested["Status"] != "pending" {
-		t.Errorf("Status = %v, want %q", requested["Status"], "pending")
+	if requested["status"] != "pending" {
+		t.Errorf("Status = %v, want %q", requested["status"], "pending")
 	}
-	if requested["Type"] != "qa-escalation" {
-		t.Errorf("Type = %v, want %q", requested["Type"], "qa-escalation")
+	if requested["type"] != "qa-escalation" {
+		t.Errorf("Type = %v, want %q", requested["type"], "qa-escalation")
 	}
-	if requested["Content"] != content {
-		t.Errorf("Content = %v, want %q", requested["Content"], content)
+	if requested["content"] != content {
+		t.Errorf("Content = %v, want %q", requested["content"], content)
 	}
 
 	// 2. Check status — should be pending.
@@ -58,8 +58,8 @@ func TestApprovalFullWorkflow(t *testing.T) {
 	if err := json.Unmarshal([]byte(statusOut), &statusResult); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, statusOut)
 	}
-	if statusResult["Status"] != "pending" {
-		t.Errorf("Status = %v, want %q", statusResult["Status"], "pending")
+	if statusResult["status"] != "pending" {
+		t.Errorf("Status = %v, want %q", statusResult["status"], "pending")
 	}
 
 	// 3. Verdict — approve.
@@ -71,11 +71,11 @@ func TestApprovalFullWorkflow(t *testing.T) {
 	if err := json.Unmarshal([]byte(verdictOut), &verdictResult); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, verdictOut)
 	}
-	if verdictResult["Status"] != "approved" {
-		t.Errorf("Status = %v, want %q", verdictResult["Status"], "approved")
+	if verdictResult["status"] != "approved" {
+		t.Errorf("Status = %v, want %q", verdictResult["status"], "approved")
 	}
-	if verdictResult["VerdictComment"] != "looks good" {
-		t.Errorf("VerdictComment = %v, want %q", verdictResult["VerdictComment"], "looks good")
+	if verdictResult["verdict_comment"] != "looks good" {
+		t.Errorf("VerdictComment = %v, want %q", verdictResult["verdict_comment"], "looks good")
 	}
 
 	// 4. Check status again — should be approved.
@@ -87,8 +87,8 @@ func TestApprovalFullWorkflow(t *testing.T) {
 	if err := json.Unmarshal([]byte(statusOut2), &statusResult2); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, statusOut2)
 	}
-	if statusResult2["Status"] != "approved" {
-		t.Errorf("Status = %v, want %q", statusResult2["Status"], "approved")
+	if statusResult2["status"] != "approved" {
+		t.Errorf("Status = %v, want %q", statusResult2["status"], "approved")
 	}
 }
 
@@ -118,8 +118,8 @@ func TestApprovalRequestAllTypes(t *testing.T) {
 			if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 				t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
 			}
-			if result["Type"] != at {
-				t.Errorf("Type = %v, want %q", result["Type"], at)
+			if result["type"] != at {
+				t.Errorf("Type = %v, want %q", result["type"], at)
 			}
 		})
 	}
@@ -182,10 +182,10 @@ func TestApprovalRequestWithStory(t *testing.T) {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
 	}
 	// StoryID should be non-nil (a float64 in JSON).
-	if result["StoryID"] == nil {
+	if result["story_id"] == nil {
 		t.Error("expected non-nil StoryID")
 	}
-	if result["EpicID"] == nil {
+	if result["epic_id"] == nil {
 		t.Error("expected non-nil EpicID")
 	}
 }
@@ -214,7 +214,7 @@ func TestApprovalVerdictNeedsRevision(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &requested); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
 	}
-	approvalID := requested["ID"].(string)
+	approvalID := requested["id"].(string)
 
 	// Verdict with needs_revision.
 	verdictOut, err := executeCmd(t, "tools", "approval", "verdict", approvalID, "--verdict", "needs_revision", "--comment", "needs more detail")
@@ -226,11 +226,11 @@ func TestApprovalVerdictNeedsRevision(t *testing.T) {
 	if err := json.Unmarshal([]byte(verdictOut), &verdictResult); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, verdictOut)
 	}
-	if verdictResult["Status"] != "needs_revision" {
-		t.Errorf("Status = %v, want %q", verdictResult["Status"], "needs_revision")
+	if verdictResult["status"] != "needs_revision" {
+		t.Errorf("Status = %v, want %q", verdictResult["status"], "needs_revision")
 	}
-	if verdictResult["PreviousVersion"] != originalContent {
-		t.Errorf("PreviousVersion = %v, want %q", verdictResult["PreviousVersion"], originalContent)
+	if verdictResult["previous_version"] != originalContent {
+		t.Errorf("PreviousVersion = %v, want %q", verdictResult["previous_version"], originalContent)
 	}
 }
 
@@ -259,7 +259,7 @@ func TestApprovalListPending(t *testing.T) {
 		if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 			t.Fatalf("invalid JSON: %v", err)
 		}
-		ids = append(ids, result["ID"].(string))
+		ids = append(ids, result["id"].(string))
 	}
 
 	// Approve the first one.
@@ -293,8 +293,8 @@ func TestApprovalListPending(t *testing.T) {
 	if len(pendingApprovals) != 1 {
 		t.Errorf("list pending: len = %d, want 1", len(pendingApprovals))
 	}
-	if pendingApprovals[0]["ID"] != ids[1] {
-		t.Errorf("pending ID = %v, want %q", pendingApprovals[0]["ID"], ids[1])
+	if pendingApprovals[0]["id"] != ids[1] {
+		t.Errorf("pending ID = %v, want %q", pendingApprovals[0]["id"], ids[1])
 	}
 }
 
@@ -321,7 +321,7 @@ func TestApprovalVerdictOnNonPending(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &requested); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
-	approvalID := requested["ID"].(string)
+	approvalID := requested["id"].(string)
 
 	_, err = executeCmd(t, "tools", "approval", "verdict", approvalID, "--verdict", "approved")
 	if err != nil {

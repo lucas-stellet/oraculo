@@ -43,25 +43,32 @@ func (s TaskStatus) CanTransitionTo(target TaskStatus) bool {
 
 // Task represents an executable unit of work within a story.
 type Task struct {
-	ID            int
-	StoryID       int
-	Name          string
-	Description   string
-	Status        TaskStatus
-	FailureReason string
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	StartedAt     *time.Time
-	CompletedAt   *time.Time
+	ID            int        `json:"id"`
+	StoryID       int        `json:"story_id"`
+	Name          string     `json:"name"`
+	Description   string     `json:"description"`
+	Status        TaskStatus `json:"status"`
+	FailureReason string     `json:"failure_reason"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+	StartedAt     *time.Time `json:"started_at,omitempty"`
+	CompletedAt   *time.Time `json:"completed_at,omitempty"`
 }
 
 // TaskResult holds rich completion data for a finished task.
 type TaskResult struct {
-	ID            int
-	TaskID        int
-	Summary       string
-	Logs          string
-	SkillsUsed    []string
-	FilesModified []string
-	CreatedAt     time.Time
+	ID            int       `json:"id"`
+	TaskID        int       `json:"task_id"`
+	Summary       string    `json:"summary"`
+	Logs          string    `json:"logs"`
+	SkillsUsed    []string  `json:"skills_used"`
+	FilesModified []string  `json:"files_modified"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+// TaskEnriched extends Task with dependencies and result for API responses.
+type TaskEnriched struct {
+	Task
+	DependsOn []int       `json:"depends_on"`
+	Result    *TaskResult `json:"result,omitempty"`
 }

@@ -26,11 +26,11 @@ func TestValidationSave(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
 	}
-	if result["Verdict"] != "approved" {
-		t.Errorf("Verdict = %v, want %q", result["Verdict"], "approved")
+	if result["verdict"] != "approved" {
+		t.Errorf("Verdict = %v, want %q", result["verdict"], "approved")
 	}
-	if result["Findings"] != `{"blocker":0,"major":0,"minor":1}` {
-		t.Errorf("Findings = %v", result["Findings"])
+	if result["findings"] != `{"blocker":0,"major":0,"minor":1}` {
+		t.Errorf("Findings = %v", result["findings"])
 	}
 }
 
@@ -54,8 +54,8 @@ func TestValidationSave_Rejected(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
 	}
-	if result["Verdict"] != "rejected" {
-		t.Errorf("Verdict = %v, want %q", result["Verdict"], "rejected")
+	if result["verdict"] != "rejected" {
+		t.Errorf("Verdict = %v, want %q", result["verdict"], "rejected")
 	}
 }
 

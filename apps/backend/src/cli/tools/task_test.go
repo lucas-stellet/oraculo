@@ -98,8 +98,8 @@ func TestTaskLifecycle_Complete(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &started); err != nil {
 		t.Fatalf("invalid JSON from start: %v\noutput: %s", err, out)
 	}
-	if started["Status"] != "in_progress" {
-		t.Errorf("Status after start = %v, want %q", started["Status"], "in_progress")
+	if started["status"] != "in_progress" {
+		t.Errorf("Status after start = %v, want %q", started["status"], "in_progress")
 	}
 
 	// complete (requires stdin JSON)
@@ -119,8 +119,8 @@ func TestTaskLifecycle_Complete(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &completed); err != nil {
 		t.Fatalf("invalid JSON from complete: %v\noutput: %s", err, buf.String())
 	}
-	if completed["Status"] != "completed" {
-		t.Errorf("Status after complete = %v, want %q", completed["Status"], "completed")
+	if completed["status"] != "completed" {
+		t.Errorf("Status after complete = %v, want %q", completed["status"], "completed")
 	}
 }
 
@@ -155,11 +155,11 @@ func TestTaskLifecycle_Fail(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &failed); err != nil {
 		t.Fatalf("invalid JSON from fail: %v\noutput: %s", err, out)
 	}
-	if failed["Status"] != "failed" {
-		t.Errorf("Status after fail = %v, want %q", failed["Status"], "failed")
+	if failed["status"] != "failed" {
+		t.Errorf("Status after fail = %v, want %q", failed["status"], "failed")
 	}
-	if failed["FailureReason"] != "timeout exceeded" {
-		t.Errorf("FailureReason = %v, want %q", failed["FailureReason"], "timeout exceeded")
+	if failed["failure_reason"] != "timeout exceeded" {
+		t.Errorf("FailureReason = %v, want %q", failed["failure_reason"], "timeout exceeded")
 	}
 }
 
@@ -283,7 +283,7 @@ func TestTaskList(t *testing.T) {
 	// Verify we see both statuses.
 	statuses := map[string]bool{}
 	for _, task := range tasks {
-		if s, ok := task["Status"].(string); ok {
+		if s, ok := task["status"].(string); ok {
 			statuses[s] = true
 		}
 	}
@@ -314,14 +314,14 @@ func TestTaskGet(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
 	}
-	if result["Name"] != "my-task" {
-		t.Errorf("Name = %v, want %q", result["Name"], "my-task")
+	if result["name"] != "my-task" {
+		t.Errorf("Name = %v, want %q", result["name"], "my-task")
 	}
-	if result["Description"] != "do stuff" {
-		t.Errorf("Description = %v, want %q", result["Description"], "do stuff")
+	if result["description"] != "do stuff" {
+		t.Errorf("Description = %v, want %q", result["description"], "do stuff")
 	}
-	if result["Status"] != "pending" {
-		t.Errorf("Status = %v, want %q", result["Status"], "pending")
+	if result["status"] != "pending" {
+		t.Errorf("Status = %v, want %q", result["status"], "pending")
 	}
 }
 

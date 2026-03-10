@@ -81,10 +81,10 @@ func TestIntegration_ApprovalFlow(t *testing.T) {
 		t.Fatal("expected at least 1 pending approval")
 	}
 
-	// domain.Approval has no JSON tags, so the JSON key matches the field name "ID".
-	approvalID, ok := approvals[0]["ID"].(string)
+	// domain.Approval uses snake_case JSON tags.
+	approvalID, ok := approvals[0]["id"].(string)
 	if !ok || approvalID == "" {
-		t.Fatalf("missing or invalid approval ID, got: %v", approvals[0]["ID"])
+		t.Fatalf("missing or invalid approval ID, got: %v", approvals[0]["id"])
 	}
 
 	// 6. POST /api/approvals/{id}/verdict — approve it.

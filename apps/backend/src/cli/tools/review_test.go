@@ -34,7 +34,7 @@ func createEpicVersion(t *testing.T, epicName, content string) float64 {
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
 	}
-	return result["ID"].(float64)
+	return result["id"].(float64)
 }
 
 func TestReviewCreateApproved(t *testing.T) {
@@ -52,14 +52,14 @@ func TestReviewCreateApproved(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
 	}
-	if result["ID"] == nil || result["ID"].(float64) < 1 {
-		t.Errorf("expected valid ID, got %v", result["ID"])
+	if result["id"] == nil || result["id"].(float64) < 1 {
+		t.Errorf("expected valid ID, got %v", result["id"])
 	}
-	if result["Verdict"] != "approved" {
-		t.Errorf("Verdict = %v, want %q", result["Verdict"], "approved")
+	if result["verdict"] != "approved" {
+		t.Errorf("Verdict = %v, want %q", result["verdict"], "approved")
 	}
-	if result["Comment"] != "Looks good" {
-		t.Errorf("Comment = %v, want %q", result["Comment"], "Looks good")
+	if result["comment"] != "Looks good" {
+		t.Errorf("Comment = %v, want %q", result["comment"], "Looks good")
 	}
 }
 
@@ -78,8 +78,8 @@ func TestReviewCreateRejected(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
 	}
-	if result["Verdict"] != "rejected" {
-		t.Errorf("Verdict = %v, want %q", result["Verdict"], "rejected")
+	if result["verdict"] != "rejected" {
+		t.Errorf("Verdict = %v, want %q", result["verdict"], "rejected")
 	}
 }
 
@@ -99,7 +99,7 @@ func TestReviewGet(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &created); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
-	reviewID := int(created["ID"].(float64))
+	reviewID := int(created["id"].(float64))
 
 	// Get the review
 	out, err = executeCmd(t, "tools", "review", "get", fmt.Sprintf("%d", reviewID))
@@ -111,14 +111,14 @@ func TestReviewGet(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
 	}
-	if result["ID"] != float64(reviewID) {
-		t.Errorf("ID = %v, want %v", result["ID"], reviewID)
+	if result["id"] != float64(reviewID) {
+		t.Errorf("ID = %v, want %v", result["id"], reviewID)
 	}
-	if result["Verdict"] != "approved" {
-		t.Errorf("Verdict = %v, want %q", result["Verdict"], "approved")
+	if result["verdict"] != "approved" {
+		t.Errorf("Verdict = %v, want %q", result["verdict"], "approved")
 	}
-	if result["Comment"] != "LGTM" {
-		t.Errorf("Comment = %v, want %q", result["Comment"], "LGTM")
+	if result["comment"] != "LGTM" {
+		t.Errorf("Comment = %v, want %q", result["comment"], "LGTM")
 	}
 }
 

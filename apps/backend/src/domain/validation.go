@@ -5,10 +5,10 @@ import "time"
 
 // Validation represents a QA validation verdict for a story.
 type Validation struct {
-	ID        int
-	StoryID   int
-	TaskID    *int
-	Verdict   string
-	Findings  string
-	CreatedAt time.Time
+	ID        int       `json:"id"`
+	StoryID   int       `json:"story_id"`
+	TaskID    *int      `json:"task_id,omitempty"`
+	Verdict   string    `json:"verdict"`
+	Findings  string    `json:"findings"`
+	CreatedAt time.Time `json:"created_at"`
 }

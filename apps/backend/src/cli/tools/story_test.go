@@ -161,8 +161,8 @@ func TestStorySave_CreatesDBRecord(t *testing.T) {
 	if len(stories) != 1 {
 		t.Fatalf("len = %d, want 1", len(stories))
 	}
-	if stories[0]["Name"] != "new-story" {
-		t.Errorf("Name = %v, want %q", stories[0]["Name"], "new-story")
+	if stories[0]["name"] != "new-story" {
+		t.Errorf("Name = %v, want %q", stories[0]["name"], "new-story")
 	}
 }
 
@@ -327,8 +327,8 @@ func TestStoryUpdate(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
 	}
-	if result["Description"] != "new desc" {
-		t.Errorf("Description = %v, want %q", result["Description"], "new desc")
+	if result["description"] != "new desc" {
+		t.Errorf("Description = %v, want %q", result["description"], "new desc")
 	}
 }
 
@@ -449,8 +449,8 @@ func TestStoryUpdateStatus(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, out)
 	}
-	if result["ApprovalStatus"] != "approved" {
-		t.Errorf("ApprovalStatus = %v, want %q", result["ApprovalStatus"], "approved")
+	if result["approval_status"] != "approved" {
+		t.Errorf("ApprovalStatus = %v, want %q", result["approval_status"], "approved")
 	}
 }
 
@@ -516,13 +516,13 @@ func TestStoryVersion(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
 	}
-	if result["ID"] == nil || result["ID"].(float64) < 1 {
-		t.Errorf("expected valid ID, got %v", result["ID"])
+	if result["id"] == nil || result["id"].(float64) < 1 {
+		t.Errorf("expected valid ID, got %v", result["id"])
 	}
-	if result["Number"] != float64(1) {
-		t.Errorf("Number = %v, want 1", result["Number"])
+	if result["number"] != float64(1) {
+		t.Errorf("Number = %v, want 1", result["number"])
 	}
-	if result["StoryID"] == nil {
+	if result["story_id"] == nil {
 		t.Error("expected StoryID to be set")
 	}
 }
