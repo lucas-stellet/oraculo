@@ -64,7 +64,7 @@ export const api = {
     }).then((r) => r.json()),
 
   getSystemStatus: () =>
-    fetchJSON<{ update_available: boolean; started_at: string; project_commit: string }>("/api/system/status"),
+    fetchJSON<{ update_available: boolean; started_at: string; project_commit: string; new_version: string }>("/api/system/status"),
 
   restartServer: () =>
     fetch("/api/system/restart", { method: "POST" }).then((r) => r.json()),

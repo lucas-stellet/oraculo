@@ -31,6 +31,7 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
   const [stories, setStories] = useState<Story[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [newVersion, setNewVersion] = useState("");
   const [restarting, setRestarting] = useState(false);
   const [projectCommit, setProjectCommit] = useState("");
 
@@ -48,6 +49,7 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
         .then((s) => {
           setUpdateAvailable(s.update_available);
           if (s.project_commit) setProjectCommit(s.project_commit);
+          if (s.new_version) setNewVersion(s.new_version);
         })
         .catch(() => {});
     }
@@ -82,7 +84,12 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
       {updateAvailable && (
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-blue-800/50 bg-blue-950/40 px-5 py-2.5">
           <span className="text-sm text-blue-200 font-[family-name:var(--font-sans)]">
-            A new version of Oraculo is available.
+            New version available
+            {newVersion && (
+              <span className="ml-2 font-[family-name:var(--font-mono)] text-blue-400 text-xs">
+                {newVersion}
+              </span>
+            )}
           </span>
           <button
             onClick={handleRestart}
