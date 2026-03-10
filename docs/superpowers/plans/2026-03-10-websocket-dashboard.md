@@ -77,9 +77,9 @@
 
       // Seed an epic, story, and task so we have a valid task_id.
       epicStore := NewEpicStore(database)
-      epic, _ := epicStore.Create("gastos", "")
+      epic, _, _ := epicStore.Create("gastos", "")
       storyStore := NewStoryStore(database)
-      story, _ := storyStore.Create(epic.ID, "registro", "")
+      story, _, _ := storyStore.Create(epic.ID, "registro", "")
       taskStore := NewTaskStore(database)
       task, _, _ := taskStore.Create(story.ID, "implement-api", "", nil)
 
@@ -119,18 +119,18 @@
 
 - [ ] **Step 3: Update `Agent` struct and `Start()` in `agent_store.go`**
 
-  Add `TaskID *int` to the `Agent` struct:
+  Add `TaskID *int` to the `Agent` struct and add JSON tags to all fields (required so the frontend receives snake_case field names — without tags Go serializes as PascalCase and the WS event data won't match frontend expectations):
 
   ```go
   type Agent struct {
-      ID        int
-      SessionID string
-      Name      string
-      Type      string
-      Status    string
-      StartedAt time.Time
-      StoppedAt *time.Time
-      TaskID    *int
+      ID        int        `json:"id"`
+      SessionID string     `json:"session_id"`
+      Name      string     `json:"name"`
+      Type      string     `json:"type"`
+      Status    string     `json:"status"`
+      StartedAt time.Time  `json:"started_at"`
+      StoppedAt *time.Time `json:"stopped_at"`
+      TaskID    *int       `json:"task_id"`
   }
   ```
 
@@ -257,12 +257,12 @@
       t.Helper()
       epicName, storyName, taskName = "gastos", "registro", "implement-api"
       epicStore := db.NewEpicStore(database)
-      epic, err := epicStore.Create(epicName, "")
+      epic, _, err := epicStore.Create(epicName, "")
       if err != nil {
           t.Fatalf("seed epic: %v", err)
       }
       storyStore := db.NewStoryStore(database)
-      story, err := storyStore.Create(epic.ID, storyName, "")
+      story, _, err := storyStore.Create(epic.ID, storyName, "")
       if err != nil {
           t.Fatalf("seed story: %v", err)
       }
@@ -453,6 +453,10 @@
           writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
           return
       }
+      if body.TaskName == "" || body.StoryName == "" || body.EpicName == "" {
+          writeAPIError(w, http.StatusBadRequest, "task_name, story_name, and epic_name are required")
+          return
+      }
       h.logger.Info("hook.task_started", "task", body.TaskName, "story", body.StoryName, "epic", body.EpicName)
       h.broadcast("task_started", body)
       writeJSON(w, map[string]string{"status": "ok"})
@@ -553,10 +557,10 @@ These CLI commands are called by the execute skill's orchestrator. They POST to 
   package cli
 
   import (
+      "bytes"
       "encoding/json"
       "fmt"
       "net/http"
-      "strings"
       "time"
 
       "github.com/lucas/oraculo/apps/backend/src/config"
@@ -616,7 +620,7 @@ These CLI commands are called by the execute skill's orchestrator. They POST to 
       })
       postURL := fmt.Sprintf("http://localhost:%d/hooks/agent-start", port)
       client := &http.Client{Timeout: 2 * time.Second}
-      resp, err := client.Post(postURL, "application/json", strings.NewReader(string(payload)))
+      resp, err := client.Post(postURL, "application/json", bytes.NewReader(payload))
       if err != nil {
           return fmt.Errorf("post agent-start: %w", err)
       }
@@ -669,7 +673,7 @@ These CLI commands are called by the execute skill's orchestrator. They POST to 
       })
       postURL := fmt.Sprintf("http://localhost:%d/hooks/task-started", port)
       client := &http.Client{Timeout: 2 * time.Second}
-      resp, err := client.Post(postURL, "application/json", strings.NewReader(string(payload)))
+      resp, err := client.Post(postURL, "application/json", bytes.NewReader(payload))
       if err != nil {
           return fmt.Errorf("post task-started: %w", err)
       }
@@ -789,6 +793,13 @@ These CLI commands are called by the execute skill's orchestrator. They POST to 
   `--session-id` is optional. If provided, it should be the Claude Code session ID of the dispatched agent (not always known before dispatch — omit if unknown).
 
   Both calls are best-effort: failure logs a warning but does not block dispatch.
+
+  > **Ordem obrigatória:** O frontend, ao receber `task_started`, chama `api.listTasks()` e espera ver o status `in_progress` no banco. `handleTaskStarted` no backend apenas faz broadcast — não altera o DB. Portanto, `oraculo task start` **deve ser chamado antes** de `oraculo hook task-started`, para que o banco já esteja atualizado quando o frontend consultar. A sequência completa antes de cada dispatch é:
+  >
+  > 1. `oraculo task start --story-id <id> --name <task_name>` — muda status para `in_progress` no DB
+  > 2. `oraculo hook task-started ...` — broadcast WS para o dashboard atualizar
+  > 3. `oraculo hook agent-start ...` — registra associação agente↔task
+  > 4. Dispatch via Agent tool
   ```
 
 - [ ] **Step 3: Commit**
@@ -824,6 +835,7 @@ These CLI commands are called by the execute skill's orchestrator. They POST to 
     useCallback,
     useContext,
     useEffect,
+    useMemo,
     useRef,
   } from "react";
 
@@ -845,6 +857,8 @@ These CLI commands are called by the execute skill's orchestrator. They POST to 
     const handlersRef = useRef<Set<Handler>>(new Set());
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Guard: prevents scheduling reconnects after unmount.
+    const mountedRef = useRef(true);
 
     const connect = useCallback(() => {
       // Determine WS URL: same origin, /ws path.
@@ -864,7 +878,9 @@ These CLI commands are called by the execute skill's orchestrator. They POST to 
       };
 
       ws.onclose = () => {
-        // Reconnect after 2s unless component is unmounting
+        // ws.close() in cleanup fires onclose asynchronously — guard against
+        // scheduling reconnects after the component has unmounted.
+        if (!mountedRef.current) return;
         reconnectTimerRef.current = setTimeout(connect, 2000);
       };
 
@@ -874,8 +890,10 @@ These CLI commands are called by the execute skill's orchestrator. They POST to 
     }, []);
 
     useEffect(() => {
+      mountedRef.current = true;
       connect();
       return () => {
+        mountedRef.current = false;
         if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
         wsRef.current?.close();
       };
@@ -888,8 +906,12 @@ These CLI commands are called by the execute skill's orchestrator. They POST to 
       };
     }, []);
 
+    // Memoize context value to prevent spurious re-subscriptions when the
+    // Provider re-renders (a new object literal would change ctx identity).
+    const value = useMemo(() => ({ subscribe }), [subscribe]);
+
     return (
-      <WSContext.Provider value={{ subscribe }}>
+      <WSContext.Provider value={value}>
         {children}
       </WSContext.Provider>
     );
@@ -916,20 +938,65 @@ These CLI commands are called by the execute skill's orchestrator. They POST to 
 
   In `apps/dashboard/src/app/epics/[id]/layout.tsx`:
 
+  > **Importante:** `EpicLayout` não pode chamar `useWebSocket` e ao mesmo tempo ser o componente que renderiza o `WebSocketProvider` — o componente pai não pode consumir o contexto que ele mesmo provê. A solução é extrair um componente interno `EpicLayoutInner` que vive _dentro_ do Provider e é quem consome o contexto.
+
   ```tsx
   import { WebSocketProvider } from "@/lib/ws";
+  import { useWebSocket } from "@/lib/ws";
+  import type { WSEvent } from "@/lib/ws";
+  import { useCallback } from "react";
 
-  // Inside the return:
-  return (
-    <SidebarProvider>
-      <WebSocketProvider>
-        <div className="flex h-screen overflow-hidden bg-[#020617]">
-          <Sidebar ... />
-          <div className="flex-1 overflow-y-auto">{children}</div>
-        </div>
-      </WebSocketProvider>
-    </SidebarProvider>
-  );
+  export default function EpicLayout({
+    children,
+  }: {
+    children: React.ReactNode;
+  }) {
+    return (
+      <SidebarProvider>
+        <WebSocketProvider>
+          <EpicLayoutInner>{children}</EpicLayoutInner>
+        </WebSocketProvider>
+      </SidebarProvider>
+    );
+  }
+
+  // EpicLayoutInner lives inside WebSocketProvider and can safely consume the WS context.
+  function EpicLayoutInner({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const epicName = pathname.split("/").filter(Boolean)[1];
+    const [stories, setStories] = useState<Story[]>([]);
+    const [pendingCount, setPendingCount] = useState(0);
+
+    useEffect(() => {
+      api.listStories(epicName).then(setStories).catch(() => setStories([]));
+      api.listApprovals(undefined, "pending").then((approvals) => {
+        setPendingCount(approvals.length);
+      }).catch(() => setPendingCount(0));
+    }, [epicName]);
+
+    // Update sidebar pending count in real time.
+    const handleWS = useCallback((evt: WSEvent) => {
+      if (evt.event === "approval_requested" || evt.event === "approval_decided") {
+        api.listApprovals(undefined, "pending").then((approvals) => {
+          setPendingCount(approvals.length);
+        }).catch(() => {});
+      }
+    }, []);
+
+    useWebSocket(handleWS);
+
+    return (
+      <div className="flex h-screen overflow-hidden bg-[#020617]">
+        <Sidebar
+          epicId={epicName}
+          epicName={epicName}
+          stories={stories.map((s) => ({ id: s.id, name: s.name, status: deriveStoryStatus(s) }))}
+          pendingApprovalCount={pendingCount}
+        />
+        <div className="flex-1 overflow-y-auto">{children}</div>
+      </div>
+    );
+  }
   ```
 
 - [ ] **Step 3: Build dashboard to catch type errors**
@@ -1001,23 +1068,7 @@ These CLI commands are called by the execute skill's orchestrator. They POST to 
   useWebSocket(handleWS);
   ```
 
-  Also update the sidebar pending count in the layout: the `approval_requested` event should update `pendingCount`. Since `layout.tsx` is separate, add the same subscription pattern there too:
-
-  In `layout.tsx`, add inside `EpicLayout`:
-  ```tsx
-  import { useCallback } from "react";
-  import { useWebSocket } from "@/lib/ws";
-
-  const handleWS = useCallback((evt: { event: string }) => {
-    if (evt.event === "approval_requested" || evt.event === "approval_decided") {
-      api.listApprovals(undefined, "pending").then((approvals) => {
-        setPendingCount(approvals.length);
-      }).catch(() => {});
-    }
-  }, []);
-
-  useWebSocket(handleWS);
-  ```
+  > O `pendingCount` do sidebar já é atualizado em tempo real pelo `handleWS` em `EpicLayoutInner` (adicionado no Task 7, Step 2). Não é necessário nenhuma alteração adicional em `layout.tsx`.
 
 - [ ] **Step 2: Build dashboard**
 
@@ -1029,8 +1080,7 @@ These CLI commands are called by the execute skill's orchestrator. They POST to 
 - [ ] **Step 3: Commit**
 
   ```bash
-  git add apps/dashboard/src/app/epics/[id]/approvals/_client.tsx \
-          apps/dashboard/src/app/epics/[id]/layout.tsx
+  git add "apps/dashboard/src/app/epics/[id]/approvals/_client.tsx"
   git commit -m "feat(dashboard): real-time approval updates via WebSocket"
   ```
 
