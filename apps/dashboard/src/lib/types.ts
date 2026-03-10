@@ -1,15 +1,6 @@
-export type ApprovalStatus =
-  | "none"
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "needs_revision";
-
+export type ApprovalStatus = "none" | "pending" | "approved" | "rejected" | "needs_revision";
 export type TaskStatus = "pending" | "in_progress" | "completed" | "failed";
-
 export type Phase = "discover" | "plan" | "execute" | "validate";
-
-export type StoryStatus = "pending" | "in_progress" | "completed" | "failed";
 
 export interface Epic {
   id: number;
@@ -32,11 +23,13 @@ export interface Story {
   id: number;
   epic_id: number;
   name: string;
-  status: StoryStatus;
+  description: string;
+  approval_status: ApprovalStatus;
+  created_at: string;
+  updated_at: string;
   task_count: number;
   completed_task_count: number;
-  running_status: string;
-  last_activity: string;
+  failed_task_count: number;
 }
 
 export interface StoryTask {
@@ -45,36 +38,37 @@ export interface StoryTask {
   name: string;
   description: string;
   status: TaskStatus;
-  agent: string | null;
-  duration: string | null;
+  failure_reason: string;
+  created_at: string;
+  updated_at: string;
+  started_at: string | null;
+  completed_at: string | null;
   depends_on: number[];
   result: TaskResult | null;
 }
 
 export interface TaskResult {
+  id: number;
+  task_id: number;
   summary: string;
-  files_modified: string[];
+  logs: string;
   skills_used: string[];
-  failure_reason: string | null;
-}
-
-export interface StoryDetail extends Story {
-  approval_status: ApprovalStatus;
+  files_modified: string[];
+  created_at: string;
 }
 
 export interface StoryVersion {
   id: number;
   story_id: number;
-  version: number;
-  type: "requirements" | "design";
-  created_at: string;
-  approval_status: ApprovalStatus;
+  number: number;
   content: string;
+  created_at: string;
 }
 
 export interface Review {
   id: number;
   version_id: number;
+  version_type: "epic" | "story";
   verdict: "approved" | "rejected";
   comment: string;
   created_at: string;
@@ -83,24 +77,25 @@ export interface Review {
 export interface Validation {
   id: number;
   story_id: number;
+  task_id: number | null;
   verdict: "approved" | "rejected";
   findings: string;
   created_at: string;
 }
 
-export type ApprovalType = "epic-version" | "story-version" | "qa-escalation" | "design" | "execution-plan";
+export type ApprovalType = "qa-escalation" | "design" | "execution-plan";
 
 export interface Approval {
-  id: number;
-  epic_id: number;
-  story_name: string | null;
+  id: string;
   type: ApprovalType;
-  title: string;
-  description: string;
-  status: "pending" | "approved" | "rejected";
-  requested_at: string;
+  epic_id: number | null;
+  story_id: number | null;
   content: string;
-  previous_content: string;
+  previous_version: string;
+  status: ApprovalStatus;
+  verdict_comment: string;
+  requested_at: string;
+  decided_at: string | null;
 }
 
 export interface InlineComment {
