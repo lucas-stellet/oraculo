@@ -299,7 +299,18 @@ func newStoryVersionCmd() *cobra.Command {
 				output.WriteError(w, err)
 				return err
 			}
-			return output.WriteJSON(w, version)
+
+			approvalStore := db.NewApprovalStore(database)
+			approval, err := approvalStore.Request(domain.ApprovalDesign, &epicID, &story.ID, string(content))
+			if err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+
+			return output.WriteJSON(w, map[string]any{
+				"version_id":  version.ID,
+				"approval_id": approval.ID,
+			})
 		},
 	}
 	cmd.Flags().String("epic", "", "Parent epic name (required)")

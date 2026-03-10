@@ -46,9 +46,7 @@ Then create a version for human review:
 
 `oraculo tools story version <story-name> --epic <epic-name>`
 
-Pass the markdown through stdin. Then monitor the review with:
-
-`oraculo tools review list <version-id> --type story`
+Pass the markdown through stdin. The command returns `{"version_id": <int>, "approval_id": "<uuid>"}`. Capture the `approval_id` — it is needed in the approval phase to monitor the human verdict.
 
 <halt>
   - The document requires invented facts to feel complete — return to the missing phase
@@ -63,7 +61,7 @@ Pass the markdown through stdin. Then monitor the review with:
     - Story name and epic context are explicit and stable
 
   Persist via CLI:
-    - Collect the phase outputs into a JSON object with key: `version_id` (the ID returned by `oraculo tools story version`)
+    - Collect the phase outputs into a JSON object with keys: `version_id` and `approval_id` (both returned by `oraculo tools story version`)
     - `echo '<json>' | oraculo tools phase complete artifact --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and resolve the persistence issue.

@@ -26,27 +26,28 @@
 
 ## Execution
 
-The version was created in the artifact phase. Monitor its review with:
+The approval gate was created in the artifact phase. Monitor it with the `approval_id` saved in the artifact phase:
 
-`oraculo tools review list <version-id> --type story`
+`oraculo tools approval status <approval-id>`
 
-React to verdicts:
+React to the `status` field:
 - `approved`: the story is ready for planning — recommend `/oraculo:plan <epic-name>` or `/oraculo:story <epic-name>` for the next requirement
-- `rejected`: surface the reason and return to reframing
+- `rejected`: surface the `verdict_comment` and return to reframing
+- `needs_revision`: surface the `verdict_comment` and return to the appropriate phase for revision
 
 <halt>
-  - Review list fails — surface the CLI error and stop
-  - No review exists yet — remain in awaiting review
+  - Status command fails — surface the CLI error and stop
+  - Status is still `pending` — remain in awaiting-verdict state
 </halt>
 
 <phase-gate phase="approval">
   Exit conditions:
-    - Story review status is actively monitored through the CLI
-    - Awaiting-review state is explicit until a verdict is returned
-    - Approved and rejected paths are clear
+    - Approval status is actively monitored through the CLI
+    - Awaiting-verdict state is explicit until a non-pending status is returned
+    - Approved, rejected, and needs_revision paths are clear
 
   Persist via CLI:
-    - Review is tracked through `oraculo tools review list`; the session was completed on artifact persistence.
+    - Approval is tracked through `oraculo tools approval status`; the session was completed on artifact persistence.
 
   If CLI rejects: surface the rejection and resolve it.
   On success: Stop and wait for the human verdict. Do not auto-invoke another command.

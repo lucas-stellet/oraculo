@@ -34,7 +34,7 @@ func createEpicVersion(t *testing.T, epicName, content string) float64 {
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
 	}
-	return result["id"].(float64)
+	return result["version_id"].(float64)
 }
 
 func TestReviewCreateApproved(t *testing.T) {

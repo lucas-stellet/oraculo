@@ -308,14 +308,11 @@ func TestEpicVersion(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
 	}
-	if result["id"] == nil || result["id"].(float64) < 1 {
-		t.Errorf("expected valid ID, got %v", result["id"])
+	if result["version_id"] == nil || result["version_id"].(float64) < 1 {
+		t.Errorf("expected valid version_id, got %v", result["version_id"])
 	}
-	if result["number"] != float64(1) {
-		t.Errorf("Number = %v, want 1", result["number"])
-	}
-	if result["epic_id"] == nil {
-		t.Error("expected EpicID to be set")
+	if result["approval_id"] == nil || result["approval_id"].(string) == "" {
+		t.Errorf("expected non-empty approval_id, got %v", result["approval_id"])
 	}
 }
 
@@ -350,8 +347,11 @@ func TestEpicVersionMultiple(t *testing.T) {
 	if err := json.Unmarshal(buf2.Bytes(), &result); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf2.String())
 	}
-	if result["number"] != float64(2) {
-		t.Errorf("Number = %v, want 2", result["number"])
+	if result["version_id"] == nil || result["version_id"].(float64) < 2 {
+		t.Errorf("expected version_id >= 2, got %v", result["version_id"])
+	}
+	if result["approval_id"] == nil || result["approval_id"].(string) == "" {
+		t.Errorf("expected non-empty approval_id, got %v", result["approval_id"])
 	}
 }
 

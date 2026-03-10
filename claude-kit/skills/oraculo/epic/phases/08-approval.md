@@ -48,28 +48,31 @@ Then create a version of the saved artifact for review:
 
 `oraculo tools epic version <epic-name>`
 
-Pass the markdown through stdin. Then monitor the review with:
+Pass the markdown through stdin. The command returns `{"version_id": <int>, "approval_id": "<uuid>"}`. Capture the `approval_id` — it is needed to monitor the human verdict.
 
-`oraculo tools review list <version-id> --type epic`
+Monitor the approval gate with:
 
-When a verdict exists:
+`oraculo tools approval status <approval-id>`
+
+React to the `status` field:
 - `approved`: tell the user the epic is approved and recommend `/oraculo:story <epic-name>` or `/oraculo:plan`
-- `rejected`: surface the reason and return to the phase that reopens the problem space, usually divergence or convergence
+- `rejected`: surface the `verdict_comment` and return to the phase that reopens the problem space, usually divergence or convergence
+- `needs_revision`: surface the `verdict_comment` and return to the appropriate phase
 
 <halt>
   - Version creation fails — stop and surface the CLI error
-  - No review exists yet — remain in awaiting review and do not pretend the work is final
+  - Status is still `pending` — remain in awaiting-verdict state and do not pretend the work is final
 </halt>
 
 <phase-gate phase="artifact">
   Exit conditions:
     - Requirements document saved through `oraculo tools epic save`
     - Version created through `oraculo tools epic version`
-    - Awaiting-review state is explicit until a verdict arrives
-    - Verdict handling path is clear for approved or rejected
+    - Awaiting-verdict state is explicit until a non-pending status is returned
+    - Verdict handling path is clear for approved, rejected, and needs_revision
 
   Persist via CLI:
-    - Collect the phase outputs into a JSON object with key: `version_id` (the ID returned by `oraculo tools epic version`)
+    - Collect the phase outputs into a JSON object with keys: `version_id` and `approval_id` (both returned by `oraculo tools epic version`)
     - `echo '<json>' | oraculo tools phase complete artifact --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and resolve the sequence issue.

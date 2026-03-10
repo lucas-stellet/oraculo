@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/lucas/oraculo/apps/backend/src/db"
+	"github.com/lucas/oraculo/apps/backend/src/domain"
 	"github.com/lucas/oraculo/apps/backend/src/output"
 	"github.com/spf13/cobra"
 )
@@ -42,7 +43,18 @@ func newEpicVersionCmd() *cobra.Command {
 				output.WriteError(w, err)
 				return err
 			}
-			return output.WriteJSON(w, version)
+
+			approvalStore := db.NewApprovalStore(database)
+			approval, err := approvalStore.Request(domain.ApprovalDesign, &epic.ID, nil, string(content))
+			if err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+
+			return output.WriteJSON(w, map[string]any{
+				"version_id":  version.ID,
+				"approval_id": approval.ID,
+			})
 		},
 	}
 }
