@@ -7,6 +7,8 @@ import { ArrowLeft, Eye, Pencil, Check, X } from "lucide-react";
 import { cn, approvalDisplayTitle } from "@/lib/utils";
 import { useSidebar } from "@/lib/sidebar-context";
 import { api } from "@/lib/api";
+import { useWebSocket } from "@/lib/ws";
+import type { WSEvent } from "@/lib/ws";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { MarkdownToolbar } from "@/components/markdown-toolbar";
 import type { Approval, ApprovalType, InlineComment } from "@/lib/types";
@@ -30,6 +32,7 @@ export default function ReviewPage() {
   const [approval, setApproval] = useState<Approval | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [decidedElsewhere, setDecidedElsewhere] = useState(false);
 
   useEffect(() => {
     prevCollapsed.current = collapsed;
@@ -62,6 +65,14 @@ export default function ReviewPage() {
       editContentRef.current = textareaRef.current.value;
     }
   }, []);
+
+  const handleWS = useCallback((evt: WSEvent) => {
+    if (evt.event === "approval_decided" && evt.id === approvalId && !submitting) {
+      setDecidedElsewhere(true);
+    }
+  }, [approvalId, submitting]);
+
+  useWebSocket(handleWS);
 
   const handleContentChange = useCallback(
     (newValue: string) => {
@@ -185,6 +196,12 @@ export default function ReviewPage() {
           </div>
 
           <div className="h-5 w-px bg-[#22324a]" />
+
+          {decidedElsewhere && (
+            <div className="flex items-center gap-3 rounded-lg border border-amber-700 bg-amber-950/40 px-4 py-3 text-sm text-amber-300 font-[family-name:var(--font-sans)]">
+              This approval was decided in another session. Refresh to see the latest status.
+            </div>
+          )}
 
           {/* Actions */}
           <button
