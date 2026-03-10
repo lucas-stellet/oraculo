@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -43,16 +44,33 @@ export function Sidebar({
 }: SidebarProps) {
   const { collapsed, setCollapsed } = useSidebar();
   const pathname = usePathname();
+  const [storiesOpen, setStoriesOpen] = useState(false);
+  const storiesRef = useRef<HTMLDivElement>(null);
 
   const homeHref = `/epics/${epicId}`;
   const isHomeActive = pathname === `/epics/${epicId}`;
   const isApprovalsActive = pathname.includes("/approvals");
 
+  useEffect(() => {
+    if (!storiesOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (storiesRef.current && !storiesRef.current.contains(e.target as Node)) {
+        setStoriesOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [storiesOpen]);
+
+  useEffect(() => {
+    setStoriesOpen(false);
+  }, [collapsed]);
+
   return (
     <aside
       className={cn(
         "flex h-screen flex-col bg-zinc-900 transition-[width] duration-200",
-        collapsed ? "w-16" : "w-[260px]"
+        collapsed ? "w-16 overflow-visible" : "w-[260px]"
       )}
     >
       {/* Logo */}
@@ -91,7 +109,7 @@ export function Sidebar({
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto">
+      <nav className={cn("flex-1", collapsed ? "overflow-visible" : "overflow-y-auto")}>
         {/* Overview */}
         <div className={cn("px-2 py-3", collapsed && "px-2 py-3")}>
           <Link
@@ -128,18 +146,60 @@ export function Sidebar({
           )}
 
           {collapsed ? (
-            <div
-              className="flex items-center justify-center rounded-lg py-2.5 text-[#8ea2bd] hover:bg-zinc-800 transition-colors cursor-default"
-              title="Stories"
-            >
-              <div className="flex items-start">
-                <BookOpen className="h-[18px] w-[18px]" />
-                {stories.length > 0 && (
-                  <span className="-ml-1.5 -mt-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-500 px-1 text-[9px] font-semibold text-white font-[family-name:var(--font-mono)]">
-                    {stories.length}
-                  </span>
+            <div ref={storiesRef} className="relative">
+              <button
+                onClick={() => setStoriesOpen(!storiesOpen)}
+                className={cn(
+                  "flex w-full items-center justify-center rounded-lg py-2.5 text-[#8ea2bd] transition-colors",
+                  storiesOpen
+                    ? "bg-zinc-800 text-white"
+                    : "hover:bg-zinc-800"
                 )}
-              </div>
+              >
+                <div className="flex items-start">
+                  <BookOpen className="h-[18px] w-[18px]" />
+                  {stories.length > 0 && (
+                    <span className="-ml-1.5 -mt-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-500 px-1 text-[9px] font-semibold text-white font-[family-name:var(--font-mono)]">
+                      {stories.length}
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              {storiesOpen && (
+                <div className="absolute left-full top-0 z-50 ml-2 w-56 rounded-lg border border-white/10 bg-zinc-900 py-2 shadow-xl shadow-black/50">
+                  <div className="px-3 pb-1.5 text-[11px] uppercase tracking-widest text-zinc-500 font-[family-name:var(--font-mono)]">
+                    Stories
+                  </div>
+                  {stories.map((story) => {
+                    const storyHref = `/epics/${epicId}/stories/${story.id}`;
+                    const isActive = pathname.includes(`/stories/${story.id}`);
+                    return (
+                      <Link
+                        key={story.id}
+                        href={storyHref}
+                        onClick={() => setStoriesOpen(false)}
+                        className={cn(
+                          "flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors",
+                          isActive
+                            ? "bg-blue-600/20 text-blue-400"
+                            : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "h-1.5 w-1.5 shrink-0 rounded-full",
+                            storyDotColor(story.status)
+                          )}
+                        />
+                        <span className="truncate font-[family-name:var(--font-sans)]">
+                          {story.name}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-0.5">
