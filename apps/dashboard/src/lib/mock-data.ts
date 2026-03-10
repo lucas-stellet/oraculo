@@ -1,4 +1,4 @@
-import type { EpicSummary, Story, StoryTask } from "./types";
+import type { EpicSummary, Story, StoryTask, Approval } from "./types";
 
 // ── Epic ────────────────────────────────────────────────────────────────────
 export const mockEpic: EpicSummary = {
@@ -114,6 +114,80 @@ export const mockTasks: Record<number, StoryTask[]> = {
   ],
 };
 
+// ── Approvals ────────────────────────────────────────────────────────────────
+export const mockApprovals: Approval[] = [
+  {
+    id: 1,
+    epic_id: 1,
+    story_name: "Registro de Gastos",
+    type: "design",
+    title: "Design Approval: Registro de Gastos",
+    description: "Technical architecture document for expense tracking. Covers data model, API contracts, and component structure.",
+    status: "pending",
+    requested_at: "3 min ago",
+  },
+  {
+    id: 2,
+    epic_id: 1,
+    story_name: "Dashboard de Resumo",
+    type: "story-version",
+    title: "Story Update: Dashboard de Resumo",
+    description: "Story specification with control, business rules, expected behavior, and acceptance criteria needing review.",
+    status: "pending",
+    requested_at: "12 min ago",
+  },
+  {
+    id: 3,
+    epic_id: 1,
+    story_name: "Categorização Automática",
+    type: "qa-escalation",
+    title: "QA Escalation: Categorização Automática",
+    description: "QA rejected implementation 3 times. Recurring issue with category matching accuracy. Needs human decision.",
+    status: "pending",
+    requested_at: "25 min ago",
+  },
+  {
+    id: 4,
+    epic_id: 1,
+    story_name: null,
+    type: "epic-version",
+    title: "Epic Update: Gastos Pessoais",
+    description: "Epic requirements document with problem definition, objectives, user stories, scope, and dependencies.",
+    status: "pending",
+    requested_at: "1 hour ago",
+  },
+  {
+    id: 5,
+    epic_id: 1,
+    story_name: "Registro de Gastos",
+    type: "execution-plan",
+    title: "Plan Approval: Registro de Gastos",
+    description: "Execution plan with 12 tasks across 3 agents.",
+    status: "approved",
+    requested_at: "2 hours ago",
+  },
+  {
+    id: 6,
+    epic_id: 1,
+    story_name: "Categorização Automática",
+    type: "design",
+    title: "Design Approval: Categorização Automática",
+    description: "Category taxonomy and matching algorithm design.",
+    status: "approved",
+    requested_at: "3 hours ago",
+  },
+  {
+    id: 7,
+    epic_id: 1,
+    story_name: "Dashboard de Resumo",
+    type: "story-version",
+    title: "Story Update: Dashboard de Resumo",
+    description: "Initial story definition rejected — too broad.",
+    status: "rejected",
+    requested_at: "5 hours ago",
+  },
+];
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 export function getEpic(): EpicSummary {
   return mockEpic;
@@ -129,4 +203,16 @@ export function getStory(storyId: number): Story | undefined {
 
 export function getTasks(storyId: number): StoryTask[] {
   return mockTasks[storyId] ?? [];
+}
+
+export function getApprovals(epicId: number): Approval[] {
+  return mockApprovals.filter((a) => a.epic_id === epicId);
+}
+
+export function getPendingApprovals(epicId: number): Approval[] {
+  return mockApprovals.filter((a) => a.epic_id === epicId && a.status === "pending");
+}
+
+export function getResolvedApprovals(epicId: number): Approval[] {
+  return mockApprovals.filter((a) => a.epic_id === epicId && a.status !== "pending");
 }

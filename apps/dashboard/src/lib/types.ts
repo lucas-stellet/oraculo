@@ -47,3 +47,16 @@ export interface StoryTask {
   agent: string | null;
   duration: string | null;
 }
+
+export type ApprovalType = "epic-version" | "story-version" | "qa-escalation" | "design" | "execution-plan";
+
+export interface Approval {
+  id: number;
+  epic_id: number;
+  story_name: string | null;
+  type: ApprovalType;
+  title: string;
+  description: string;
+  status: "pending" | "approved" | "rejected";
+  requested_at: string;
+}

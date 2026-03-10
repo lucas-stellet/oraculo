@@ -7,33 +7,45 @@ import {
   FolderOpen,
   ChevronDown,
   House,
-  Layers,
   PanelLeftClose,
   PanelLeftOpen,
   ScanEye,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   epicId: number;
   epicName: string;
+  stories: { id: number; name: string; status: string }[];
+  pendingApprovalCount: number;
 }
 
-const navItems = [
-  { label: "Home", icon: House, href: (id: number) => `/epics/${id}` },
-  {
-    label: "Stories",
-    icon: Layers,
-    href: (id: number) => `/epics/${id}`,
-    matchPattern: "/stories/",
-  },
-];
+function storyDotColor(status: string) {
+  switch (status) {
+    case "completed":
+      return "bg-green-500";
+    case "in_progress":
+      return "bg-blue-500";
+    case "failed":
+      return "bg-red-500";
+    default:
+      return "bg-zinc-500";
+  }
+}
 
-export function Sidebar({ epicId, epicName }: SidebarProps) {
+export function Sidebar({
+  epicId,
+  epicName,
+  stories,
+  pendingApprovalCount,
+}: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
-  const isStoryDetail = pathname.includes("/stories/");
+  const homeHref = `/epics/${epicId}`;
+  const isHomeActive = pathname === `/epics/${epicId}`;
+  const isApprovalsActive = pathname.includes("/approvals");
 
   return (
     <aside
@@ -77,39 +89,104 @@ export function Sidebar({ epicId, epicName }: SidebarProps) {
         )}
       </div>
 
-      {/* Nav Items */}
-      <nav className="space-y-0.5 px-2 py-3">
-        {navItems.map((item) => {
-          const isActive = item.matchPattern
-            ? isStoryDetail
-            : !isStoryDetail;
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-2 py-3">
+        {/* Home */}
+        <Link
+          href={homeHref}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            collapsed && "justify-center px-0",
+            isHomeActive
+              ? "bg-blue-600 text-white"
+              : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+          )}
+          title={collapsed ? "Home" : undefined}
+        >
+          <House className="h-[18px] w-[18px] shrink-0" />
+          {!collapsed && (
+            <span className="font-[family-name:var(--font-sans)]">Home</span>
+          )}
+        </Link>
 
-          return (
-            <Link
-              key={item.label}
-              href={item.href(epicId)}
+        {/* STORIES section */}
+        {!collapsed && (
+          <div className="px-3 pt-4 pb-1 text-[11px] uppercase tracking-widest text-zinc-500 font-[family-name:var(--font-mono)]">
+            Stories
+          </div>
+        )}
+
+        <div className="space-y-0.5">
+          {stories.map((story) => {
+            const storyHref = `/epics/${epicId}/stories/${story.id}`;
+            const isActive = pathname.includes(`/stories/${story.id}`);
+
+            return (
+              <Link
+                key={story.id}
+                href={storyHref}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  collapsed && "justify-center px-0",
+                  isActive
+                    ? "bg-blue-600/20 text-blue-400"
+                    : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                )}
+                title={collapsed ? story.name : undefined}
+              >
+                <div
+                  className={cn(
+                    "h-1.5 w-1.5 shrink-0 rounded-full",
+                    storyDotColor(story.status)
+                  )}
+                />
+                {!collapsed && (
+                  <span className="truncate text-[13px] font-[family-name:var(--font-sans)]">
+                    {story.name}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* MONITOR section */}
+        {!collapsed && (
+          <div className="px-3 pt-5 pb-1 text-[11px] uppercase tracking-widest text-zinc-500 font-[family-name:var(--font-mono)]">
+            Monitor
+          </div>
+        )}
+
+        {/* Approvals */}
+        <Link
+          href={`/epics/${epicId}/approvals`}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            collapsed && "justify-center px-0",
+            isApprovalsActive
+              ? "bg-zinc-800 text-white"
+              : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+          )}
+          title={collapsed ? "Approvals" : undefined}
+        >
+          <ShieldAlert className="h-[18px] w-[18px] shrink-0" />
+          {!collapsed && (
+            <span className="font-[family-name:var(--font-sans)]">
+              Approvals
+            </span>
+          )}
+          {pendingApprovalCount > 0 && (
+            <span
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                collapsed && "justify-center px-0",
-                isActive
-                  ? "bg-blue-600 text-white"
-                  : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                "flex items-center justify-center rounded-full bg-red-600 text-[10px] text-white min-w-[18px] h-[18px] px-1 font-[family-name:var(--font-mono)]",
+                collapsed ? "" : "ml-auto"
               )}
-              title={collapsed ? item.label : undefined}
             >
-              <item.icon className="h-[18px] w-[18px] shrink-0" />
-              {!collapsed && (
-                <span className="font-[family-name:var(--font-sans)]">
-                  {item.label}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+              {pendingApprovalCount}
+            </span>
+          )}
+        </Link>
       </nav>
-
-      {/* Spacer */}
-      <div className="flex-1" />
 
       {/* Sidebar Toggle */}
       <button
