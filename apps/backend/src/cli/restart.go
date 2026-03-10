@@ -49,7 +49,7 @@ func newRestartCmd() *cobra.Command {
 				return fmt.Errorf("locate binary: %w", err)
 			}
 
-			child, err := os.StartProcess(bin, []string{bin, "start", "http"},
+			child, err := os.StartProcess(bin, []string{bin, "start", "http", "--no-browser"},
 				&os.ProcAttr{
 					Files: []*os.File{nil, nil, nil},
 					Sys:   &syscall.SysProcAttr{Setsid: true},

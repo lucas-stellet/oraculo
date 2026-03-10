@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { Sidebar } from "@/components/sidebar";
@@ -32,7 +32,6 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [restarting, setRestarting] = useState(false);
-  const restartingRef = useRef(false);
 
   useEffect(() => {
     api.listStories(epicName).then(setStories).catch(() => setStories([]));
@@ -54,6 +53,10 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleWS = useCallback((evt: WSEvent) => {
+    if (evt.event === "ws_reconnected") {
+      window.location.reload();
+      return;
+    }
     if (evt.event === "approval_requested" || evt.event === "approval_decided") {
       api.listApprovals(undefined, "pending").then((approvals) => {
         setPendingCount(approvals.length);
@@ -64,22 +67,10 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
   useWebSocket(handleWS);
 
   function handleRestart() {
-    if (restartingRef.current) return;
-    restartingRef.current = true;
+    if (restarting) return;
     setRestarting(true);
-    api.restartServer().catch(() => {}).finally(() => {
-      // Poll /health until the server is back, then reload
-      function poll() {
-        fetch("/health").then((r) => {
-          if (r.ok) {
-            window.location.reload();
-          } else {
-            setTimeout(poll, 500);
-          }
-        }).catch(() => setTimeout(poll, 500));
-      }
-      setTimeout(poll, 600);
-    });
+    // Fire and forget — the WS drop+reconnect will trigger window.location.reload()
+    api.restartServer().catch(() => {});
   }
 
   return (

@@ -29,6 +29,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Guard: prevents scheduling reconnects after unmount.
   const mountedRef = useRef(true);
+  // Tracks how many times we've successfully opened a connection.
+  // > 0 means this is a reconnection after a previous drop.
+  const connectCountRef = useRef(0);
 
   const connect = useCallback(() => {
     // Determine WS URL: same origin, /ws path.
@@ -37,6 +40,15 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     const ws = new WebSocket(url);
     wsRef.current = ws;
+
+    ws.onopen = () => {
+      if (connectCountRef.current > 0) {
+        // Reconnected after a drop — broadcast internal event so consumers
+        // can react (e.g. reload the page to pick up new server assets).
+        handlersRef.current.forEach((h) => h({ event: "ws_reconnected" }));
+      }
+      connectCountRef.current++;
+    };
 
     ws.onmessage = (msg) => {
       try {
