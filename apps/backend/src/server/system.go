@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 	"os"
+	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -29,6 +31,7 @@ func (h *SystemHandler) handleStatus(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]any{
 		"update_available": updateAvailable,
 		"started_at":       h.startedAt,
+		"project_commit":   projectCommit(),
 	})
 }
 
@@ -42,4 +45,14 @@ func (h *SystemHandler) handleRestart(w http.ResponseWriter, r *http.Request) {
 		env := append(os.Environ(), "ORACULO_NO_BROWSER=1")
 		_ = syscall.Exec(h.binaryPath, []string{h.binaryPath, "start", "http"}, env)
 	}()
+}
+
+// projectCommit returns the short git commit hash of the current working directory,
+// or an empty string if git is unavailable or not a repository.
+func projectCommit() string {
+	out, err := exec.Command("git", "rev-parse", "--short", "HEAD").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }

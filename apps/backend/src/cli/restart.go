@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"syscall"
 	"time"
@@ -68,11 +67,3 @@ func newRestartCmd() *cobra.Command {
 	}
 }
 
-func portInUse(port int) bool {
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		return true
-	}
-	ln.Close()
-	return false
-}

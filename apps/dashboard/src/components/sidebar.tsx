@@ -21,6 +21,7 @@ interface SidebarProps {
   epicName: string;
   stories: { id: number; name: string; status: string }[];
   pendingApprovalCount: number;
+  projectCommit?: string;
 }
 
 function storyDotColor(status: string) {
@@ -41,6 +42,7 @@ export function Sidebar({
   epicName,
   stories,
   pendingApprovalCount,
+  projectCommit,
 }: SidebarProps) {
   const { collapsed, setCollapsed } = useSidebar();
   const pathname = usePathname();
@@ -84,9 +86,16 @@ export function Sidebar({
           <ScanEye className="h-4 w-4 text-white" />
         </div>
         {!collapsed && (
-          <span className="text-[15px] font-bold tracking-[2.5px] text-[#f5f9ff] font-[family-name:var(--font-display)]">
-            ORACULO
-          </span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[15px] font-bold tracking-[2.5px] text-[#f5f9ff] font-[family-name:var(--font-display)]">
+              ORACULO
+            </span>
+            {projectCommit && (
+              <span className="text-[10px] text-[#525e6e] font-[family-name:var(--font-mono)]">
+                {projectCommit}
+              </span>
+            )}
+          </div>
         )}
       </div>
 

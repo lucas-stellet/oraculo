@@ -32,6 +32,7 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [restarting, setRestarting] = useState(false);
+  const [projectCommit, setProjectCommit] = useState("");
 
   useEffect(() => {
     api.listStories(epicName).then(setStories).catch(() => setStories([]));
@@ -44,7 +45,10 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     function check() {
       api.getSystemStatus()
-        .then((s) => setUpdateAvailable(s.update_available))
+        .then((s) => {
+          setUpdateAvailable(s.update_available);
+          if (s.project_commit) setProjectCommit(s.project_commit);
+        })
         .catch(() => {});
     }
     check();
@@ -96,6 +100,7 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
           epicName={epicName}
           stories={stories.map((s) => ({ id: s.id, name: s.name, status: deriveStoryStatus(s) }))}
           pendingApprovalCount={pendingCount}
+          projectCommit={projectCommit}
         />
         <div className="flex-1 overflow-y-auto">{children}</div>
       </div>

@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -32,65 +33,77 @@ func newKillCmd() *cobra.Command {
 	}
 }
 
-// killServer finds and stops the process listening on port.
-// Returns nil if no process is found or after it is stopped.
+// killServer finds and stops all processes listening on port.
+// Waits until the port is confirmed free before returning.
 func killServer(w io.Writer, port int) error {
-	pid, err := pidOnPort(port)
+	pids, err := pidsOnPort(port)
 	if err != nil {
-		return fmt.Errorf("find process on port %d: %w", port, err)
+		return fmt.Errorf("find processes on port %d: %w", port, err)
 	}
-	if pid == 0 {
+	if len(pids) == 0 {
 		fmt.Fprintf(w, "No process found on port %d.\n", port)
 		return nil
 	}
 
-	proc, err := os.FindProcess(pid)
-	if err != nil {
-		return fmt.Errorf("find process %d: %w", pid, err)
+	for _, pid := range pids {
+		proc, err := os.FindProcess(pid)
+		if err != nil {
+			continue
+		}
+		if err := proc.Signal(syscall.Signal(0)); err != nil {
+			continue // already dead
+		}
+		fmt.Fprintf(w, "Stopping Oraculo (pid %d, port %d)...\n", pid, port)
+		_ = proc.Signal(syscall.SIGTERM)
 	}
 
-	// Verify the process is actually running before touching it.
-	if err := proc.Signal(syscall.Signal(0)); err != nil {
-		fmt.Fprintf(w, "Process %d is not running.\n", pid)
-		return nil
-	}
-
-	fmt.Fprintf(w, "Stopping Oraculo (pid %d, port %d)...\n", pid, port)
-
-	if err := proc.Signal(syscall.SIGTERM); err != nil {
-		return fmt.Errorf("send SIGTERM to %d: %w", pid, err)
-	}
-
-	// Wait up to 5 s for graceful shutdown.
+	// Wait up to 5 s for the port to be released.
 	for range 50 {
 		time.Sleep(100 * time.Millisecond)
-		if err := proc.Signal(syscall.Signal(0)); err != nil {
+		if !portInUse(port) {
 			fmt.Fprintln(w, "Oraculo stopped.")
 			return nil
 		}
 	}
 
-	// Force kill if still alive.
-	_ = proc.Signal(syscall.SIGKILL)
+	// Force-kill any survivors and wait a bit more.
+	for _, pid := range pids {
+		if proc, err := os.FindProcess(pid); err == nil {
+			_ = proc.Signal(syscall.SIGKILL)
+		}
+	}
+	time.Sleep(300 * time.Millisecond)
 	fmt.Fprintln(w, "Oraculo force-stopped.")
 	return nil
 }
 
-// pidOnPort returns the PID of the process listening on the given TCP port,
-// or 0 if no process is found.
-func pidOnPort(port int) (int, error) {
+// pidsOnPort returns all PIDs listening on the given TCP port.
+func pidsOnPort(port int) ([]int, error) {
 	out, err := exec.Command("lsof", "-ti", fmt.Sprintf("tcp:%d", port)).Output()
 	if err != nil {
 		// lsof exits 1 when no process matches — not an error for us.
-		return 0, nil
+		return nil, nil
 	}
-	line := strings.SplitN(strings.TrimSpace(string(out)), "\n", 2)[0]
-	if line == "" {
-		return 0, nil
+	var pids []int
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		pid, err := strconv.Atoi(line)
+		if err != nil {
+			continue
+		}
+		pids = append(pids, pid)
 	}
-	pid, err := strconv.Atoi(line)
+	return pids, nil
+}
+
+func portInUse(port int) bool {
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		return 0, fmt.Errorf("parse pid %q: %w", line, err)
+		return true
 	}
-	return pid, nil
+	ln.Close()
+	return false
 }
