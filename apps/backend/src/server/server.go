@@ -196,6 +196,17 @@ func newSPAHandler(assets fs.FS) http.Handler {
 			fileServer.ServeHTTP(w, r)
 			return
 		}
+		// Try with dynamic segments replaced by __placeholder__.
+		// Next.js fetches RSC segment files (e.g. __next.*.txt) directly under
+		// the route path — these live under __placeholder__ in the build output.
+		if phPath := withPlaceholders(fsPath); phPath != fsPath {
+			if info, err = fs.Stat(assets, phPath); err == nil && !info.IsDir() {
+				r2 := r.Clone(r.Context())
+				r2.URL.Path = "/" + phPath
+				fileServer.ServeHTTP(w, r2)
+				return
+			}
+		}
 		// Unknown path: resolve to the best shell for this route.
 		// RSC fetches (Next.js client navigation) need the .txt payload;
 		// regular browser navigations need the .html shell.
@@ -205,6 +216,31 @@ func newSPAHandler(assets fs.FS) http.Handler {
 		r2.URL.Path = shell
 		fileServer.ServeHTTP(w, r2)
 	})
+}
+
+// withPlaceholders replaces dynamic route segments with "__placeholder__".
+// Known dynamic positions: epics/{id} at index 1, approvals/{approvalId} at index 3.
+// Returns the original path unchanged if no substitution is needed.
+func withPlaceholders(fsPath string) string {
+	segs := strings.Split(strings.Trim(fsPath, "/"), "/")
+	if len(segs) < 2 || segs[0] != "epics" {
+		return fsPath
+	}
+	result := make([]string, len(segs))
+	copy(result, segs)
+	changed := false
+	if result[1] != "__placeholder__" {
+		result[1] = "__placeholder__"
+		changed = true
+	}
+	if len(result) >= 4 && result[2] == "approvals" && result[3] != "__placeholder__" {
+		result[3] = "__placeholder__"
+		changed = true
+	}
+	if !changed {
+		return fsPath
+	}
+	return strings.Join(result, "/")
 }
 
 // spaShell maps a URL path to the most appropriate pre-rendered shell file.

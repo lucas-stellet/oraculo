@@ -136,6 +136,36 @@ claude-kit/
 
 Only `SKILL.md` files appear as slash commands. Reference files inside skill directories are internal — they don't pollute the command list.
 
+## Dashboard Static Assets and SPA Routing
+
+The dashboard is a Next.js app with `output: "export"`, embedded in the Go binary via `embed.FS`. Dynamic routes are pre-rendered with the `__placeholder__` param (e.g. `/epics/__placeholder__/approvals.html`).
+
+### How the Go server routes requests (`apps/backend/src/server/server.go`)
+
+The SPA handler follows three steps in order:
+
+1. **Exact file** — if `fs.Stat(assets, fsPath)` finds the file, serve it directly.
+2. **Placeholder substitution** — if the file doesn't exist, replace dynamic segments in the URL with `__placeholder__` (via `withPlaceholders`) and serve the resulting file if it exists.
+3. **HTML/TXT shell** — fallback to `spaShell`, which maps the route to the `.html` shell (direct navigation) or `.txt` payload (RSC requests with `?_rsc=`).
+
+### Why step 2 is necessary
+
+The Next.js app router fetches RSC segment files by direct path — without the `?_rsc=` query param. Examples:
+
+```
+GET /epics/gastos-pessoais/approvals/__next.epics.$d$id.approvals.__PAGE__.txt
+GET /epics/gastos-pessoais/approvals/__next._full.txt
+```
+
+These files live under `epics/__placeholder__/approvals/`, not `epics/gastos-pessoais/approvals/`. Without substitution, the handler falls through to `spaShell` and returns HTML — the router receives HTML where it expects RSC data and navigates to the wrong page.
+
+### When adding new dynamic routes to the dashboard
+
+- Add the dynamic segment to `withPlaceholders` in `server.go`.
+- Also update `spaShell` with the corresponding shell mapping.
+- Every new dynamic page must use `generateStaticParams()` returning `[{ id: "__placeholder__" }]` (or the equivalent param name).
+- Never add client-side redirect logic based on SSR params — always use `usePathname()` to read the real ID from the URL.
+
 ## Package Manager
 
 **ALWAYS use `bun`** — never npm, yarn, or pnpm. This applies to installing dependencies, running scripts, and any other package manager operation across the entire project.
