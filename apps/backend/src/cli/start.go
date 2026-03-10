@@ -46,13 +46,11 @@ func newStartMCPCmd() *cobra.Command {
 }
 
 func newStartHTTPCmd() *cobra.Command {
-	cmd := &cobra.Command{
+	return &cobra.Command{
 		Use:   "http",
 		Short: "Start HTTP + WebSocket server as daemon",
 		RunE:  runStartHTTP,
 	}
-	cmd.Flags().Bool("no-browser", false, "Do not open the browser on start")
-	return cmd
 }
 
 // runStartAll starts both MCP and HTTP servers (backwards compatible).
@@ -93,16 +91,17 @@ func runStartAll(cmd *cobra.Command, _ []string) error {
 		return srv.ListenAndServe(ctx, port, 0)
 	})
 
-	// Open browser after server starts
-	go func() {
-		time.Sleep(500 * time.Millisecond)
-		url := fmt.Sprintf("http://localhost:%d", port)
-		if err := openBrowser(url); err != nil {
-			logger.Error("browser.open_failed", "url", url, "error", err)
-		} else {
-			logger.Info("browser.opened", "url", url)
-		}
-	}()
+	if os.Getenv("ORACULO_NO_BROWSER") == "" {
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			url := fmt.Sprintf("http://localhost:%d", port)
+			if err := openBrowser(url); err != nil {
+				logger.Error("browser.open_failed", "url", url, "error", err)
+			} else {
+				logger.Info("browser.opened", "url", url)
+			}
+		}()
+	}
 
 	g.Go(func() error { return mcpSrv.RunStdio(ctx) })
 
@@ -149,7 +148,7 @@ func runStartMCP(cmd *cobra.Command, _ []string) error {
 }
 
 // runStartHTTP starts the HTTP + WebSocket server as a daemon with idle timeout.
-func runStartHTTP(cmd *cobra.Command, args []string) error {
+func runStartHTTP(cmd *cobra.Command, _ []string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -185,8 +184,7 @@ func runStartHTTP(cmd *cobra.Command, args []string) error {
 		return srv.ListenAndServe(ctx, port, defaultIdleTimeout)
 	})
 
-	noBrowser, _ := cmd.Flags().GetBool("no-browser")
-	if !noBrowser {
+	if os.Getenv("ORACULO_NO_BROWSER") == "" {
 		go func() {
 			time.Sleep(500 * time.Millisecond)
 			url := fmt.Sprintf("http://localhost:%d", port)

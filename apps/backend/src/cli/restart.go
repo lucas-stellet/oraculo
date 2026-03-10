@@ -49,10 +49,11 @@ func newRestartCmd() *cobra.Command {
 				return fmt.Errorf("locate binary: %w", err)
 			}
 
-			child, err := os.StartProcess(bin, []string{bin, "start", "http", "--no-browser"},
+			child, err := os.StartProcess(bin, []string{bin, "start", "http"},
 				&os.ProcAttr{
 					Files: []*os.File{nil, nil, nil},
 					Sys:   &syscall.SysProcAttr{Setsid: true},
+					Env:   append(os.Environ(), "ORACULO_NO_BROWSER=1"),
 				},
 			)
 			if err != nil {

@@ -39,6 +39,7 @@ func (h *SystemHandler) handleRestart(w http.ResponseWriter, r *http.Request) {
 	}
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		_ = syscall.Exec(h.binaryPath, []string{h.binaryPath, "start", "http", "--no-browser"}, os.Environ())
+		env := append(os.Environ(), "ORACULO_NO_BROWSER=1")
+		_ = syscall.Exec(h.binaryPath, []string{h.binaryPath, "start", "http"}, env)
 	}()
 }
