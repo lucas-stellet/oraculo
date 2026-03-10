@@ -1,6 +1,7 @@
 package server_test
 
 import (
+	"fmt"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -30,29 +31,67 @@ func TestHealthEndpoint(t *testing.T) {
 	}
 }
 
-func TestAgentStartHook(t *testing.T) {
-	srv := testServer(t)
-	body := `{"session_id":"s1","agent_name":"code-agent","agent_type":"code"}`
+func seedEpicStoryTask(t *testing.T, database *db.DB) (epicName, storyName, taskName string) {
+	t.Helper()
+	epicName, storyName, taskName = "gastos", "registro", "implement-api"
+	epicStore := db.NewEpicStore(database)
+	epic, _, err := epicStore.Create(epicName, "")
+	if err != nil {
+		t.Fatalf("seed epic: %v", err)
+	}
+	storyStore := db.NewStoryStore(database)
+	story, _, err := storyStore.Create(epic.ID, storyName, "")
+	if err != nil {
+		t.Fatalf("seed story: %v", err)
+	}
+	taskStore := db.NewTaskStore(database)
+	_, _, err = taskStore.Create(story.ID, taskName, "", nil)
+	if err != nil {
+		t.Fatalf("seed task: %v", err)
+	}
+	return
+}
+
+func TestAgentStartHook_WithTask(t *testing.T) {
+	srv, database := testServerWithDB(t)
+	epicName, storyName, taskName := seedEpicStoryTask(t, database)
+
+	body := fmt.Sprintf(`{"session_id":"s1","agent_name":"code-01","agent_type":"code","task_name":%q,"story_name":%q,"epic_name":%q}`,
+		taskName, storyName, epicName)
 	req := httptest.NewRequest("POST", "/hooks/agent-start", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
 	if rec.Code != 200 {
-		t.Fatalf("status %d, want 200", rec.Code)
+		t.Fatalf("status %d, want 200: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAgentStartHook_MissingTaskFields_Returns400(t *testing.T) {
+	srv := testServer(t)
+	body := `{"session_id":"s1","agent_name":"code-01","agent_type":"code"}`
+	req := httptest.NewRequest("POST", "/hooks/agent-start", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != 400 {
+		t.Fatalf("status %d, want 400", rec.Code)
 	}
 }
 
 func TestAgentStopHook(t *testing.T) {
-	srv := testServer(t)
+	srv, database := testServerWithDB(t)
+	epicName, storyName, taskName := seedEpicStoryTask(t, database)
 
 	// First start an agent.
-	startBody := `{"session_id":"s1","agent_name":"code-agent","agent_type":"code"}`
+	startBody := fmt.Sprintf(`{"session_id":"s1","agent_name":"code-agent","agent_type":"code","task_name":%q,"story_name":%q,"epic_name":%q}`,
+		taskName, storyName, epicName)
 	startReq := httptest.NewRequest("POST", "/hooks/agent-start", strings.NewReader(startBody))
 	startReq.Header.Set("Content-Type", "application/json")
 	startRec := httptest.NewRecorder()
 	srv.ServeHTTP(startRec, startReq)
 	if startRec.Code != 200 {
-		t.Fatalf("agent-start status %d, want 200", startRec.Code)
+		t.Fatalf("agent-start status %d, want 200: %s", startRec.Code, startRec.Body.String())
 	}
 
 	// Now stop agent with id=1.
@@ -219,6 +258,18 @@ func TestSessionEndHook(t *testing.T) {
 	srv := testServer(t)
 	body := `{"session_id":"s1"}`
 	req := httptest.NewRequest("POST", "/hooks/session-end", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != 200 {
+		t.Fatalf("status %d, want 200", rec.Code)
+	}
+}
+
+func TestTaskStartedHook(t *testing.T) {
+	srv := testServer(t)
+	body := `{"session_id":"s1","task_name":"implement-feature","story_name":"registro","epic_name":"gastos"}`
+	req := httptest.NewRequest("POST", "/hooks/task-started", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)

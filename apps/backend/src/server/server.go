@@ -39,6 +39,9 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 		agents:   db.NewAgentStore(database),
 		toolEvts: db.NewToolEventStore(database),
 		sessEvts: db.NewSessionEventStore(database),
+		epics:    db.NewEpicStore(database),
+		stories:  db.NewStoryStore(database),
+		tasks:    db.NewTaskStore(database),
 		hub:      hub,
 		logger:   logger,
 	}
@@ -65,6 +68,7 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 	mux.HandleFunc("POST /hooks/agent-stop", hook.handleAgentStop)
 	mux.HandleFunc("POST /hooks/tool-used", hook.handleToolUsed)
 	mux.HandleFunc("POST /hooks/task-completed", hook.handleTaskCompleted)
+	mux.HandleFunc("POST /hooks/task-started", hook.handleTaskStarted)
 	mux.HandleFunc("POST /hooks/stop", hook.handleStop)
 	mux.HandleFunc("POST /hooks/teammate-idle", hook.handleTeammateIdle)
 	mux.HandleFunc("POST /hooks/session-start", hook.handleSessionStart)

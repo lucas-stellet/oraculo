@@ -14,6 +14,9 @@ type HookHandler struct {
 	agents   *db.AgentStore
 	toolEvts *db.ToolEventStore
 	sessEvts *db.SessionEventStore
+	epics    *db.EpicStore
+	stories  *db.StoryStore
+	tasks    *db.TaskStore
 	hub      *ws.Hub
 	logger   *slog.Logger
 }
@@ -29,24 +32,49 @@ func (h *HookHandler) broadcast(event string, payload any) {
 
 // handleAgentStart records a new agent start event.
 // POST /hooks/agent-start
-// Body: {"session_id":"...","agent_name":"...","agent_type":"..."}
+// Body: {"session_id":"...","agent_name":"...","agent_type":"...","task_name":"...","story_name":"...","epic_name":"..."}
 func (h *HookHandler) handleAgentStart(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		SessionID string `json:"session_id"`
 		AgentName string `json:"agent_name"`
 		AgentType string `json:"agent_type"`
+		TaskName  string `json:"task_name"`
+		StoryName string `json:"story_name"`
+		EpicName  string `json:"epic_name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	h.logger.Info("hook.agent_started", "agent", body.AgentName, "type", body.AgentType)
-	agent, err := h.agents.Start(body.SessionID, body.AgentName, body.AgentType, nil)
+	if body.TaskName == "" || body.StoryName == "" || body.EpicName == "" {
+		writeAPIError(w, http.StatusBadRequest, "task_name, story_name, and epic_name are required")
+		return
+	}
+
+	epic, err := h.epics.GetByName(body.EpicName)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, "epic not found: "+body.EpicName)
+		return
+	}
+	story, err := h.stories.GetByName(epic.ID, body.StoryName)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, "story not found: "+body.StoryName)
+		return
+	}
+	task, err := h.tasks.GetByName(story.ID, body.TaskName)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, "task not found: "+body.TaskName)
+		return
+	}
+
+	taskID := task.ID
+	agent, err := h.agents.Start(body.SessionID, body.AgentName, body.AgentType, &taskID)
 	if err != nil {
 		h.logger.Warn("hook.agent_started.error", "err", err)
 		writeAPIError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.logger.Info("hook.agent_started", "agent", body.AgentName, "type", body.AgentType, "task_id", taskID)
 	h.broadcast("agent_started", agent)
 	writeJSON(w, agent)
 }
@@ -121,6 +149,29 @@ func (h *HookHandler) handleTaskCompleted(w http.ResponseWriter, r *http.Request
 	}
 
 	h.broadcast("task_completed", body)
+	writeJSON(w, map[string]string{"status": "ok"})
+}
+
+// handleTaskStarted broadcasts a task start event.
+// POST /hooks/task-started
+// Body: {"session_id":"...","task_name":"...","story_name":"...","epic_name":"..."}
+func (h *HookHandler) handleTaskStarted(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		SessionID string `json:"session_id"`
+		TaskName  string `json:"task_name"`
+		StoryName string `json:"story_name"`
+		EpicName  string `json:"epic_name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if body.TaskName == "" || body.StoryName == "" || body.EpicName == "" {
+		writeAPIError(w, http.StatusBadRequest, "task_name, story_name, and epic_name are required")
+		return
+	}
+	h.logger.Info("hook.task_started", "task", body.TaskName, "story", body.StoryName, "epic", body.EpicName)
+	h.broadcast("task_started", body)
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 
