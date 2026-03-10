@@ -1249,400 +1249,89 @@
       "width": 1440,
       "height": 900,
       "fill": "#020617",
+      "layout": "vertical",
       "children": [
         {
           "type": "frame",
-          "id": "wp1no",
-          "name": "Sidebar",
-          "reusable": true,
-          "width": 260,
-          "height": "fill_container",
-          "fill": "#18181b",
-          "layout": "vertical",
+          "id": "GmJIH",
+          "name": "banner",
+          "width": "fill_container",
+          "fill": "#0d1d33",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "#1e40af"
+          },
+          "gap": 12,
+          "padding": [
+            10,
+            20
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
           "children": [
             {
               "type": "frame",
-              "id": "eL19K",
-              "name": "Logo Area",
-              "width": "fill_container",
-              "height": 48,
-              "stroke": {
-                "align": "inside",
-                "thickness": {
-                  "bottom": 1
-                },
-                "fill": "#ffffff0d"
-              },
-              "gap": 10,
-              "padding": [
-                0,
-                16
-              ],
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "klhVe",
-                  "name": "Logo Mark",
-                  "width": 28,
-                  "height": 28,
-                  "fill": "#2563eb",
-                  "cornerRadius": 8,
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "TGan1",
-                      "name": "logoIcon",
-                      "width": 16,
-                      "height": 16,
-                      "iconFontName": "scan-eye",
-                      "iconFontFamily": "lucide",
-                      "fill": "#ffffff"
-                    }
-                  ]
-                },
-                {
-                  "type": "text",
-                  "id": "ymFeA",
-                  "name": "logoText",
-                  "fill": "#f5f9ff",
-                  "content": "ORACULO",
-                  "fontFamily": "Space Grotesk",
-                  "fontSize": 15,
-                  "fontWeight": "700",
-                  "letterSpacing": 2.5
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "2hYB0",
-              "name": "Context Switcher",
-              "width": "fill_container",
-              "height": 64,
-              "stroke": {
-                "align": "inside",
-                "thickness": {
-                  "bottom": 1
-                },
-                "fill": "#ffffff1a"
-              },
-              "gap": 12,
-              "padding": [
-                0,
-                16
-              ],
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "icon_font",
-                  "id": "LLmLa",
-                  "name": "folderIcon",
-                  "width": 20,
-                  "height": 20,
-                  "iconFontName": "folder-open",
-                  "iconFontFamily": "lucide",
-                  "fill": "#60a5fa"
-                },
-                {
-                  "type": "text",
-                  "id": "hbvLS",
-                  "name": "epicName",
-                  "fill": "#f5f9ff",
-                  "content": "Gastos Pessoais",
-                  "fontFamily": "Space Grotesk",
-                  "fontSize": 14,
-                  "fontWeight": "600"
-                },
-                {
-                  "type": "icon_font",
-                  "id": "uJ0mI",
-                  "name": "chevron",
-                  "width": 16,
-                  "height": 16,
-                  "iconFontName": "chevron-down",
-                  "iconFontFamily": "lucide",
-                  "fill": "#8ea2bd"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "WcdlG",
-              "name": "Nav Items",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 2,
-              "padding": [
-                12,
-                8
-              ],
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "11C3W",
-                  "name": "Nav Overview",
-                  "width": "fill_container",
-                  "height": 40,
-                  "fill": "#2563eb",
-                  "cornerRadius": 8,
-                  "gap": 12,
-                  "padding": [
-                    0,
-                    12
-                  ],
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "6RHBV",
-                      "name": "navHomeIcon",
-                      "width": 18,
-                      "height": 18,
-                      "iconFontName": "layout-dashboard",
-                      "iconFontFamily": "lucide",
-                      "fill": "#ffffff"
-                    },
-                    {
-                      "type": "text",
-                      "id": "VXilz",
-                      "name": "navHomeLabel",
-                      "fill": "#ffffff",
-                      "content": "Overview",
-                      "fontFamily": "IBM Plex Sans",
-                      "fontSize": 14,
-                      "fontWeight": "500"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "ovJRY",
-              "name": "Stories Section",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 2,
-              "padding": [
-                4,
-                8
-              ],
-              "children": [
-                {
-                  "type": "text",
-                  "id": "pBi3G",
-                  "fill": "#71717a",
-                  "content": "STORIES",
-                  "fontFamily": "IBM Plex Mono",
-                  "fontSize": 11,
-                  "fontWeight": "500",
-                  "letterSpacing": 1.2
-                },
-                {
-                  "type": "frame",
-                  "id": "2eAFy",
-                  "name": "Story 1",
-                  "width": "fill_container",
-                  "height": 36,
-                  "cornerRadius": 6,
-                  "gap": 8,
-                  "padding": [
-                    0,
-                    12
-                  ],
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "ellipse",
-                      "id": "1IVU3",
-                      "fill": "#3b82f6",
-                      "width": 6,
-                      "height": 6
-                    },
-                    {
-                      "type": "text",
-                      "id": "dXhEP",
-                      "fill": "#a1a1aa",
-                      "content": "Registro de Gastos",
-                      "fontFamily": "IBM Plex Sans",
-                      "fontSize": 13,
-                      "fontWeight": "500"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "smy6Y",
-                  "name": "Story 2",
-                  "width": "fill_container",
-                  "height": 36,
-                  "cornerRadius": 6,
-                  "gap": 8,
-                  "padding": [
-                    0,
-                    12
-                  ],
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "ellipse",
-                      "id": "MJLgf",
-                      "fill": "#22c55e",
-                      "width": 6,
-                      "height": 6
-                    },
-                    {
-                      "type": "text",
-                      "id": "s6dqe",
-                      "fill": "#a1a1aa",
-                      "content": "Categorização Automática",
-                      "fontFamily": "IBM Plex Sans",
-                      "fontSize": 13,
-                      "fontWeight": "500"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "daFRG",
-                  "name": "Story 3",
-                  "width": "fill_container",
-                  "height": 36,
-                  "cornerRadius": 6,
-                  "gap": 8,
-                  "padding": [
-                    0,
-                    12
-                  ],
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "ellipse",
-                      "id": "yAeIh",
-                      "fill": "#71717a",
-                      "width": 6,
-                      "height": 6
-                    },
-                    {
-                      "type": "text",
-                      "id": "wWBgV",
-                      "fill": "#a1a1aa",
-                      "content": "Dashboard de Resumo",
-                      "fontFamily": "IBM Plex Sans",
-                      "fontSize": 13,
-                      "fontWeight": "500"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "ILweb",
-              "name": "Monitor Section",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 2,
-              "padding": [
-                4,
-                8
-              ],
-              "children": [
-                {
-                  "type": "text",
-                  "id": "0zZ6v",
-                  "fill": "#71717a",
-                  "content": "MONITOR",
-                  "fontFamily": "IBM Plex Mono",
-                  "fontSize": 11,
-                  "fontWeight": "500",
-                  "letterSpacing": 1.2
-                },
-                {
-                  "type": "frame",
-                  "id": "0K4el",
-                  "name": "Nav Approvals",
-                  "width": "fill_container",
-                  "height": 36,
-                  "cornerRadius": 6,
-                  "gap": 8,
-                  "padding": [
-                    0,
-                    12
-                  ],
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "rW3MK",
-                      "width": 16,
-                      "height": 16,
-                      "iconFontName": "shield-alert",
-                      "iconFontFamily": "lucide",
-                      "fill": "#8ea2bd"
-                    },
-                    {
-                      "type": "text",
-                      "id": "AVUQ9",
-                      "fill": "#a1a1aa",
-                      "content": "Approvals",
-                      "fontFamily": "IBM Plex Sans",
-                      "fontSize": 13,
-                      "fontWeight": "500"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "UkLcO",
-              "name": "Spacer",
-              "width": "fill_container",
-              "height": "fill_container"
-            },
-            {
-              "type": "frame",
-              "id": "5PBD1",
-              "name": "Sidebar Toggle",
-              "width": "fill_container",
-              "height": 48,
-              "stroke": {
-                "align": "inside",
-                "thickness": {
-                  "top": 1
-                },
-                "fill": "#ffffff1a"
-              },
+              "id": "l0zas",
+              "name": "bannerLeft",
               "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "GUToQ",
+                  "name": "bannerIcon",
+                  "width": 15,
+                  "height": 15,
+                  "iconFontName": "refresh-cw",
+                  "iconFontFamily": "lucide",
+                  "fill": "#93c5fd"
+                },
+                {
+                  "type": "text",
+                  "id": "jZCH9",
+                  "name": "bannerText",
+                  "fill": "#93c5fd",
+                  "content": "A new version of Oraculo is available.",
+                  "fontFamily": "IBM Plex Sans",
+                  "fontSize": 13
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "QSwKY",
+              "name": "bannerBtn",
+              "fill": "#2563eb",
+              "cornerRadius": 6,
+              "gap": 6,
               "padding": [
-                0,
-                16
+                6,
+                14
               ],
               "alignItems": "center",
               "children": [
                 {
                   "type": "icon_font",
-                  "id": "vt6sX",
-                  "name": "toggleIcon",
-                  "width": 18,
-                  "height": 18,
-                  "iconFontName": "panel-left-close",
+                  "id": "34hCW",
+                  "name": "btnIcon",
+                  "width": 13,
+                  "height": 13,
+                  "iconFontName": "refresh-cw",
                   "iconFontFamily": "lucide",
-                  "fill": "#8ea2bd"
+                  "fill": "#ffffff"
                 },
                 {
                   "type": "text",
-                  "id": "OYjxo",
-                  "name": "toggleLabel",
-                  "fill": "#71717a",
-                  "content": "Collapse",
+                  "id": "Jgk3I",
+                  "name": "btnText",
+                  "fill": "#ffffff",
+                  "content": "Restart server",
                   "fontFamily": "IBM Plex Sans",
-                  "fontSize": 13,
-                  "fontWeight": "500"
+                  "fontSize": 12,
+                  "fontWeight": "600"
                 }
               ]
             }
@@ -1650,68 +1339,210 @@
         },
         {
           "type": "frame",
-          "id": "rHMYy",
-          "name": "Main Content",
-          "clip": true,
+          "id": "sEiOs",
+          "name": "innerRow",
           "width": "fill_container",
           "height": "fill_container",
-          "layout": "vertical",
-          "gap": 24,
-          "padding": 32,
           "children": [
             {
               "type": "frame",
-              "id": "GVpfH",
-              "name": "Page Header",
-              "width": "fill_container",
-              "justifyContent": "space_between",
-              "alignItems": "center",
+              "id": "wp1no",
+              "name": "Sidebar",
+              "reusable": true,
+              "width": 260,
+              "height": "fill_container",
+              "fill": "#18181b",
+              "layout": "vertical",
               "children": [
                 {
                   "type": "frame",
-                  "id": "Wwr6W",
-                  "name": "headerLeft",
-                  "layout": "vertical",
-                  "gap": 4,
+                  "id": "eL19K",
+                  "name": "Logo Area",
+                  "width": "fill_container",
+                  "height": 48,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#ffffff0d"
+                  },
+                  "gap": 10,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
                   "children": [
                     {
-                      "type": "text",
-                      "id": "qMcAV",
-                      "name": "headerKicker",
-                      "fill": "#60a5fa",
-                      "content": "EPIC OVERVIEW",
-                      "fontFamily": "IBM Plex Mono",
-                      "fontSize": 12,
-                      "fontWeight": "500",
-                      "letterSpacing": 1.2
+                      "type": "frame",
+                      "id": "klhVe",
+                      "name": "Logo Mark",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "#2563eb",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "TGan1",
+                          "name": "logoIcon",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "scan-eye",
+                          "iconFontFamily": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
                     },
                     {
                       "type": "text",
-                      "id": "m881B",
-                      "name": "headerTitle",
+                      "id": "ymFeA",
+                      "name": "logoText",
                       "fill": "#f5f9ff",
-                      "content": "Gastos Pessoais",
+                      "content": "ORACULO",
                       "fontFamily": "Space Grotesk",
-                      "fontSize": 32,
-                      "fontWeight": "700"
+                      "fontSize": 15,
+                      "fontWeight": "700",
+                      "letterSpacing": 2.5
                     }
                   ]
                 },
                 {
                   "type": "frame",
-                  "id": "7Im9p",
-                  "name": "headerRight",
+                  "id": "2hYB0",
+                  "name": "Context Switcher",
+                  "width": "fill_container",
+                  "height": 64,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#ffffff1a"
+                  },
                   "gap": 12,
+                  "padding": [
+                    0,
+                    16
+                  ],
                   "alignItems": "center",
                   "children": [
                     {
+                      "type": "icon_font",
+                      "id": "LLmLa",
+                      "name": "folderIcon",
+                      "width": 20,
+                      "height": 20,
+                      "iconFontName": "folder-open",
+                      "iconFontFamily": "lucide",
+                      "fill": "#60a5fa"
+                    },
+                    {
+                      "type": "text",
+                      "id": "hbvLS",
+                      "name": "epicName",
+                      "fill": "#f5f9ff",
+                      "content": "Gastos Pessoais",
+                      "fontFamily": "Space Grotesk",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "uJ0mI",
+                      "name": "chevron",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "chevron-down",
+                      "iconFontFamily": "lucide",
+                      "fill": "#8ea2bd"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "WcdlG",
+                  "name": "Nav Items",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "padding": [
+                    12,
+                    8
+                  ],
+                  "children": [
+                    {
                       "type": "frame",
-                      "id": "5ikGy",
-                      "name": "statusBadge",
-                      "height": 32,
-                      "fill": "#1d4ed8",
-                      "cornerRadius": 16,
-                      "gap": 6,
+                      "id": "11C3W",
+                      "name": "Nav Overview",
+                      "width": "fill_container",
+                      "height": 40,
+                      "fill": "#2563eb",
+                      "cornerRadius": 8,
+                      "gap": 12,
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "6RHBV",
+                          "name": "navHomeIcon",
+                          "width": 18,
+                          "height": 18,
+                          "iconFontName": "layout-dashboard",
+                          "iconFontFamily": "lucide",
+                          "fill": "#ffffff"
+                        },
+                        {
+                          "type": "text",
+                          "id": "VXilz",
+                          "name": "navHomeLabel",
+                          "fill": "#ffffff",
+                          "content": "Overview",
+                          "fontFamily": "IBM Plex Sans",
+                          "fontSize": 14,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ovJRY",
+                  "name": "Stories Section",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "padding": [
+                    4,
+                    8
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "pBi3G",
+                      "fill": "#71717a",
+                      "content": "STORIES",
+                      "fontFamily": "IBM Plex Mono",
+                      "fontSize": 11,
+                      "fontWeight": "500",
+                      "letterSpacing": 1.2
+                    },
+                    {
+                      "type": "frame",
+                      "id": "2eAFy",
+                      "name": "Story 1",
+                      "width": "fill_container",
+                      "height": 36,
+                      "cornerRadius": 6,
+                      "gap": 8,
                       "padding": [
                         0,
                         12
@@ -1720,18 +1551,16 @@
                       "children": [
                         {
                           "type": "ellipse",
-                          "id": "cDeJK",
-                          "name": "statusDot",
-                          "fill": "#60a5fa",
-                          "width": 8,
-                          "height": 8
+                          "id": "1IVU3",
+                          "fill": "#3b82f6",
+                          "width": 6,
+                          "height": 6
                         },
                         {
                           "type": "text",
-                          "id": "xGlhf",
-                          "name": "statusText",
-                          "fill": "#eff6ff",
-                          "content": "In Progress",
+                          "id": "dXhEP",
+                          "fill": "#a1a1aa",
+                          "content": "Registro de Gastos",
                           "fontFamily": "IBM Plex Sans",
                           "fontSize": 13,
                           "fontWeight": "500"
@@ -1739,13 +1568,175 @@
                       ]
                     },
                     {
+                      "type": "frame",
+                      "id": "smy6Y",
+                      "name": "Story 2",
+                      "width": "fill_container",
+                      "height": 36,
+                      "cornerRadius": 6,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "MJLgf",
+                          "fill": "#22c55e",
+                          "width": 6,
+                          "height": 6
+                        },
+                        {
+                          "type": "text",
+                          "id": "s6dqe",
+                          "fill": "#a1a1aa",
+                          "content": "Categorização Automática",
+                          "fontFamily": "IBM Plex Sans",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "daFRG",
+                      "name": "Story 3",
+                      "width": "fill_container",
+                      "height": 36,
+                      "cornerRadius": 6,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "yAeIh",
+                          "fill": "#71717a",
+                          "width": 6,
+                          "height": 6
+                        },
+                        {
+                          "type": "text",
+                          "id": "wWBgV",
+                          "fill": "#a1a1aa",
+                          "content": "Dashboard de Resumo",
+                          "fontFamily": "IBM Plex Sans",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ILweb",
+                  "name": "Monitor Section",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "padding": [
+                    4,
+                    8
+                  ],
+                  "children": [
+                    {
                       "type": "text",
-                      "id": "CUfef",
-                      "name": "progressText",
-                      "fill": "#8ea2bd",
-                      "content": "2 / 4 stories completed",
+                      "id": "0zZ6v",
+                      "fill": "#71717a",
+                      "content": "MONITOR",
+                      "fontFamily": "IBM Plex Mono",
+                      "fontSize": 11,
+                      "fontWeight": "500",
+                      "letterSpacing": 1.2
+                    },
+                    {
+                      "type": "frame",
+                      "id": "0K4el",
+                      "name": "Nav Approvals",
+                      "width": "fill_container",
+                      "height": 36,
+                      "cornerRadius": 6,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "rW3MK",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "shield-alert",
+                          "iconFontFamily": "lucide",
+                          "fill": "#8ea2bd"
+                        },
+                        {
+                          "type": "text",
+                          "id": "AVUQ9",
+                          "fill": "#a1a1aa",
+                          "content": "Approvals",
+                          "fontFamily": "IBM Plex Sans",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "UkLcO",
+                  "name": "Spacer",
+                  "width": "fill_container",
+                  "height": "fill_container"
+                },
+                {
+                  "type": "frame",
+                  "id": "5PBD1",
+                  "name": "Sidebar Toggle",
+                  "width": "fill_container",
+                  "height": 48,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "top": 1
+                    },
+                    "fill": "#ffffff1a"
+                  },
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "vt6sX",
+                      "name": "toggleIcon",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "panel-left-close",
+                      "iconFontFamily": "lucide",
+                      "fill": "#8ea2bd"
+                    },
+                    {
+                      "type": "text",
+                      "id": "OYjxo",
+                      "name": "toggleLabel",
+                      "fill": "#71717a",
+                      "content": "Collapse",
                       "fontFamily": "IBM Plex Sans",
-                      "fontSize": 14
+                      "fontSize": 13,
+                      "fontWeight": "500"
                     }
                   ]
                 }
@@ -1753,203 +1744,103 @@
             },
             {
               "type": "frame",
-              "id": "GSri6",
-              "name": "Story Grid",
+              "id": "rHMYy",
+              "name": "Main Content",
+              "clip": true,
               "width": "fill_container",
-              "gap": 20,
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 24,
+              "padding": 32,
               "children": [
                 {
                   "type": "frame",
-                  "id": "pBDvO",
-                  "name": "Story Card 1",
-                  "clip": true,
+                  "id": "GVpfH",
+                  "name": "Page Header",
                   "width": "fill_container",
-                  "height": 200,
-                  "fill": "#0f172a",
-                  "cornerRadius": 20,
-                  "stroke": {
-                    "align": "inside",
-                    "thickness": 1,
-                    "fill": "#22324a"
-                  },
-                  "layout": "vertical",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
                   "children": [
                     {
                       "type": "frame",
-                      "id": "U9AXI",
-                      "name": "Card Header",
-                      "width": "fill_container",
-                      "padding": [
-                        16,
-                        20
-                      ],
-                      "justifyContent": "space_between",
-                      "alignItems": "center",
+                      "id": "Wwr6W",
+                      "name": "headerLeft",
+                      "layout": "vertical",
+                      "gap": 4,
                       "children": [
                         {
                           "type": "text",
-                          "id": "jd3OC",
-                          "name": "card1Title",
-                          "fill": "#f5f9ff",
-                          "content": "Registro de Gastos",
-                          "fontFamily": "Space Grotesk",
-                          "fontSize": 16,
-                          "fontWeight": "600"
+                          "id": "qMcAV",
+                          "name": "headerKicker",
+                          "fill": "#60a5fa",
+                          "content": "EPIC OVERVIEW",
+                          "fontFamily": "IBM Plex Mono",
+                          "fontSize": 12,
+                          "fontWeight": "500",
+                          "letterSpacing": 1.2
                         },
                         {
+                          "type": "text",
+                          "id": "m881B",
+                          "name": "headerTitle",
+                          "fill": "#f5f9ff",
+                          "content": "Gastos Pessoais",
+                          "fontFamily": "Space Grotesk",
+                          "fontSize": 32,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "7Im9p",
+                      "name": "headerRight",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
                           "type": "frame",
-                          "id": "ZFjoW",
-                          "name": "card1Badge",
-                          "height": 24,
+                          "id": "5ikGy",
+                          "name": "statusBadge",
+                          "height": 32,
                           "fill": "#1d4ed8",
-                          "cornerRadius": 12,
+                          "cornerRadius": 16,
+                          "gap": 6,
                           "padding": [
                             0,
-                            10
+                            12
                           ],
                           "alignItems": "center",
                           "children": [
                             {
+                              "type": "ellipse",
+                              "id": "cDeJK",
+                              "name": "statusDot",
+                              "fill": "#60a5fa",
+                              "width": 8,
+                              "height": 8
+                            },
+                            {
                               "type": "text",
-                              "id": "J2GDn",
-                              "name": "card1BadgeText",
+                              "id": "xGlhf",
+                              "name": "statusText",
                               "fill": "#eff6ff",
                               "content": "In Progress",
-                              "fontFamily": "IBM Plex Mono",
-                              "fontSize": 11,
+                              "fontFamily": "IBM Plex Sans",
+                              "fontSize": 13,
                               "fontWeight": "500"
                             }
                           ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "qHa97",
-                      "name": "Card Body",
-                      "width": "fill_container",
-                      "height": "fill_container",
-                      "layout": "vertical",
-                      "gap": 8,
-                      "padding": [
-                        0,
-                        20
-                      ],
-                      "justifyContent": "center",
-                      "children": [
+                        },
                         {
                           "type": "text",
-                          "id": "gvWNF",
-                          "name": "card1ProgLabel",
+                          "id": "CUfef",
+                          "name": "progressText",
                           "fill": "#8ea2bd",
-                          "content": "67% complete (8/12 tasks)",
+                          "content": "2 / 4 stories completed",
                           "fontFamily": "IBM Plex Sans",
-                          "fontSize": 13
-                        },
-                        {
-                          "type": "frame",
-                          "id": "uk0nn",
-                          "name": "Progress Track",
-                          "width": "fill_container",
-                          "height": 6,
-                          "fill": "#22324a",
-                          "cornerRadius": 3,
-                          "children": [
-                            {
-                              "type": "frame",
-                              "id": "kU4UR",
-                              "name": "Progress Fill",
-                              "width": 220,
-                              "height": 6,
-                              "fill": "#2563eb",
-                              "cornerRadius": 3
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "LFP0s",
-                      "name": "Card Footer",
-                      "width": "fill_container",
-                      "stroke": {
-                        "align": "inside",
-                        "thickness": {
-                          "top": 1
-                        },
-                        "fill": "#22324a"
-                      },
-                      "padding": [
-                        12,
-                        20
-                      ],
-                      "justifyContent": "space_between",
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "xwnob",
-                          "name": "card1FooterLeft",
-                          "layout": "vertical",
-                          "gap": 2,
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "2qs1F",
-                              "name": "card1Running",
-                              "fill": "#22c55e",
-                              "content": "Executing now",
-                              "fontFamily": "IBM Plex Sans",
-                              "fontSize": 12,
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "text",
-                              "id": "HnjOn",
-                              "name": "card1Last",
-                              "fill": "#71717a",
-                              "content": "Last: 2 min ago",
-                              "fontFamily": "IBM Plex Mono",
-                              "fontSize": 11
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "evtZ3",
-                          "name": "card1Open",
-                          "height": 28,
-                          "fill": "#2563eb",
-                          "cornerRadius": 6,
-                          "gap": 4,
-                          "padding": [
-                            0,
-                            12
-                          ],
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "ZCWpS",
-                              "name": "card1OpenText",
-                              "fill": "#ffffff",
-                              "content": "Open",
-                              "fontFamily": "IBM Plex Sans",
-                              "fontSize": 12,
-                              "fontWeight": "600"
-                            },
-                            {
-                              "type": "icon_font",
-                              "id": "b4m10",
-                              "name": "card1OpenArrow",
-                              "width": 14,
-                              "height": 14,
-                              "iconFontName": "arrow-right",
-                              "iconFontFamily": "lucide",
-                              "fill": "#ffffff"
-                            }
-                          ]
+                          "fontSize": 14,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -1957,306 +1848,205 @@
                 },
                 {
                   "type": "frame",
-                  "id": "MnUoL",
-                  "name": "Story Card 2",
-                  "clip": true,
+                  "id": "GSri6",
+                  "name": "Story Grid",
                   "width": "fill_container",
-                  "height": 200,
-                  "fill": "#0f172a",
-                  "cornerRadius": 20,
-                  "stroke": {
-                    "align": "inside",
-                    "thickness": 1,
-                    "fill": "#22324a"
-                  },
-                  "layout": "vertical",
+                  "gap": 20,
                   "children": [
                     {
                       "type": "frame",
-                      "id": "29Xt3",
-                      "name": "Card Header",
+                      "id": "pBDvO",
+                      "name": "Story Card 1",
+                      "clip": true,
                       "width": "fill_container",
-                      "padding": [
-                        16,
-                        20
-                      ],
-                      "justifyContent": "space_between",
-                      "alignItems": "center",
+                      "height": 200,
+                      "fill": "#0f172a",
+                      "cornerRadius": 20,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#22324a"
+                      },
+                      "layout": "vertical",
                       "children": [
                         {
-                          "type": "text",
-                          "id": "W8xEC",
-                          "name": "card1Title",
-                          "fill": "#f5f9ff",
-                          "content": "Categorização Automática",
-                          "fontFamily": "Space Grotesk",
-                          "fontSize": 16,
-                          "fontWeight": "600"
-                        },
-                        {
                           "type": "frame",
-                          "id": "ur4bV",
-                          "name": "card1Badge",
-                          "height": 24,
-                          "fill": "#15803d",
-                          "cornerRadius": 12,
+                          "id": "U9AXI",
+                          "name": "Card Header",
+                          "width": "fill_container",
                           "padding": [
-                            0,
-                            10
+                            16,
+                            20
                           ],
+                          "justifyContent": "space_between",
                           "alignItems": "center",
                           "children": [
                             {
                               "type": "text",
-                              "id": "ZP814",
-                              "name": "card1BadgeText",
-                              "fill": "#eff6ff",
-                              "content": "Completed",
-                              "fontFamily": "IBM Plex Mono",
-                              "fontSize": 11,
-                              "fontWeight": "500"
+                              "id": "jd3OC",
+                              "name": "card1Title",
+                              "fill": "#f5f9ff",
+                              "content": "Registro de Gastos",
+                              "fontFamily": "Space Grotesk",
+                              "fontSize": 16,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "ZFjoW",
+                              "name": "card1Badge",
+                              "height": 24,
+                              "fill": "#1d4ed8",
+                              "cornerRadius": 12,
+                              "padding": [
+                                0,
+                                10
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "J2GDn",
+                                  "name": "card1BadgeText",
+                                  "fill": "#eff6ff",
+                                  "content": "In Progress",
+                                  "fontFamily": "IBM Plex Mono",
+                                  "fontSize": 11,
+                                  "fontWeight": "500"
+                                }
+                              ]
                             }
                           ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "I70xu",
-                      "name": "Card Body",
-                      "width": "fill_container",
-                      "height": "fill_container",
-                      "layout": "vertical",
-                      "gap": 8,
-                      "padding": [
-                        0,
-                        20
-                      ],
-                      "justifyContent": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "n4u1n",
-                          "name": "card1ProgLabel",
-                          "fill": "#8ea2bd",
-                          "content": "100% complete (12/12 tasks)",
-                          "fontFamily": "IBM Plex Sans",
-                          "fontSize": 13
                         },
                         {
                           "type": "frame",
-                          "id": "1aTlG",
-                          "name": "Progress Track",
+                          "id": "qHa97",
+                          "name": "Card Body",
                           "width": "fill_container",
-                          "height": 6,
-                          "fill": "#22324a",
-                          "cornerRadius": 3,
+                          "height": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "padding": [
+                            0,
+                            20
+                          ],
+                          "justifyContent": "center",
                           "children": [
                             {
+                              "type": "text",
+                              "id": "gvWNF",
+                              "name": "card1ProgLabel",
+                              "fill": "#8ea2bd",
+                              "content": "67% complete (8/12 tasks)",
+                              "fontFamily": "IBM Plex Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
                               "type": "frame",
-                              "id": "EJ0Os",
-                              "name": "Progress Fill",
+                              "id": "uk0nn",
+                              "name": "Progress Track",
                               "width": "fill_container",
                               "height": 6,
-                              "fill": "#22c55e",
-                              "cornerRadius": 3
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "jaGpR",
-                      "name": "Card Footer",
-                      "width": "fill_container",
-                      "stroke": {
-                        "align": "inside",
-                        "thickness": {
-                          "top": 1
-                        },
-                        "fill": "#22324a"
-                      },
-                      "padding": [
-                        12,
-                        20
-                      ],
-                      "justifyContent": "space_between",
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "axpDB",
-                          "name": "card1FooterLeft",
-                          "layout": "vertical",
-                          "gap": 2,
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "U4jsv",
-                              "name": "card1Running",
-                              "fill": "#8ea2bd",
-                              "content": "Completed",
-                              "fontFamily": "IBM Plex Sans",
-                              "fontSize": 12,
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "text",
-                              "id": "wLc3b",
-                              "name": "card1Last",
-                              "fill": "#71717a",
-                              "content": "Last: 1 hour ago",
-                              "fontFamily": "IBM Plex Mono",
-                              "fontSize": 11
+                              "fill": "#22324a",
+                              "cornerRadius": 3,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "kU4UR",
+                                  "name": "Progress Fill",
+                                  "width": 220,
+                                  "height": 6,
+                                  "fill": "#2563eb",
+                                  "cornerRadius": 3
+                                }
+                              ]
                             }
                           ]
                         },
                         {
                           "type": "frame",
-                          "id": "5GyI7",
-                          "name": "card1Open",
-                          "height": 28,
-                          "fill": "#2563eb",
-                          "cornerRadius": 6,
-                          "gap": 4,
-                          "padding": [
-                            0,
-                            12
-                          ],
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "A0LbM",
-                              "name": "card1OpenText",
-                              "fill": "#ffffff",
-                              "content": "Open",
-                              "fontFamily": "IBM Plex Sans",
-                              "fontSize": 12,
-                              "fontWeight": "600"
-                            },
-                            {
-                              "type": "icon_font",
-                              "id": "xPgvr",
-                              "name": "card1OpenArrow",
-                              "width": 14,
-                              "height": 14,
-                              "iconFontName": "arrow-right",
-                              "iconFontFamily": "lucide",
-                              "fill": "#ffffff"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "lyhO7",
-                  "name": "Story Card 3",
-                  "clip": true,
-                  "width": "fill_container",
-                  "height": 200,
-                  "fill": "#0f172a",
-                  "cornerRadius": 20,
-                  "stroke": {
-                    "align": "inside",
-                    "thickness": 1,
-                    "fill": "#22324a"
-                  },
-                  "layout": "vertical",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "3TAWM",
-                      "name": "Card Header",
-                      "width": "fill_container",
-                      "padding": [
-                        16,
-                        20
-                      ],
-                      "justifyContent": "space_between",
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "LjPu4",
-                          "name": "card1Title",
-                          "fill": "#f5f9ff",
-                          "content": "Dashboard de Resumo",
-                          "fontFamily": "Space Grotesk",
-                          "fontSize": 16,
-                          "fontWeight": "600"
-                        },
-                        {
-                          "type": "frame",
-                          "id": "uB199",
-                          "name": "card1Badge",
-                          "height": 24,
-                          "fill": "#3f3f46",
-                          "cornerRadius": 12,
-                          "padding": [
-                            0,
-                            10
-                          ],
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "kgFRw",
-                              "name": "card1BadgeText",
-                              "fill": "#eff6ff",
-                              "content": "Pending",
-                              "fontFamily": "IBM Plex Mono",
-                              "fontSize": 11,
-                              "fontWeight": "500"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "5IoFT",
-                      "name": "Card Body",
-                      "width": "fill_container",
-                      "height": "fill_container",
-                      "layout": "vertical",
-                      "gap": 8,
-                      "padding": [
-                        0,
-                        20
-                      ],
-                      "justifyContent": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "RFQJu",
-                          "name": "card1ProgLabel",
-                          "fill": "#8ea2bd",
-                          "content": "0% complete (0/6 tasks)",
-                          "fontFamily": "IBM Plex Sans",
-                          "fontSize": 13
-                        },
-                        {
-                          "type": "frame",
-                          "id": "0tNTM",
-                          "name": "Progress Track",
+                          "id": "LFP0s",
+                          "name": "Card Footer",
                           "width": "fill_container",
-                          "height": 6,
-                          "fill": "#22324a",
-                          "cornerRadius": 3,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "top": 1
+                            },
+                            "fill": "#22324a"
+                          },
+                          "padding": [
+                            12,
+                            20
+                          ],
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
                           "children": [
                             {
                               "type": "frame",
-                              "id": "iXboV",
-                              "name": "Progress Fill",
-                              "width": 0,
-                              "height": 6,
-                              "fill": "#3f3f46",
-                              "cornerRadius": 3
+                              "id": "xwnob",
+                              "name": "card1FooterLeft",
+                              "layout": "vertical",
+                              "gap": 2,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "2qs1F",
+                                  "name": "card1Running",
+                                  "fill": "#22c55e",
+                                  "content": "Executing now",
+                                  "fontFamily": "IBM Plex Sans",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "HnjOn",
+                                  "name": "card1Last",
+                                  "fill": "#71717a",
+                                  "content": "Last: 2 min ago",
+                                  "fontFamily": "IBM Plex Mono",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "evtZ3",
+                              "name": "card1Open",
+                              "height": 28,
+                              "fill": "#2563eb",
+                              "cornerRadius": 6,
+                              "gap": 4,
+                              "padding": [
+                                0,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "ZCWpS",
+                                  "name": "card1OpenText",
+                                  "fill": "#ffffff",
+                                  "content": "Open",
+                                  "fontFamily": "IBM Plex Sans",
+                                  "fontSize": 12,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "icon_font",
+                                  "id": "b4m10",
+                                  "name": "card1OpenArrow",
+                                  "width": 14,
+                                  "height": 14,
+                                  "iconFontName": "arrow-right",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#ffffff"
+                                }
+                              ]
                             }
                           ]
                         }
@@ -2264,84 +2054,397 @@
                     },
                     {
                       "type": "frame",
-                      "id": "Rh7up",
-                      "name": "Card Footer",
+                      "id": "MnUoL",
+                      "name": "Story Card 2",
+                      "clip": true,
                       "width": "fill_container",
+                      "height": 200,
+                      "fill": "#0f172a",
+                      "cornerRadius": 20,
                       "stroke": {
                         "align": "inside",
-                        "thickness": {
-                          "top": 1
-                        },
+                        "thickness": 1,
                         "fill": "#22324a"
                       },
-                      "padding": [
-                        12,
-                        20
-                      ],
-                      "justifyContent": "space_between",
-                      "alignItems": "center",
+                      "layout": "vertical",
                       "children": [
                         {
                           "type": "frame",
-                          "id": "Itzng",
-                          "name": "card1FooterLeft",
-                          "layout": "vertical",
-                          "gap": 2,
+                          "id": "29Xt3",
+                          "name": "Card Header",
+                          "width": "fill_container",
+                          "padding": [
+                            16,
+                            20
+                          ],
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
                           "children": [
                             {
                               "type": "text",
-                              "id": "YYIiR",
-                              "name": "card1Running",
-                              "fill": "#71717a",
-                              "content": "Not started",
-                              "fontFamily": "IBM Plex Sans",
-                              "fontSize": 12,
-                              "fontWeight": "500"
+                              "id": "W8xEC",
+                              "name": "card1Title",
+                              "fill": "#f5f9ff",
+                              "content": "Categorização Automática",
+                              "fontFamily": "Space Grotesk",
+                              "fontSize": 16,
+                              "fontWeight": "600"
                             },
                             {
-                              "type": "text",
-                              "id": "JczNH",
-                              "name": "card1Last",
-                              "fill": "#71717a",
-                              "content": "Waiting",
-                              "fontFamily": "IBM Plex Mono",
-                              "fontSize": 11
+                              "type": "frame",
+                              "id": "ur4bV",
+                              "name": "card1Badge",
+                              "height": 24,
+                              "fill": "#15803d",
+                              "cornerRadius": 12,
+                              "padding": [
+                                0,
+                                10
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "ZP814",
+                                  "name": "card1BadgeText",
+                                  "fill": "#eff6ff",
+                                  "content": "Completed",
+                                  "fontFamily": "IBM Plex Mono",
+                                  "fontSize": 11,
+                                  "fontWeight": "500"
+                                }
+                              ]
                             }
                           ]
                         },
                         {
                           "type": "frame",
-                          "id": "v0UCF",
-                          "name": "card1Open",
-                          "height": 28,
-                          "fill": "#2563eb",
-                          "cornerRadius": 6,
-                          "gap": 4,
+                          "id": "I70xu",
+                          "name": "Card Body",
+                          "width": "fill_container",
+                          "height": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
                           "padding": [
                             0,
-                            12
+                            20
                           ],
+                          "justifyContent": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n4u1n",
+                              "name": "card1ProgLabel",
+                              "fill": "#8ea2bd",
+                              "content": "100% complete (12/12 tasks)",
+                              "fontFamily": "IBM Plex Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "1aTlG",
+                              "name": "Progress Track",
+                              "width": "fill_container",
+                              "height": 6,
+                              "fill": "#22324a",
+                              "cornerRadius": 3,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "EJ0Os",
+                                  "name": "Progress Fill",
+                                  "width": "fill_container",
+                                  "height": 6,
+                                  "fill": "#22c55e",
+                                  "cornerRadius": 3
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "jaGpR",
+                          "name": "Card Footer",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "top": 1
+                            },
+                            "fill": "#22324a"
+                          },
+                          "padding": [
+                            12,
+                            20
+                          ],
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "axpDB",
+                              "name": "card1FooterLeft",
+                              "layout": "vertical",
+                              "gap": 2,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "U4jsv",
+                                  "name": "card1Running",
+                                  "fill": "#8ea2bd",
+                                  "content": "Completed",
+                                  "fontFamily": "IBM Plex Sans",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "wLc3b",
+                                  "name": "card1Last",
+                                  "fill": "#71717a",
+                                  "content": "Last: 1 hour ago",
+                                  "fontFamily": "IBM Plex Mono",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "5GyI7",
+                              "name": "card1Open",
+                              "height": 28,
+                              "fill": "#2563eb",
+                              "cornerRadius": 6,
+                              "gap": 4,
+                              "padding": [
+                                0,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "A0LbM",
+                                  "name": "card1OpenText",
+                                  "fill": "#ffffff",
+                                  "content": "Open",
+                                  "fontFamily": "IBM Plex Sans",
+                                  "fontSize": 12,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "icon_font",
+                                  "id": "xPgvr",
+                                  "name": "card1OpenArrow",
+                                  "width": 14,
+                                  "height": 14,
+                                  "iconFontName": "arrow-right",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#ffffff"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "lyhO7",
+                      "name": "Story Card 3",
+                      "clip": true,
+                      "width": "fill_container",
+                      "height": 200,
+                      "fill": "#0f172a",
+                      "cornerRadius": 20,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#22324a"
+                      },
+                      "layout": "vertical",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "3TAWM",
+                          "name": "Card Header",
+                          "width": "fill_container",
+                          "padding": [
+                            16,
+                            20
+                          ],
+                          "justifyContent": "space_between",
                           "alignItems": "center",
                           "children": [
                             {
                               "type": "text",
-                              "id": "YsPtz",
-                              "name": "card1OpenText",
-                              "fill": "#ffffff",
-                              "content": "Open",
-                              "fontFamily": "IBM Plex Sans",
-                              "fontSize": 12,
+                              "id": "LjPu4",
+                              "name": "card1Title",
+                              "fill": "#f5f9ff",
+                              "content": "Dashboard de Resumo",
+                              "fontFamily": "Space Grotesk",
+                              "fontSize": 16,
                               "fontWeight": "600"
                             },
                             {
-                              "type": "icon_font",
-                              "id": "jXawH",
-                              "name": "card1OpenArrow",
-                              "width": 14,
-                              "height": 14,
-                              "iconFontName": "arrow-right",
-                              "iconFontFamily": "lucide",
-                              "fill": "#ffffff"
+                              "type": "frame",
+                              "id": "uB199",
+                              "name": "card1Badge",
+                              "height": 24,
+                              "fill": "#3f3f46",
+                              "cornerRadius": 12,
+                              "padding": [
+                                0,
+                                10
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "kgFRw",
+                                  "name": "card1BadgeText",
+                                  "fill": "#eff6ff",
+                                  "content": "Pending",
+                                  "fontFamily": "IBM Plex Mono",
+                                  "fontSize": 11,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "5IoFT",
+                          "name": "Card Body",
+                          "width": "fill_container",
+                          "height": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "padding": [
+                            0,
+                            20
+                          ],
+                          "justifyContent": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "RFQJu",
+                              "name": "card1ProgLabel",
+                              "fill": "#8ea2bd",
+                              "content": "0% complete (0/6 tasks)",
+                              "fontFamily": "IBM Plex Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "0tNTM",
+                              "name": "Progress Track",
+                              "width": "fill_container",
+                              "height": 6,
+                              "fill": "#22324a",
+                              "cornerRadius": 3,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "iXboV",
+                                  "name": "Progress Fill",
+                                  "width": 0,
+                                  "height": 6,
+                                  "fill": "#3f3f46",
+                                  "cornerRadius": 3
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Rh7up",
+                          "name": "Card Footer",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "top": 1
+                            },
+                            "fill": "#22324a"
+                          },
+                          "padding": [
+                            12,
+                            20
+                          ],
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "Itzng",
+                              "name": "card1FooterLeft",
+                              "layout": "vertical",
+                              "gap": 2,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "YYIiR",
+                                  "name": "card1Running",
+                                  "fill": "#71717a",
+                                  "content": "Not started",
+                                  "fontFamily": "IBM Plex Sans",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "JczNH",
+                                  "name": "card1Last",
+                                  "fill": "#71717a",
+                                  "content": "Waiting",
+                                  "fontFamily": "IBM Plex Mono",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "v0UCF",
+                              "name": "card1Open",
+                              "height": 28,
+                              "fill": "#2563eb",
+                              "cornerRadius": 6,
+                              "gap": 4,
+                              "padding": [
+                                0,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "YsPtz",
+                                  "name": "card1OpenText",
+                                  "fill": "#ffffff",
+                                  "content": "Open",
+                                  "fontFamily": "IBM Plex Sans",
+                                  "fontSize": 12,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "icon_font",
+                                  "id": "jXawH",
+                                  "name": "card1OpenArrow",
+                                  "width": 14,
+                                  "height": 14,
+                                  "iconFontName": "arrow-right",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#ffffff"
+                                }
+                              ]
                             }
                           ]
                         }
@@ -2902,7 +3005,8 @@
                   "fill": "#8ea2bd",
                   "content": "8/12 tasks completed · Last activity: 2 min ago",
                   "fontFamily": "IBM Plex Mono",
-                  "fontSize": 13
+                  "fontSize": 13,
+                  "fontWeight": "normal"
                 }
               ]
             },
@@ -3151,7 +3255,8 @@
                           "fill": "#71717a",
                           "content": "code-01",
                           "fontFamily": "IBM Plex Mono",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -3162,7 +3267,8 @@
                       "fill": "#71717a",
                       "content": "3m 42s",
                       "fontFamily": "IBM Plex Mono",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -3293,7 +3399,8 @@
                           "fill": "#71717a",
                           "content": "code-02",
                           "fontFamily": "IBM Plex Mono",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -3304,7 +3411,8 @@
                       "fill": "#71717a",
                       "content": "5m 18s",
                       "fontFamily": "IBM Plex Mono",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -3435,7 +3543,8 @@
                           "fill": "#71717a",
                           "content": "code-01",
                           "fontFamily": "IBM Plex Mono",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -3446,7 +3555,8 @@
                       "fill": "#71717a",
                       "content": "4m 07s",
                       "fontFamily": "IBM Plex Mono",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -3834,7 +3944,8 @@
                           "fill": "#71717a",
                           "content": "code-03",
                           "fontFamily": "IBM Plex Mono",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -3845,7 +3956,8 @@
                       "fill": "#71717a",
                       "content": "1m 22s",
                       "fontFamily": "IBM Plex Mono",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -3977,7 +4089,8 @@
                           "fill": "#71717a",
                           "content": "—",
                           "fontFamily": "IBM Plex Mono",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -3988,7 +4101,8 @@
                       "fill": "#71717a",
                       "content": "—",
                       "fontFamily": "IBM Plex Mono",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -4120,7 +4234,8 @@
                           "fill": "#71717a",
                           "content": "—",
                           "fontFamily": "IBM Plex Mono",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -4131,7 +4246,8 @@
                       "fill": "#71717a",
                       "content": "—",
                       "fontFamily": "IBM Plex Mono",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
