@@ -2,46 +2,26 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import { Check, Bot } from "lucide-react";
-import { getEpic, getStory, getTasks } from "@/lib/mock-data";
-import type { TaskStatus } from "@/lib/types";
+import { getEpic, getStoryDetail, getTasks } from "@/lib/mock-data";
+import type { ApprovalStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { TasksTab } from "./_components/tasks-tab";
+import { RequirementsTab } from "./_components/requirements-tab";
+import { DesignTab } from "./_components/design-tab";
+import { QATab } from "./_components/qa-tab";
 
-const tabs = ["Tasks", "Design", "Requirements", "QA"] as const;
+const tabs = ["Tasks", "Requirements", "Design", "QA"] as const;
 type Tab = (typeof tabs)[number];
 
-const taskStatusConfig: Record<
-  TaskStatus,
-  { label: string; bg: string; text: string; checkBg: string; checkIcon: string }
+const approvalConfig: Record<
+  ApprovalStatus,
+  { label: string; bg: string; text: string }
 > = {
-  completed: {
-    label: "completed",
-    bg: "bg-green-700",
-    text: "text-green-50",
-    checkBg: "bg-green-500",
-    checkIcon: "text-white",
-  },
-  in_progress: {
-    label: "in_progress",
-    bg: "bg-blue-700",
-    text: "text-blue-50",
-    checkBg: "bg-blue-700",
-    checkIcon: "text-blue-400",
-  },
-  pending: {
-    label: "pending",
-    bg: "bg-zinc-700",
-    text: "text-zinc-100",
-    checkBg: "bg-zinc-700",
-    checkIcon: "text-transparent",
-  },
-  failed: {
-    label: "failed",
-    bg: "bg-red-700",
-    text: "text-red-50",
-    checkBg: "bg-red-700",
-    checkIcon: "text-white",
-  },
+  none: { label: "No Review", bg: "bg-zinc-700", text: "text-zinc-100" },
+  pending: { label: "Pending Approval", bg: "bg-amber-800", text: "text-amber-50" },
+  approved: { label: "Approved", bg: "bg-green-700", text: "text-green-50" },
+  rejected: { label: "Rejected", bg: "bg-red-700", text: "text-red-50" },
+  needs_revision: { label: "Needs Revision", bg: "bg-amber-800", text: "text-amber-50" },
 };
 
 export default function StoryDetailPage({
@@ -54,7 +34,7 @@ export default function StoryDetailPage({
   const sId = Number(storyId);
 
   const epic = getEpic();
-  const story = getStory(sId);
+  const story = getStoryDetail(sId);
   const tasks = getTasks(sId);
 
   const [activeTab, setActiveTab] = useState<Tab>("Tasks");
@@ -67,26 +47,7 @@ export default function StoryDetailPage({
     );
   }
 
-  const statusBg =
-    story.status === "in_progress"
-      ? "bg-blue-700"
-      : story.status === "completed"
-        ? "bg-green-700"
-        : "bg-zinc-700";
-  const statusDot =
-    story.status === "in_progress"
-      ? "bg-blue-400"
-      : story.status === "completed"
-        ? "bg-green-400"
-        : "bg-zinc-400";
-  const statusLabel =
-    story.status === "in_progress"
-      ? "In Progress"
-      : story.status === "completed"
-        ? "Completed"
-        : story.status === "failed"
-          ? "Failed"
-          : "Pending";
+  const approval = approvalConfig[story.approval_status];
 
   return (
     <div className="flex h-full flex-col gap-6 p-8">
@@ -116,17 +77,18 @@ export default function StoryDetailPage({
             {story.name}
           </h1>
           <span
-            className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 ${statusBg}`}
+            className={cn(
+              "inline-flex items-center rounded-xl px-2.5 py-1 text-[11px] font-medium font-[family-name:var(--font-mono)]",
+              approval.bg,
+              approval.text
+            )}
           >
-            <span className={`h-2 w-2 rounded-full ${statusDot}`} />
-            <span className="text-[11px] font-medium text-blue-50 font-[family-name:var(--font-mono)]">
-              {statusLabel}
-            </span>
+            {approval.label}
           </span>
         </div>
         <span className="text-[13px] text-[#8ea2bd] font-[family-name:var(--font-mono)]">
-          {story.completed_task_count}/{story.task_count} tasks &middot; Last
-          run: {story.last_activity}
+          {story.completed_task_count}/{story.task_count} tasks completed
+          &middot; Last activity: {story.last_activity}
         </span>
       </div>
 
@@ -149,66 +111,10 @@ export default function StoryDetailPage({
       </div>
 
       {/* Tab Content */}
-      {activeTab === "Tasks" && (
-        <div className="flex flex-col gap-0.5">
-          {tasks.map((task) => {
-            const config = taskStatusConfig[task.status];
-            return (
-              <div
-                key={task.id}
-                className="flex items-center gap-3 rounded-lg bg-[#0f172a] px-4 py-3"
-              >
-                {/* Checkbox */}
-                <div
-                  className={cn(
-                    "flex h-5 w-5 shrink-0 items-center justify-center rounded",
-                    config.checkBg
-                  )}
-                >
-                  <Check
-                    className={cn("h-3.5 w-3.5", config.checkIcon)}
-                  />
-                </div>
-
-                {/* Task Name */}
-                <span className="flex-1 truncate text-sm text-[#f5f9ff] font-[family-name:var(--font-sans)]">
-                  {task.name}
-                </span>
-
-                {/* Status Badge */}
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium font-[family-name:var(--font-mono)]",
-                    config.bg,
-                    config.text
-                  )}
-                >
-                  {config.label}
-                </span>
-
-                {/* Agent */}
-                <div className="flex items-center gap-1">
-                  <Bot className="h-3.5 w-3.5 text-[#8ea2bd]" />
-                  <span className="text-xs text-zinc-500 font-[family-name:var(--font-mono)]">
-                    {task.agent ?? "\u2014"}
-                  </span>
-                </div>
-
-                {/* Duration */}
-                <span className="w-16 text-right text-xs text-zinc-500 font-[family-name:var(--font-mono)]">
-                  {task.duration ?? "\u2014"}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {activeTab !== "Tasks" && (
-        <div className="flex flex-1 items-center justify-center text-sm text-zinc-600 font-[family-name:var(--font-sans)]">
-          {activeTab} content coming soon
-        </div>
-      )}
+      {activeTab === "Tasks" && <TasksTab tasks={tasks} />}
+      {activeTab === "Requirements" && <RequirementsTab storyId={sId} />}
+      {activeTab === "Design" && <DesignTab storyId={sId} epicId={epicId} />}
+      {activeTab === "QA" && <QATab storyId={sId} />}
     </div>
   );
 }

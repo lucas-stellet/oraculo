@@ -2,6 +2,7 @@
 
 import { use } from "react";
 import { Sidebar } from "@/components/sidebar";
+import { SidebarProvider } from "@/lib/sidebar-context";
 import { getEpic, getStories, getPendingApprovals } from "@/lib/mock-data";
 
 export default function EpicLayout({
@@ -18,14 +19,16 @@ export default function EpicLayout({
   const pendingApprovals = getPendingApprovals(epicId);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#020617]">
-      <Sidebar
-        epicId={epicId}
-        epicName={epic.name}
-        stories={stories.map((s) => ({ id: s.id, name: s.name, status: s.status }))}
-        pendingApprovalCount={pendingApprovals.length}
-      />
-      <div className="flex-1 overflow-y-auto">{children}</div>
-    </div>
+    <SidebarProvider>
+      <div className="flex h-screen overflow-hidden bg-[#020617]">
+        <Sidebar
+          epicId={epicId}
+          epicName={epic.name}
+          stories={stories.map((s) => ({ id: s.id, name: s.name, status: s.status }))}
+          pendingApprovalCount={pendingApprovals.length}
+        />
+        <div className="flex-1 overflow-y-auto">{children}</div>
+      </div>
+    </SidebarProvider>
   );
 }

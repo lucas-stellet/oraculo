@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -13,6 +12,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "@/lib/sidebar-context";
 
 interface SidebarProps {
   epicId: number;
@@ -40,7 +40,7 @@ export function Sidebar({
   stories,
   pendingApprovalCount,
 }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, setCollapsed } = useSidebar();
   const pathname = usePathname();
 
   const homeHref = `/epics/${epicId}`;

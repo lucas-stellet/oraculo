@@ -43,9 +43,49 @@ export interface StoryTask {
   id: number;
   story_id: number;
   name: string;
+  description: string;
   status: TaskStatus;
   agent: string | null;
   duration: string | null;
+  depends_on: number[];
+  result: TaskResult | null;
+}
+
+export interface TaskResult {
+  summary: string;
+  files_modified: string[];
+  skills_used: string[];
+  failure_reason: string | null;
+}
+
+export interface StoryDetail extends Story {
+  approval_status: ApprovalStatus;
+}
+
+export interface StoryVersion {
+  id: number;
+  story_id: number;
+  version: number;
+  type: "requirements" | "design";
+  created_at: string;
+  approval_status: ApprovalStatus;
+  content: string;
+}
+
+export interface Review {
+  id: number;
+  version_id: number;
+  verdict: "approved" | "rejected";
+  comment: string;
+  created_at: string;
+}
+
+export interface Validation {
+  id: number;
+  story_id: number;
+  verdict: "approved" | "rejected";
+  findings: string;
+  created_at: string;
 }
 
 export type ApprovalType = "epic-version" | "story-version" | "qa-escalation" | "design" | "execution-plan";
@@ -59,4 +99,13 @@ export interface Approval {
   description: string;
   status: "pending" | "approved" | "rejected";
   requested_at: string;
+  content: string;
+  previous_content: string;
+}
+
+export interface InlineComment {
+  id: number;
+  selected_text: string;
+  comment: string;
+  created_at: string;
 }

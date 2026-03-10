@@ -183,10 +183,13 @@ export default function ApprovalsPage({
                     <span className="text-[12px] text-[#71717a] font-[family-name:var(--font-mono)]">
                       Requested {approval.requested_at}
                     </span>
-                    <button className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#2563eb] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-blue-500 font-[family-name:var(--font-sans)]">
+                    <Link
+                      href={`/epics/${epicId}/approvals/${approval.id}/review`}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#2563eb] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-blue-500 font-[family-name:var(--font-sans)]"
+                    >
                       Review
                       <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
+                    </Link>
                   </div>
                 </div>
               );
