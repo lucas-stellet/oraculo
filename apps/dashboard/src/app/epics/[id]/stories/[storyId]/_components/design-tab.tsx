@@ -86,7 +86,7 @@ export function DesignTab({ epicName }: { epicName: string }) {
             Awaiting design approval
           </span>
           <Link
-            href={`/epics/${epicName}/approvals`}
+            href={`/epics/${epicName}/approvals/${current.id}/review`}
             className="text-sm font-medium text-amber-400 hover:text-amber-300 font-[family-name:var(--font-sans)]"
           >
             Go to Approvals &rarr;
