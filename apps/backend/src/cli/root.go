@@ -23,6 +23,8 @@ func NewRoot(version string) *cobra.Command {
 	root.AddCommand(
 		newVersionCmd(version),
 		newStartCmd(),
+		newRestartCmd(),
+		newKillCmd(),
 		newLogsCmd(),
 		newInstallCmd(),
 		newUninstallCmd(),
