@@ -3,9 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -88,17 +90,13 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 		mux.HandleFunc("GET /logs", logs.ServeSSE)
 	}
 
-	// Static files for dashboard (embedded)
+	// Static files for dashboard (embedded) with SPA fallback
 	if staticPath != "" {
 		slog.Info("server.static.enabled", "path", staticPath)
 	} else {
 		slog.Info("server.static.embedded")
 	}
-	// Use embedded assets if available, fallback to filesystem
-	fs := http.FileServer(http.FS(DashboardAssets))
-	mux.Handle("GET /", fs)
-	mux.Handle("GET /_next/", fs)
-	mux.Handle("GET /_next/*", fs)
+	mux.Handle("GET /", newSPAHandler(DashboardAssets))
 
 	return &Server{mux: mux, database: database, lastActivity: time.Now(), staticPath: staticPath}
 }
@@ -173,4 +171,79 @@ func (s *Server) ListenAndServe(ctx context.Context, port int, idleTimeout time.
 
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]string{"status": "ok"})
+}
+
+// newSPAHandler returns a handler that serves static files from assets,
+// falling back to the best-matching HTML shell for unknown routes.
+// Dynamic routes are matched to their placeholder HTML so Next.js
+// hydrates with the correct component tree.
+// For RSC payload requests (?_rsc=...), the corresponding .txt file is served.
+func newSPAHandler(assets fs.FS) http.Handler {
+	fileServer := http.FileServer(http.FS(assets))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Strip leading slash to get the filesystem path
+		fsPath := r.URL.Path
+		if len(fsPath) > 0 && fsPath[0] == '/' {
+			fsPath = fsPath[1:]
+		}
+		if fsPath == "" {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+		// Check if the file exists in the embedded FS
+		info, err := fs.Stat(assets, fsPath)
+		if err == nil && !info.IsDir() {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+		// Unknown path: resolve to the best shell for this route.
+		// RSC fetches (Next.js client navigation) need the .txt payload;
+		// regular browser navigations need the .html shell.
+		isRSC := r.URL.Query().Get("_rsc") != ""
+		shell := spaShell(r.URL.Path, isRSC)
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = shell
+		fileServer.ServeHTTP(w, r2)
+	})
+}
+
+// spaShell maps a URL path to the most appropriate pre-rendered shell file.
+// Dynamic segments are mapped to placeholder paths generated during the build.
+// When isRSC is true, returns the .txt RSC payload; otherwise returns the .html shell.
+func spaShell(urlPath string, isRSC bool) string {
+	ext := ".html"
+	if isRSC {
+		ext = ".txt"
+	}
+	segs := splitPath(urlPath)
+	n := len(segs)
+
+	// /epics/{id}/approvals/{approvalId}/review
+	if n >= 5 && segs[0] == "epics" && segs[2] == "approvals" && segs[4] == "review" {
+		return "/epics/__placeholder__/approvals/__placeholder__/review" + ext
+	}
+	// /epics/{id}/approvals
+	if n >= 3 && segs[0] == "epics" && segs[2] == "approvals" {
+		return "/epics/__placeholder__/approvals" + ext
+	}
+	// /epics/{id}/stories/{storyId}
+	if n >= 4 && segs[0] == "epics" && segs[2] == "stories" {
+		return "/epics/__placeholder__/stories/__placeholder__" + ext
+	}
+	// /epics/{id} and any sub-paths not matched above
+	if n >= 2 && segs[0] == "epics" {
+		return "/epics/__placeholder__" + ext
+	}
+	return "/"
+}
+
+// splitPath splits a URL path into non-empty segments.
+func splitPath(p string) []string {
+	var segs []string
+	for _, s := range strings.Split(strings.Trim(p, "/"), "/") {
+		if s != "" {
+			segs = append(segs, s)
+		}
+	}
+	return segs
 }

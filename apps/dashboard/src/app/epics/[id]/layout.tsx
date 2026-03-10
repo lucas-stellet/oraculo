@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarProvider } from "@/lib/sidebar-context";
 import { api } from "@/lib/api";
@@ -9,12 +10,11 @@ import type { Story } from "@/lib/types";
 
 export default function EpicLayout({
   children,
-  params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ id: string }>;
 }) {
-  const { id: epicName } = use(params);
+  const pathname = usePathname();
+  const epicName = pathname.split("/").filter(Boolean)[1];
   const [stories, setStories] = useState<Story[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
 

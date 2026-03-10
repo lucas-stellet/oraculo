@@ -5,7 +5,7 @@ VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 DASHBOARD_DIR := ./apps/dashboard
 
-.PHONY: build install test vet clean web-dev
+.PHONY: build rebuild install test vet clean web-dev
 
 build:
 	@# Build dashboard if not already built
@@ -15,6 +15,14 @@ build:
 	@# Copy static files to embedded directory
 	@mkdir -p apps/backend/src/server/dashboard_assets
 	@cp -r $(DASHBOARD_DIR)/out/* apps/backend/src/server/dashboard_assets/
+	go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(BUILD)
+
+rebuild:
+	@# Force full rebuild: dashboard + Go binary
+	rm -rf $(DASHBOARD_DIR)/out apps/backend/src/server/dashboard_assets
+	cd $(DASHBOARD_DIR) && bun run build
+	mkdir -p apps/backend/src/server/dashboard_assets
+	cp -r $(DASHBOARD_DIR)/out/* apps/backend/src/server/dashboard_assets/
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(BUILD)
 
 install: build

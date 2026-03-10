@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { EpicCard } from "@/components/epic-card";
 import { CreateEpicDialog } from "@/components/create-epic-dialog";
 import type { EpicSummary } from "@/lib/types";
 
 export default function LandingPage() {
+  const router = useRouter();
   const [epics, setEpics] = useState<EpicSummary[]>([]);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function LandingPage() {
   }
 
   function handleOpen(epic: EpicSummary) {
-    window.location.href = `/epics/${encodeURIComponent(epic.name)}`;
+    router.push(`/epics/${encodeURIComponent(epic.name)}`);
   }
 
   return (
