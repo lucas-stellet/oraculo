@@ -1,20 +1,19 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Compass,
-  ClipboardCheck,
   AlertTriangle,
-  FileText,
   ClipboardList,
   CheckCircle2,
   XCircle,
   ArrowRight,
   ShieldAlert,
 } from "lucide-react";
-import { getEpic, getPendingApprovals, getResolvedApprovals } from "@/lib/mock-data";
-import type { ApprovalType } from "@/lib/types";
+import { api } from "@/lib/api";
+import { approvalDisplayTitle } from "@/lib/utils";
+import type { Approval, ApprovalType } from "@/lib/types";
 
 const typeConfig: Record<
   ApprovalType,
@@ -37,15 +36,6 @@ const typeConfig: Record<
     resolvedBadgeBg: "#2e1065",
     resolvedBadgeText: "#c4b5fd",
   },
-  "story-version": {
-    label: "Story Definition",
-    icon: ClipboardCheck,
-    iconColor: "#22d3ee",
-    badgeBg: "#0891b2",
-    badgeText: "#ecfeff",
-    resolvedBadgeBg: "#164e63",
-    resolvedBadgeText: "#67e8f9",
-  },
   "qa-escalation": {
     label: "QA Escalation",
     icon: AlertTriangle,
@@ -54,15 +44,6 @@ const typeConfig: Record<
     badgeText: "#fef2f2",
     resolvedBadgeBg: "#450a0a",
     resolvedBadgeText: "#fca5a5",
-  },
-  "epic-version": {
-    label: "Epic Requirements",
-    icon: FileText,
-    iconColor: "#60a5fa",
-    badgeBg: "#1d4ed8",
-    badgeText: "#eff6ff",
-    resolvedBadgeBg: "#1e3a5f",
-    resolvedBadgeText: "#93c5fd",
   },
   "execution-plan": {
     label: "Execution Plan",
@@ -80,19 +61,26 @@ export default function ApprovalsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
-  const epicId = Number(id);
+  const { id: epicName } = use(params);
+  const [pending, setPending] = useState<Approval[]>([]);
+  const [resolved, setResolved] = useState<Approval[]>([]);
 
-  const epic = getEpic();
-  const pending = getPendingApprovals(epicId);
-  const resolved = getResolvedApprovals(epicId);
+  useEffect(() => {
+    api.listApprovals().then((all) => {
+      setPending(all.filter((a) => a.status === "pending"));
+      setResolved(all.filter((a) => a.status !== "pending"));
+    }).catch(() => {
+      setPending([]);
+      setResolved([]);
+    });
+  }, []);
 
   return (
     <div className="flex h-full flex-col gap-6 p-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm font-[family-name:var(--font-sans)]">
         <Link
-          href={`/epics/${epicId}`}
+          href={`/epics/${epicName}`}
           className="text-[#8ea2bd] transition-colors hover:text-white"
         >
           Home
@@ -110,7 +98,7 @@ export default function ApprovalsPage({
             APPROVALS
           </p>
           <h1 className="text-[32px] font-bold tracking-tight text-[#f5f9ff] font-[family-name:var(--font-display)]">
-            {epic.name}
+            {epicName}
           </h1>
         </div>
         <div className="flex items-center gap-3">
@@ -144,7 +132,7 @@ export default function ApprovalsPage({
             {pending.map((approval) => {
               const config = typeConfig[approval.type];
               const TypeIcon = config.icon;
-              const displayName = approval.story_name ?? epic.name;
+              const displayName = approvalDisplayTitle(approval.type);
 
               return (
                 <div
@@ -174,17 +162,25 @@ export default function ApprovalsPage({
                   </div>
 
                   {/* Body */}
-                  <p className="text-sm text-[#8ea2bd] font-[family-name:var(--font-sans)]">
-                    {approval.description}
-                  </p>
+                  {approval.content && (
+                    <p className="text-sm text-[#8ea2bd] font-[family-name:var(--font-sans)] line-clamp-2">
+                      {approval.content.slice(0, 200)}
+                    </p>
+                  )}
 
                   {/* Footer */}
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] text-[#71717a] font-[family-name:var(--font-mono)]">
-                      Requested {approval.requested_at}
+                      Requested{" "}
+                      {new Date(approval.requested_at).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </span>
                     <Link
-                      href={`/epics/${epicId}/approvals/${approval.id}/review`}
+                      href={`/epics/${epicName}/approvals/${approval.id}/review`}
                       className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#2563eb] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-blue-500 font-[family-name:var(--font-sans)]"
                     >
                       Review
@@ -208,7 +204,7 @@ export default function ApprovalsPage({
             {resolved.map((approval) => {
               const config = typeConfig[approval.type];
               const isApproved = approval.status === "approved";
-              const displayName = approval.story_name ?? epic.name;
+              const displayName = approvalDisplayTitle(approval.type);
 
               return (
                 <div
@@ -248,7 +244,12 @@ export default function ApprovalsPage({
 
                   {/* Timestamp */}
                   <span className="text-[12px] text-[#71717a] font-[family-name:var(--font-mono)]">
-                    {approval.requested_at}
+                    {new Date(approval.requested_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 </div>
               );

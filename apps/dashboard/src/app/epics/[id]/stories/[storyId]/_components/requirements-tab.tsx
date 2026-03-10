@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { FileText, ChevronDown, ChevronRight } from "lucide-react";
-import { getStoryVersions, getReviewsForVersion } from "@/lib/mock-data";
 import type { StoryVersion, Review, ApprovalStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +12,13 @@ const approvalBadge: Record<ApprovalStatus, { label: string; bg: string; text: s
   rejected: { label: "Rejected", bg: "bg-red-700", text: "text-red-50" },
   needs_revision: { label: "Needs Revision", bg: "bg-amber-800", text: "text-amber-50" },
 };
+
+function deriveVersionApprovalStatus(versionId: number, reviews: Review[]): ApprovalStatus {
+  const versionReviews = reviews.filter((r) => r.version_id === versionId);
+  if (versionReviews.length === 0) return "none";
+  const latest = versionReviews[versionReviews.length - 1];
+  return latest.verdict === "approved" ? "approved" : "rejected";
+}
 
 function MarkdownPanel({ content }: { content: string }) {
   const sections = content.split(/^## /m).filter(Boolean);
@@ -71,11 +77,18 @@ function ReviewCard({ review }: { review: Review }) {
   );
 }
 
-export function RequirementsTab({ storyId }: { storyId: number }) {
-  const versions = getStoryVersions(storyId, "requirements");
+interface RequirementsTabProps {
+  versions: StoryVersion[];
+  reviews: Review[];
+}
+
+export function RequirementsTab({ versions, reviews }: RequirementsTabProps) {
   const [showHistory, setShowHistory] = useState(false);
 
-  if (versions.length === 0) {
+  // Sort versions by number descending (latest first)
+  const sorted = [...versions].sort((a, b) => b.number - a.number);
+
+  if (sorted.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-zinc-600 font-[family-name:var(--font-sans)]">
         No requirements versions yet
@@ -83,9 +96,9 @@ export function RequirementsTab({ storyId }: { storyId: number }) {
     );
   }
 
-  const current = versions[0];
-  const badge = approvalBadge[current.approval_status];
-  const reviews = versions.flatMap((v) => getReviewsForVersion(v.id));
+  const current = sorted[0];
+  const currentStatus = deriveVersionApprovalStatus(current.id, reviews);
+  const badge = approvalBadge[currentStatus];
 
   return (
     <div className="flex flex-col gap-6">
@@ -94,7 +107,7 @@ export function RequirementsTab({ storyId }: { storyId: number }) {
         <div className="flex items-center gap-3">
           <FileText className="h-4 w-4 text-[#8ea2bd]" />
           <span className="text-sm text-[#f5f9ff] font-[family-name:var(--font-sans)]">
-            Version {current.version}
+            Version {current.number}
           </span>
           <span className="text-xs text-[#525e6e] font-[family-name:var(--font-mono)]">
             Created{" "}
@@ -114,7 +127,7 @@ export function RequirementsTab({ storyId }: { storyId: number }) {
             {badge.label}
           </span>
         </div>
-        {versions.length > 1 && (
+        {sorted.length > 1 && (
           <button
             onClick={() => setShowHistory(!showHistory)}
             className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 font-[family-name:var(--font-sans)]"
@@ -127,7 +140,7 @@ export function RequirementsTab({ storyId }: { storyId: number }) {
             ) : (
               <>
                 <ChevronRight className="h-3 w-3" />
-                View previous versions ({versions.length - 1})
+                View previous versions ({sorted.length - 1})
               </>
             )}
           </button>
@@ -138,13 +151,14 @@ export function RequirementsTab({ storyId }: { storyId: number }) {
       <MarkdownPanel content={current.content} />
 
       {/* Previous versions */}
-      {showHistory && versions.slice(1).map((v) => {
-        const vBadge = approvalBadge[v.approval_status];
+      {showHistory && sorted.slice(1).map((v) => {
+        const vStatus = deriveVersionApprovalStatus(v.id, reviews);
+        const vBadge = approvalBadge[vStatus];
         return (
           <div key={v.id} className="opacity-60">
             <div className="flex items-center gap-3 mb-3">
               <span className="text-sm text-[#8ea2bd] font-[family-name:var(--font-sans)]">
-                Version {v.version}
+                Version {v.number}
               </span>
               <span className="text-xs text-[#525e6e] font-[family-name:var(--font-mono)]">
                 {new Date(v.created_at).toLocaleDateString("en-US", {

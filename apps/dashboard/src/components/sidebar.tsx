@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "@/lib/sidebar-context";
 
 interface SidebarProps {
-  epicId: number;
+  epicId: string;
   epicName: string;
   stories: { id: number; name: string; status: string }[];
   pendingApprovalCount: number;
@@ -172,8 +172,8 @@ export function Sidebar({
                     Stories
                   </div>
                   {stories.map((story) => {
-                    const storyHref = `/epics/${epicId}/stories/${story.id}`;
-                    const isActive = pathname.includes(`/stories/${story.id}`);
+                    const storyHref = `/epics/${epicId}/stories/${encodeURIComponent(story.name)}`;
+                    const isActive = pathname.includes(`/stories/${encodeURIComponent(story.name)}`);
                     return (
                       <Link
                         key={story.id}
@@ -204,8 +204,8 @@ export function Sidebar({
           ) : (
             <div className="space-y-0.5">
               {stories.map((story) => {
-                const storyHref = `/epics/${epicId}/stories/${story.id}`;
-                const isActive = pathname.includes(`/stories/${story.id}`);
+                const storyHref = `/epics/${epicId}/stories/${encodeURIComponent(story.name)}`;
+                const isActive = pathname.includes(`/stories/${encodeURIComponent(story.name)}`);
 
                 return (
                   <Link

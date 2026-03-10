@@ -1,19 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, FileText, ChevronDown, ChevronRight } from "lucide-react";
-import { getStoryVersions, getReviewsForVersion } from "@/lib/mock-data";
-import type { ApprovalStatus } from "@/lib/types";
+import { AlertTriangle, FileText } from "lucide-react";
+import { api } from "@/lib/api";
+import { approvalDisplayTitle } from "@/lib/utils";
+import type { Approval } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const approvalBadge: Record<ApprovalStatus, { label: string; bg: string; text: string }> = {
-  none: { label: "No Review", bg: "bg-zinc-700", text: "text-zinc-100" },
-  pending: { label: "Pending", bg: "bg-amber-800", text: "text-amber-50" },
-  approved: { label: "Approved", bg: "bg-green-700", text: "text-green-50" },
-  rejected: { label: "Rejected", bg: "bg-red-700", text: "text-red-50" },
-  needs_revision: { label: "Needs Revision", bg: "bg-amber-800", text: "text-amber-50" },
-};
 
 function MarkdownPanel({ content }: { content: string }) {
   const sections = content.split(/^## /m).filter(Boolean);
@@ -40,11 +33,29 @@ function MarkdownPanel({ content }: { content: string }) {
   );
 }
 
-export function DesignTab({ storyId, epicId }: { storyId: number; epicId: number }) {
-  const versions = getStoryVersions(storyId, "design");
-  const [showHistory, setShowHistory] = useState(false);
+export function DesignTab({ epicName }: { epicName: string }) {
+  const [approvals, setApprovals] = useState<Approval[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (versions.length === 0) {
+  useEffect(() => {
+    api.listApprovals()
+      .then((all) => {
+        const designApprovals = all.filter((a) => a.type === "design");
+        setApprovals(designApprovals);
+      })
+      .catch(() => setApprovals([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center text-sm text-zinc-600 font-[family-name:var(--font-sans)]">
+        Loading...
+      </div>
+    );
+  }
+
+  if (approvals.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-zinc-600 font-[family-name:var(--font-sans)]">
         No design versions yet
@@ -52,9 +63,18 @@ export function DesignTab({ storyId, epicId }: { storyId: number; epicId: number
     );
   }
 
-  const current = versions[0];
-  const badge = approvalBadge[current.approval_status];
-  const hasPendingApproval = current.approval_status === "pending";
+  const current = approvals[0];
+  const hasPendingApproval = current.status === "pending";
+
+  const statusBadge = {
+    pending: { label: "Pending", bg: "bg-amber-800", text: "text-amber-50" },
+    approved: { label: "Approved", bg: "bg-green-700", text: "text-green-50" },
+    rejected: { label: "Rejected", bg: "bg-red-700", text: "text-red-50" },
+    none: { label: "No Review", bg: "bg-zinc-700", text: "text-zinc-100" },
+    needs_revision: { label: "Needs Revision", bg: "bg-amber-800", text: "text-amber-50" },
+  } as const;
+
+  const badge = statusBadge[current.status];
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,7 +86,7 @@ export function DesignTab({ storyId, epicId }: { storyId: number; epicId: number
             Awaiting design approval
           </span>
           <Link
-            href={`/epics/${epicId}/approvals`}
+            href={`/epics/${epicName}/approvals`}
             className="text-sm font-medium text-amber-400 hover:text-amber-300 font-[family-name:var(--font-sans)]"
           >
             Go to Approvals &rarr;
@@ -75,83 +95,32 @@ export function DesignTab({ storyId, epicId }: { storyId: number; epicId: number
       )}
 
       {/* Version indicator */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <FileText className="h-4 w-4 text-[#8ea2bd]" />
-          <span className="text-sm text-[#f5f9ff] font-[family-name:var(--font-sans)]">
-            Version {current.version}
-          </span>
-          <span className="text-xs text-[#525e6e] font-[family-name:var(--font-mono)]">
-            Created{" "}
-            {new Date(current.created_at).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </span>
-          <span
-            className={cn(
-              "inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium font-[family-name:var(--font-mono)]",
-              badge.bg,
-              badge.text
-            )}
-          >
-            {badge.label}
-          </span>
-        </div>
-        {versions.length > 1 && (
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 font-[family-name:var(--font-sans)]"
-          >
-            {showHistory ? (
-              <>
-                <ChevronDown className="h-3 w-3" />
-                Hide previous versions
-              </>
-            ) : (
-              <>
-                <ChevronRight className="h-3 w-3" />
-                View previous versions ({versions.length - 1})
-              </>
-            )}
-          </button>
-        )}
+      <div className="flex items-center gap-3">
+        <FileText className="h-4 w-4 text-[#8ea2bd]" />
+        <span className="text-sm text-[#f5f9ff] font-[family-name:var(--font-sans)]">
+          {approvalDisplayTitle(current.type)}
+        </span>
+        <span className="text-xs text-[#525e6e] font-[family-name:var(--font-mono)]">
+          Requested{" "}
+          {new Date(current.requested_at).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </span>
+        <span
+          className={cn(
+            "inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium font-[family-name:var(--font-mono)]",
+            badge.bg,
+            badge.text
+          )}
+        >
+          {badge.label}
+        </span>
       </div>
 
-      {/* Current version content */}
-      <MarkdownPanel content={current.content} />
-
-      {/* Previous versions */}
-      {showHistory && versions.slice(1).map((v) => {
-        const vBadge = approvalBadge[v.approval_status];
-        return (
-          <div key={v.id} className="opacity-60">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-sm text-[#8ea2bd] font-[family-name:var(--font-sans)]">
-                Version {v.version}
-              </span>
-              <span className="text-xs text-[#525e6e] font-[family-name:var(--font-mono)]">
-                {new Date(v.created_at).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </span>
-              <span
-                className={cn(
-                  "inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium font-[family-name:var(--font-mono)]",
-                  vBadge.bg,
-                  vBadge.text
-                )}
-              >
-                {vBadge.label}
-              </span>
-            </div>
-            <MarkdownPanel content={v.content} />
-          </div>
-        );
-      })}
+      {/* Content */}
+      {current.content && <MarkdownPanel content={current.content} />}
     </div>
   );
 }

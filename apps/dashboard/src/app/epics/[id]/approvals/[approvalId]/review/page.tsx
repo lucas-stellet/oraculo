@@ -3,18 +3,16 @@
 import { use, useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, Eye, Pencil, Check, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, approvalDisplayTitle } from "@/lib/utils";
 import { useSidebar } from "@/lib/sidebar-context";
-import { getApproval } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { MarkdownToolbar } from "@/components/markdown-toolbar";
-import type { ApprovalType, InlineComment } from "@/lib/types";
+import type { Approval, ApprovalType, InlineComment } from "@/lib/types";
 
 const typeBadge: Record<ApprovalType, { label: string; bg: string; text: string }> = {
   design: { label: "Design", bg: "#7c3aed", text: "#f5f3ff" },
-  "story-version": { label: "Story Definition", bg: "#0891b2", text: "#ecfeff" },
   "qa-escalation": { label: "QA Escalation", bg: "#dc2626", text: "#fef2f2" },
-  "epic-version": { label: "Epic Requirements", bg: "#1d4ed8", text: "#eff6ff" },
   "execution-plan": { label: "Execution Plan", bg: "#059669", text: "#ecfdf5" },
 };
 
@@ -23,12 +21,14 @@ export default function ReviewPage({
 }: {
   params: Promise<{ id: string; approvalId: string }>;
 }) {
-  const { id, approvalId } = use(params);
-  const epicId = Number(id);
-  const approval = getApproval(Number(approvalId));
+  const { id: epicName, approvalId } = use(params);
 
   const { collapsed, setCollapsed } = useSidebar();
   const prevCollapsed = useRef(collapsed);
+
+  const [approval, setApproval] = useState<Approval | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     prevCollapsed.current = collapsed;
@@ -36,11 +36,25 @@ export default function ReviewPage({
     return () => setCollapsed(prevCollapsed.current);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    api.getApproval(approvalId)
+      .then(setApproval)
+      .catch(() => setApproval(null))
+      .finally(() => setLoading(false));
+  }, [approvalId]);
+
   const [mode, setMode] = useState<"preview" | "edit">("preview");
-  const editContentRef = useRef(approval?.content ?? "");
+  const editContentRef = useRef("");
   const [, forceRender] = useState(0);
   const [comments, setComments] = useState<InlineComment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Initialize editContentRef once approval loads
+  useEffect(() => {
+    if (approval) {
+      editContentRef.current = approval.content;
+    }
+  }, [approval]);
 
   const syncContent = useCallback(() => {
     if (textareaRef.current) {
@@ -70,6 +84,35 @@ export default function ReviewPage({
     []
   );
 
+  const handleVerdict = useCallback(
+    async (verdict: "approved" | "rejected") => {
+      if (!approval || submitting) return;
+      setSubmitting(true);
+      try {
+        const commentText = comments.map((c) => `[${c.selected_text}]: ${c.comment}`).join("\n") || "";
+        await api.submitVerdict(approval.id, verdict, commentText);
+        // Refetch to update UI
+        const updated = await api.getApproval(approvalId);
+        setApproval(updated);
+      } catch {
+        // Silently handle error
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [approval, approvalId, comments, submitting]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p className="text-[#8ea2bd] font-[family-name:var(--font-sans)]">
+          Loading...
+        </p>
+      </div>
+    );
+  }
+
   if (!approval) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -82,6 +125,7 @@ export default function ReviewPage({
 
   const badge = typeBadge[approval.type];
   const displayContent = editContentRef.current || approval.content;
+  const displayTitle = approvalDisplayTitle(approval.type);
 
   return (
     <div className="flex h-full flex-col">
@@ -89,7 +133,7 @@ export default function ReviewPage({
       <div className="flex shrink-0 items-center justify-between border-b border-[#22324a] bg-[#0f172a] px-6 py-3">
         <div className="flex items-center gap-4">
           <Link
-            href={`/epics/${epicId}/approvals`}
+            href={`/epics/${epicName}/approvals`}
             className="inline-flex items-center gap-1.5 text-sm text-[#8ea2bd] transition-colors hover:text-white font-[family-name:var(--font-sans)]"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -99,7 +143,7 @@ export default function ReviewPage({
           <div className="h-5 w-px bg-[#22324a]" />
 
           <h1 className="text-[15px] font-semibold text-[#f5f9ff] font-[family-name:var(--font-display)]">
-            {approval.title}
+            {displayTitle}
           </h1>
 
           <span
@@ -142,11 +186,19 @@ export default function ReviewPage({
           <div className="h-5 w-px bg-[#22324a]" />
 
           {/* Actions */}
-          <button className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#22c55e]/30 bg-[#22c55e]/10 px-3 text-xs font-semibold text-[#22c55e] transition-colors hover:bg-[#22c55e]/20 font-[family-name:var(--font-sans)]">
+          <button
+            onClick={() => handleVerdict("approved")}
+            disabled={submitting}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#22c55e]/30 bg-[#22c55e]/10 px-3 text-xs font-semibold text-[#22c55e] transition-colors hover:bg-[#22c55e]/20 disabled:opacity-50 font-[family-name:var(--font-sans)]"
+          >
             <Check className="h-3.5 w-3.5" />
             Approve
           </button>
-          <button className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-3 text-xs font-semibold text-[#ef4444] transition-colors hover:bg-[#ef4444]/20 font-[family-name:var(--font-sans)]">
+          <button
+            onClick={() => handleVerdict("rejected")}
+            disabled={submitting}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-3 text-xs font-semibold text-[#ef4444] transition-colors hover:bg-[#ef4444]/20 disabled:opacity-50 font-[family-name:var(--font-sans)]"
+          >
             <X className="h-3.5 w-3.5" />
             Reject
           </button>

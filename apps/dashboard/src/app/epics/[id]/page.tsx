@@ -1,13 +1,16 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
-import { getEpic, getStories } from "@/lib/mock-data";
-import type { StoryStatus } from "@/lib/types";
+import { ArrowRight } from "lucide-react";
+import { api } from "@/lib/api";
+import { deriveStoryStatus } from "@/lib/utils";
+import type { Story } from "@/lib/types";
+
+type DerivedStatus = "pending" | "in_progress" | "completed" | "failed";
 
 const statusConfig: Record<
-  StoryStatus,
+  DerivedStatus,
   { label: string; bg: string; text: string; dotColor: string }
 > = {
   in_progress: {
@@ -36,9 +39,23 @@ const statusConfig: Record<
   },
 };
 
+function deriveRunningLabel(status: DerivedStatus): string {
+  switch (status) {
+    case "in_progress":
+      return "Executing now";
+    case "completed":
+      return "Completed";
+    case "failed":
+      return "Failed";
+    default:
+      return "Not started";
+  }
+}
+
 const runningStatusColor: Record<string, string> = {
   "Executing now": "text-green-500",
   Completed: "text-[#8ea2bd]",
+  Failed: "text-red-500",
   "Not started": "text-zinc-500",
 };
 
@@ -47,13 +64,15 @@ export default function EpicOverviewPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
-  const epicId = Number(id);
-  const epic = getEpic();
-  const stories = getStories(epicId);
+  const { id: epicName } = use(params);
+  const [stories, setStories] = useState<Story[]>([]);
+
+  useEffect(() => {
+    api.listStories(epicName).then(setStories).catch(() => setStories([]));
+  }, [epicName]);
 
   const completedStories = stories.filter(
-    (s) => s.status === "completed"
+    (s) => deriveStoryStatus(s) === "completed"
   ).length;
 
   return (
@@ -65,7 +84,7 @@ export default function EpicOverviewPage({
             EPIC OVERVIEW
           </span>
           <h1 className="text-[32px] font-bold tracking-tight text-[#f5f9ff] font-[family-name:var(--font-display)]">
-            {epic.name}
+            {epicName}
           </h1>
         </div>
         <div className="flex items-center gap-3">
@@ -90,13 +109,23 @@ export default function EpicOverviewPage({
                   (story.completed_task_count / story.task_count) * 100
                 )
               : 0;
-          const status = statusConfig[story.status];
+          const storyStatus = deriveStoryStatus(story);
+          const config = statusConfig[storyStatus];
           const progressColor =
-            story.status === "completed"
+            storyStatus === "completed"
               ? "bg-green-500"
-              : story.status === "in_progress"
+              : storyStatus === "in_progress"
                 ? "bg-blue-600"
                 : "bg-zinc-600";
+          const runningLabel = deriveRunningLabel(storyStatus);
+          const lastActivity = story.updated_at
+            ? new Date(story.updated_at).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "—";
 
           return (
             <div
@@ -109,9 +138,9 @@ export default function EpicOverviewPage({
                   {story.name}
                 </h3>
                 <span
-                  className={`inline-flex items-center rounded-xl px-2.5 py-0.5 text-[11px] font-medium font-[family-name:var(--font-mono)] ${status.bg} ${status.text}`}
+                  className={`inline-flex items-center rounded-xl px-2.5 py-0.5 text-[11px] font-medium font-[family-name:var(--font-mono)] ${config.bg} ${config.text}`}
                 >
-                  {status.label}
+                  {config.label}
                 </span>
               </div>
 
@@ -133,16 +162,16 @@ export default function EpicOverviewPage({
               <div className="mt-auto flex items-center justify-between border-t border-[#22324a] px-5 py-3">
                 <div className="flex flex-col gap-0.5">
                   <span
-                    className={`text-xs font-medium font-[family-name:var(--font-sans)] ${runningStatusColor[story.running_status] ?? "text-zinc-500"}`}
+                    className={`text-xs font-medium font-[family-name:var(--font-sans)] ${runningStatusColor[runningLabel] ?? "text-zinc-500"}`}
                   >
-                    {story.running_status}
+                    {runningLabel}
                   </span>
                   <span className="text-[11px] text-zinc-500 font-[family-name:var(--font-mono)]">
-                    Last: {story.last_activity}
+                    Last: {lastActivity}
                   </span>
                 </div>
                 <Link
-                  href={`/epics/${epicId}/stories/${story.id}`}
+                  href={`/epics/${epicName}/stories/${encodeURIComponent(story.name)}`}
                   className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-500"
                 >
                   Open

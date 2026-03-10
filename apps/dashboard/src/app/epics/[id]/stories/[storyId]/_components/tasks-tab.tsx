@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Bot, ChevronRight, ChevronDown } from "lucide-react";
+import { Check, ChevronRight, ChevronDown } from "lucide-react";
 import type { StoryTask, TaskStatus } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, formatDuration } from "@/lib/utils";
 
 const taskStatusConfig: Record<
   TaskStatus,
@@ -48,6 +48,7 @@ export function TasksTab({ tasks }: { tasks: StoryTask[] }) {
         const config = taskStatusConfig[task.status];
         const isExpanded = expandedId === task.id;
         const hasResult = task.result !== null;
+        const duration = formatDuration(task.started_at, task.completed_at);
 
         return (
           <div key={task.id}>
@@ -90,17 +91,9 @@ export function TasksTab({ tasks }: { tasks: StoryTask[] }) {
                 {config.label}
               </span>
 
-              {/* Agent */}
-              <div className="flex shrink-0 items-center gap-1">
-                <Bot className="h-3.5 w-3.5 text-[#8ea2bd]" />
-                <span className="text-xs text-zinc-500 font-[family-name:var(--font-mono)]">
-                  {task.agent ?? "\u2014"}
-                </span>
-              </div>
-
               {/* Duration */}
               <span className="w-16 shrink-0 text-right text-xs text-zinc-500 font-[family-name:var(--font-mono)]">
-                {task.duration ?? "\u2014"}
+                {duration ?? "\u2014"}
               </span>
 
               {/* Chevron */}
@@ -123,13 +116,13 @@ export function TasksTab({ tasks }: { tasks: StoryTask[] }) {
                   {task.result.summary}
                 </p>
 
-                {task.result.failure_reason && (
+                {task.failure_reason && (
                   <div className="mb-4 rounded-lg border border-red-900/50 bg-red-950/30 p-3">
                     <p className="text-xs font-semibold uppercase tracking-wider text-red-400 font-[family-name:var(--font-mono)] mb-1">
                       Failure Reason
                     </p>
                     <p className="text-sm text-red-200 font-[family-name:var(--font-sans)]">
-                      {task.result.failure_reason}
+                      {task.failure_reason}
                     </p>
                   </div>
                 )}

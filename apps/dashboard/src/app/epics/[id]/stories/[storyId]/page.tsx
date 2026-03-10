@@ -1,9 +1,10 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { getEpic, getStoryDetail, getTasks } from "@/lib/mock-data";
-import type { ApprovalStatus } from "@/lib/types";
+import { api } from "@/lib/api";
+import { deriveStoryStatus } from "@/lib/utils";
+import type { Story, StoryTask, StoryVersion, Review, Validation, ApprovalStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { TasksTab } from "./_components/tasks-tab";
 import { RequirementsTab } from "./_components/requirements-tab";
@@ -29,15 +30,39 @@ export default function StoryDetailPage({
 }: {
   params: Promise<{ id: string; storyId: string }>;
 }) {
-  const { id, storyId } = use(params);
-  const epicId = Number(id);
-  const sId = Number(storyId);
+  const { id: epicName, storyId: storyNameEncoded } = use(params);
+  const storyName = decodeURIComponent(storyNameEncoded);
 
-  const epic = getEpic();
-  const story = getStoryDetail(sId);
-  const tasks = getTasks(sId);
-
+  const [story, setStory] = useState<Story | null>(null);
+  const [tasks, setTasks] = useState<StoryTask[]>([]);
+  const [versions, setVersions] = useState<StoryVersion[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [validations, setValidations] = useState<Validation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("Tasks");
+
+  useEffect(() => {
+    Promise.all([
+      api.listStories(epicName).then((stories) => {
+        const found = stories.find((s) => s.name === storyName);
+        setStory(found ?? null);
+      }),
+      api.listTasks(epicName, storyName).then(setTasks).catch(() => setTasks([])),
+      api.listStoryVersions(epicName, storyName).then(setVersions).catch(() => setVersions([])),
+      api.listStoryReviews(epicName, storyName).then(setReviews).catch(() => setReviews([])),
+      api.listValidations(epicName, storyName).then(setValidations).catch(() => setValidations([])),
+    ])
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [epicName, storyName]);
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center text-zinc-500">
+        Loading...
+      </div>
+    );
+  }
 
   if (!story) {
     return (
@@ -48,20 +73,28 @@ export default function StoryDetailPage({
   }
 
   const approval = approvalConfig[story.approval_status];
+  const lastActivity = story.updated_at
+    ? new Date(story.updated_at).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "\u2014";
 
   return (
     <div className="flex h-full flex-col gap-6 p-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm font-[family-name:var(--font-sans)]">
         <Link
-          href={`/epics/${epicId}`}
+          href={`/epics/${epicName}`}
           className="text-[#8ea2bd] transition-colors hover:text-white"
         >
           Home
         </Link>
         <span className="text-[#525e6e]">&rsaquo;</span>
         <Link
-          href={`/epics/${epicId}`}
+          href={`/epics/${epicName}`}
           className="text-[#8ea2bd] transition-colors hover:text-white"
         >
           Stories
@@ -88,7 +121,7 @@ export default function StoryDetailPage({
         </div>
         <span className="text-[13px] text-[#8ea2bd] font-[family-name:var(--font-mono)]">
           {story.completed_task_count}/{story.task_count} tasks completed
-          &middot; Last activity: {story.last_activity}
+          &middot; Last activity: {lastActivity}
         </span>
       </div>
 
@@ -112,9 +145,9 @@ export default function StoryDetailPage({
 
       {/* Tab Content */}
       {activeTab === "Tasks" && <TasksTab tasks={tasks} />}
-      {activeTab === "Requirements" && <RequirementsTab storyId={sId} />}
-      {activeTab === "Design" && <DesignTab storyId={sId} epicId={epicId} />}
-      {activeTab === "QA" && <QATab storyId={sId} />}
+      {activeTab === "Requirements" && <RequirementsTab versions={versions} reviews={reviews} />}
+      {activeTab === "Design" && <DesignTab epicName={epicName} />}
+      {activeTab === "QA" && <QATab validations={validations} />}
     </div>
   );
 }

@@ -2,13 +2,12 @@
 
 import { useState } from "react";
 import { AlertOctagon, ChevronDown, ChevronRight } from "lucide-react";
-import { getValidations } from "@/lib/mock-data";
+import type { Validation } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const ESCALATION_THRESHOLD = 2;
 
-export function QATab({ storyId }: { storyId: number }) {
-  const validations = getValidations(storyId);
+export function QATab({ validations }: { validations: Validation[] }) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   if (validations.length === 0) {
