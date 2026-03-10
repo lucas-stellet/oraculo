@@ -3,6 +3,7 @@ package server_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -213,5 +214,203 @@ func TestVerdict_InvalidVerdict(t *testing.T) {
 	srv.ServeHTTP(rec, req)
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status %d, want 400", rec.Code)
+	}
+}
+
+func TestListStories_Empty(t *testing.T) {
+	srv, database := testServerWithDB(t)
+	epicStore := db.NewEpicStore(database)
+	epic, _, _ := epicStore.Create("my-epic", "")
+
+	req := httptest.NewRequest(http.MethodGet, "/api/epics/my-epic/stories", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d, want 200", rec.Code)
+	}
+	var result []domain.StorySummary
+	if err := json.NewDecoder(rec.Body).Decode(&result); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(result) != 0 {
+		t.Fatalf("expected 0 stories, got %d", len(result))
+	}
+	_ = epic
+}
+
+func TestListStories_WithTaskCounts(t *testing.T) {
+	srv, database := testServerWithDB(t)
+	epicStore := db.NewEpicStore(database)
+	storyStore := db.NewStoryStore(database)
+	taskStore := db.NewTaskStore(database)
+
+	epic, _, _ := epicStore.Create("my-epic", "")
+	story, _, _ := storyStore.Create(epic.ID, "story-1", "desc")
+	taskStore.Create(story.ID, "t1", "d", nil)
+	taskStore.Start(story.ID, "t1")
+	taskStore.Complete(story.ID, "t1", domain.TaskResult{Summary: "ok"})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/epics/my-epic/stories", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	var result []domain.StorySummary
+	json.NewDecoder(rec.Body).Decode(&result)
+	if len(result) != 1 {
+		t.Fatalf("expected 1, got %d", len(result))
+	}
+	if result[0].TaskCount != 1 || result[0].CompletedTaskCount != 1 {
+		t.Errorf("counts: total=%d completed=%d", result[0].TaskCount, result[0].CompletedTaskCount)
+	}
+}
+
+func TestListTasks_WithDepsAndResults(t *testing.T) {
+	srv, database := testServerWithDB(t)
+	epicStore := db.NewEpicStore(database)
+	storyStore := db.NewStoryStore(database)
+	taskStore := db.NewTaskStore(database)
+
+	epic, _, _ := epicStore.Create("ep", "")
+	story, _, _ := storyStore.Create(epic.ID, "st", "")
+	taskStore.Create(story.ID, "t1", "d1", nil)
+	taskStore.Create(story.ID, "t2", "d2", []string{"t1"})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/epics/ep/stories/st/tasks", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	var result []domain.TaskEnriched
+	json.NewDecoder(rec.Body).Decode(&result)
+	if len(result) != 2 {
+		t.Fatalf("expected 2, got %d", len(result))
+	}
+	if len(result[1].DependsOn) != 1 {
+		t.Errorf("t2 deps = %v", result[1].DependsOn)
+	}
+}
+
+func TestListStoryVersions(t *testing.T) {
+	srv, database := testServerWithDB(t)
+	epicStore := db.NewEpicStore(database)
+	storyStore := db.NewStoryStore(database)
+	versionStore := db.NewVersionStore(database)
+
+	epic, _, _ := epicStore.Create("ep", "")
+	story, _, _ := storyStore.Create(epic.ID, "st", "")
+	versionStore.CreateStoryVersion(story.ID, "v1")
+	versionStore.CreateStoryVersion(story.ID, "v2")
+
+	req := httptest.NewRequest(http.MethodGet, "/api/epics/ep/stories/st/versions", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	var result []domain.StoryVersion
+	json.NewDecoder(rec.Body).Decode(&result)
+	if len(result) != 2 {
+		t.Fatalf("expected 2, got %d", len(result))
+	}
+}
+
+func TestListStoryReviews(t *testing.T) {
+	srv, database := testServerWithDB(t)
+	epicStore := db.NewEpicStore(database)
+	storyStore := db.NewStoryStore(database)
+	versionStore := db.NewVersionStore(database)
+	reviewStore := db.NewReviewStore(database)
+
+	epic, _, _ := epicStore.Create("ep", "")
+	story, _, _ := storyStore.Create(epic.ID, "st", "")
+	v, _ := versionStore.CreateStoryVersion(story.ID, "content")
+	reviewStore.Create(v.ID, domain.VersionTypeStory, domain.ReviewApproved, "ok")
+
+	req := httptest.NewRequest(http.MethodGet, "/api/epics/ep/stories/st/reviews", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	var result []domain.Review
+	json.NewDecoder(rec.Body).Decode(&result)
+	if len(result) != 1 {
+		t.Fatalf("expected 1, got %d", len(result))
+	}
+}
+
+func TestListValidations(t *testing.T) {
+	srv, database := testServerWithDB(t)
+	epicStore := db.NewEpicStore(database)
+	storyStore := db.NewStoryStore(database)
+	validationStore := db.NewValidationStore(database)
+
+	epic, _, _ := epicStore.Create("ep", "")
+	story, _, _ := storyStore.Create(epic.ID, "st", "")
+	validationStore.Save(story.ID, "approved", "all good")
+
+	req := httptest.NewRequest(http.MethodGet, "/api/epics/ep/stories/st/validations", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	var result []domain.Validation
+	json.NewDecoder(rec.Body).Decode(&result)
+	if len(result) != 1 {
+		t.Fatalf("expected 1, got %d", len(result))
+	}
+}
+
+func TestGetApproval(t *testing.T) {
+	srv, database := testServerWithDB(t)
+	approvalStore := db.NewApprovalStore(database)
+	appr, _ := approvalStore.Request(domain.ApprovalDesign, nil, nil, "content")
+
+	req := httptest.NewRequest(http.MethodGet, "/api/approvals/"+appr.ID, nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	var result domain.Approval
+	json.NewDecoder(rec.Body).Decode(&result)
+	if result.ID != appr.ID {
+		t.Errorf("id = %q, want %q", result.ID, appr.ID)
+	}
+}
+
+func TestGetApproval_NotFound(t *testing.T) {
+	srv, _ := testServerWithDB(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/approvals/nonexistent", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status %d, want 404", rec.Code)
+	}
+}
+
+func TestListApprovals_EpicFilter(t *testing.T) {
+	srv, database := testServerWithDB(t)
+	epicStore := db.NewEpicStore(database)
+	approvalStore := db.NewApprovalStore(database)
+
+	epic, _, _ := epicStore.Create("ep", "")
+	approvalStore.Request(domain.ApprovalDesign, &epic.ID, nil, "c1")
+	approvalStore.Request(domain.ApprovalDesign, nil, nil, "c2")
+
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/approvals?epic_id=%d", epic.ID), nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	var result []domain.Approval
+	json.NewDecoder(rec.Body).Decode(&result)
+	if len(result) != 1 {
+		t.Fatalf("expected 1, got %d", len(result))
 	}
 }

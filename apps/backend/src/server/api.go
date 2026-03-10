@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/lucas/oraculo/apps/backend/src/approval"
 	"github.com/lucas/oraculo/apps/backend/src/db"
@@ -12,12 +13,15 @@ import (
 
 // APIHandler handles REST API requests.
 type APIHandler struct {
-	epics     *db.EpicStore
-	stories   *db.StoryStore
-	tasks     *db.TaskStore
-	approvals *db.ApprovalStore
-	bridge    *approval.Bridge
-	hub       *ws.Hub
+	epics       *db.EpicStore
+	stories     *db.StoryStore
+	tasks       *db.TaskStore
+	approvals   *db.ApprovalStore
+	versions    *db.VersionStore
+	reviews     *db.ReviewStore
+	validations *db.ValidationStore
+	bridge      *approval.Bridge
+	hub         *ws.Hub
 }
 
 // handleListEpics returns all epics with aggregated summary data.
@@ -62,11 +66,142 @@ func (a *APIHandler) handleCreateEpic(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, epic)
 }
 
-// handleListApprovals returns all approvals, optionally filtered by pending status.
+// resolveEpicStory resolves epic and story from path values.
+func (a *APIHandler) resolveEpicStory(w http.ResponseWriter, r *http.Request) (*domain.Epic, *domain.Story, bool) {
+	epicName := r.PathValue("epicName")
+	epic, err := a.epics.GetByName(epicName)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, "epic not found")
+		return nil, nil, false
+	}
+	storyName := r.PathValue("storyName")
+	story, err := a.stories.GetByName(epic.ID, storyName)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, "story not found")
+		return nil, nil, false
+	}
+	return epic, story, true
+}
+
+// handleListStories returns all stories for an epic with task counts.
+// GET /api/epics/{epicName}/stories
+func (a *APIHandler) handleListStories(w http.ResponseWriter, r *http.Request) {
+	epicName := r.PathValue("epicName")
+	epic, err := a.epics.GetByName(epicName)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, "epic not found")
+		return
+	}
+	summaries, err := a.stories.ListSummaries(epic.ID)
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, summaries)
+}
+
+// handleListTasks returns all tasks for a story with dependencies and results.
+// GET /api/epics/{epicName}/stories/{storyName}/tasks
+func (a *APIHandler) handleListTasks(w http.ResponseWriter, r *http.Request) {
+	_, story, ok := a.resolveEpicStory(w, r)
+	if !ok {
+		return
+	}
+	enriched, err := a.tasks.ListEnriched(story.ID)
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, enriched)
+}
+
+// handleListStoryVersions returns all versions for a story.
+// GET /api/epics/{epicName}/stories/{storyName}/versions
+func (a *APIHandler) handleListStoryVersions(w http.ResponseWriter, r *http.Request) {
+	_, story, ok := a.resolveEpicStory(w, r)
+	if !ok {
+		return
+	}
+	versions, err := a.versions.ListStoryVersions(story.ID)
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if versions == nil {
+		versions = []domain.StoryVersion{}
+	}
+	writeJSON(w, versions)
+}
+
+// handleListStoryReviews returns all reviews across all versions of a story.
+// GET /api/epics/{epicName}/stories/{storyName}/reviews
+func (a *APIHandler) handleListStoryReviews(w http.ResponseWriter, r *http.Request) {
+	_, story, ok := a.resolveEpicStory(w, r)
+	if !ok {
+		return
+	}
+	reviews, err := a.reviews.ListByStory(story.ID)
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, reviews)
+}
+
+// handleListValidations returns all QA validations for a story.
+// GET /api/epics/{epicName}/stories/{storyName}/validations
+func (a *APIHandler) handleListValidations(w http.ResponseWriter, r *http.Request) {
+	_, story, ok := a.resolveEpicStory(w, r)
+	if !ok {
+		return
+	}
+	validations, err := a.validations.ListByStory(story.ID)
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, validations)
+}
+
+// handleGetApproval returns a single approval by ID.
+// GET /api/approvals/{id}
+func (a *APIHandler) handleGetApproval(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		writeAPIError(w, http.StatusBadRequest, "missing approval id")
+		return
+	}
+	appr, err := a.approvals.GetByID(id)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, "approval not found")
+		return
+	}
+	writeJSON(w, appr)
+}
+
+// handleListApprovals returns all approvals, optionally filtered by pending status and epic.
 // GET /api/approvals
 // GET /api/approvals?status=pending
+// GET /api/approvals?epic_id=1
 func (a *APIHandler) handleListApprovals(w http.ResponseWriter, r *http.Request) {
 	pendingOnly := r.URL.Query().Get("status") == "pending"
+	epicIDStr := r.URL.Query().Get("epic_id")
+
+	if epicIDStr != "" {
+		epicID, err := strconv.Atoi(epicIDStr)
+		if err != nil {
+			writeAPIError(w, http.StatusBadRequest, "invalid epic_id")
+			return
+		}
+		approvals, err := a.approvals.ListByEpic(epicID, pendingOnly)
+		if err != nil {
+			writeAPIError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, approvals)
+		return
+	}
+
 	approvals, err := a.approvals.List(pendingOnly)
 	if err != nil {
 		writeAPIError(w, http.StatusInternalServerError, err.Error())

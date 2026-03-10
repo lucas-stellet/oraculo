@@ -42,12 +42,15 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 	}
 
 	api := &APIHandler{
-		epics:     db.NewEpicStore(database),
-		stories:   db.NewStoryStore(database),
-		tasks:     db.NewTaskStore(database),
-		approvals: db.NewApprovalStore(database),
-		bridge:    bridge,
-		hub:       hub,
+		epics:       db.NewEpicStore(database),
+		stories:     db.NewStoryStore(database),
+		tasks:       db.NewTaskStore(database),
+		approvals:   db.NewApprovalStore(database),
+		versions:    db.NewVersionStore(database),
+		reviews:     db.NewReviewStore(database),
+		validations: db.NewValidationStore(database),
+		bridge:      bridge,
+		hub:         hub,
 	}
 
 	mux := http.NewServeMux()
@@ -68,7 +71,13 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 	// API endpoints
 	mux.HandleFunc("GET /api/epics", api.handleListEpics)
 	mux.HandleFunc("POST /api/epics", api.handleCreateEpic)
+	mux.HandleFunc("GET /api/epics/{epicName}/stories", api.handleListStories)
+	mux.HandleFunc("GET /api/epics/{epicName}/stories/{storyName}/tasks", api.handleListTasks)
+	mux.HandleFunc("GET /api/epics/{epicName}/stories/{storyName}/versions", api.handleListStoryVersions)
+	mux.HandleFunc("GET /api/epics/{epicName}/stories/{storyName}/reviews", api.handleListStoryReviews)
+	mux.HandleFunc("GET /api/epics/{epicName}/stories/{storyName}/validations", api.handleListValidations)
 	mux.HandleFunc("GET /api/approvals", api.handleListApprovals)
+	mux.HandleFunc("GET /api/approvals/{id}", api.handleGetApproval)
 	mux.HandleFunc("POST /api/approvals/{id}/verdict", api.handleVerdict)
 
 	// WebSocket
