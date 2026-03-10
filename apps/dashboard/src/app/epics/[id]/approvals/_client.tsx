@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useWebSocket } from "@/lib/ws";
+import type { WSEvent } from "@/lib/ws";
 import Link from "next/link";
 import {
   Compass,
@@ -72,6 +74,32 @@ export default function ApprovalsPage() {
       setResolved([]);
     });
   }, []);
+
+  const handleWS = useCallback((evt: WSEvent) => {
+    if (evt.event !== "approval_requested" && evt.event !== "approval_decided") return;
+    if (!evt.id) return;
+    api.getApproval(evt.id).then((approval) => {
+      if (approval.status === "pending") {
+        setPending((prev) => {
+          const exists = prev.some((a) => a.id === approval.id);
+          return exists
+            ? prev.map((a) => (a.id === approval.id ? approval : a))
+            : [approval, ...prev];
+        });
+        setResolved((prev) => prev.filter((a) => a.id !== approval.id));
+      } else {
+        setResolved((prev) => {
+          const exists = prev.some((a) => a.id === approval.id);
+          return exists
+            ? prev.map((a) => (a.id === approval.id ? approval : a))
+            : [approval, ...prev];
+        });
+        setPending((prev) => prev.filter((a) => a.id !== approval.id));
+      }
+    }).catch(() => {});
+  }, []);
+
+  useWebSocket(handleWS);
 
   return (
     <div className="flex h-full flex-col gap-6 p-8">
