@@ -4180,6 +4180,7 @@
           "y": 0,
           "name": "Collapsed Sidebar",
           "reusable": true,
+          "clip": true,
           "width": 64,
           "height": 900,
           "fill": "#18181b",
@@ -4257,7 +4258,7 @@
             },
             {
               "type": "frame",
-              "id": "z56ZX",
+              "id": "LJT1Z",
               "name": "Collapsed Nav",
               "width": "fill_container",
               "layout": "vertical",
@@ -4266,14 +4267,13 @@
                 12,
                 8
               ],
-              "alignItems": "center",
               "children": [
                 {
                   "type": "frame",
-                  "id": "1ozcn",
-                  "name": "cn1",
-                  "width": 48,
-                  "height": 48,
+                  "id": "1TYky",
+                  "name": "cn-Overview",
+                  "width": "fill_container",
+                  "height": 40,
                   "fill": "#2563eb",
                   "cornerRadius": 8,
                   "justifyContent": "center",
@@ -4281,35 +4281,145 @@
                   "children": [
                     {
                       "type": "icon_font",
-                      "id": "P19nI",
-                      "name": "cn1Icon",
-                      "width": 20,
-                      "height": 20,
-                      "iconFontName": "house",
+                      "id": "jnIgw",
+                      "name": "overviewIcon",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "layout-dashboard",
                       "iconFontFamily": "lucide",
                       "fill": "#ffffff"
                     }
                   ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "VewnI",
+              "name": "Collapsed Stories",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
                 },
+                "fill": "#ffffff0d"
+              },
+              "layout": "vertical",
+              "gap": 4,
+              "padding": 8,
+              "children": [
                 {
                   "type": "frame",
-                  "id": "IB01q",
-                  "name": "cn2",
-                  "width": 48,
-                  "height": 48,
+                  "id": "v2x0l",
+                  "name": "cn-Stories",
+                  "width": "fill_container",
+                  "height": 40,
                   "cornerRadius": 8,
-                  "justifyContent": "center",
-                  "alignItems": "center",
+                  "layout": "none",
                   "children": [
                     {
                       "type": "icon_font",
-                      "id": "olgDd",
-                      "name": "cn2Icon",
-                      "width": 20,
-                      "height": 20,
-                      "iconFontName": "square-stack",
+                      "id": "6JwI4",
+                      "x": 15,
+                      "y": 11,
+                      "name": "storiesIcon",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "book-open",
                       "iconFontFamily": "lucide",
                       "fill": "#8ea2bd"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Cgb0N",
+                      "x": 30,
+                      "y": 4,
+                      "name": "Badge",
+                      "width": 16,
+                      "height": 16,
+                      "fill": "#3b82f6",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "3rQwv",
+                          "name": "storiesBadgeText",
+                          "fill": "#ffffff",
+                          "content": "3",
+                          "fontFamily": "IBM Plex Mono",
+                          "fontSize": 9,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "iuk3v",
+              "name": "Collapsed Monitor",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#ffffff0d"
+              },
+              "layout": "vertical",
+              "gap": 4,
+              "padding": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "xVWeC",
+                  "name": "cn-Approvals",
+                  "width": "fill_container",
+                  "height": 40,
+                  "cornerRadius": 8,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "auJLV",
+                      "x": 15,
+                      "y": 11,
+                      "name": "approvalsIcon",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "shield-alert",
+                      "iconFontFamily": "lucide",
+                      "fill": "#8ea2bd"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n6gy4",
+                      "x": 30,
+                      "y": 4,
+                      "name": "Badge",
+                      "width": 16,
+                      "height": 16,
+                      "fill": "#dc2626",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "HGTaA",
+                          "name": "approvalsBadgeText",
+                          "fill": "#ffffff",
+                          "content": "4",
+                          "fontFamily": "IBM Plex Mono",
+                          "fontSize": 9,
+                          "fontWeight": "600"
+                        }
+                      ]
                     }
                   ]
                 }
@@ -4392,7 +4502,7 @@
               "id": "gtdy8",
               "name": "tooltipText",
               "fill": "#f5f9ff",
-              "content": "Stories",
+              "content": "Overview",
               "fontFamily": "IBM Plex Sans",
               "fontSize": 13,
               "fontWeight": "500"

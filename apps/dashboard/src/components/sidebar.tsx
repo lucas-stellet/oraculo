@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BookOpen,
   FolderOpen,
   ChevronDown,
-  House,
+  LayoutDashboard,
   PanelLeftClose,
   PanelLeftOpen,
   ScanEye,
@@ -90,102 +91,137 @@ export function Sidebar({
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-2 py-3">
-        {/* Home */}
-        <Link
-          href={homeHref}
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-            collapsed && "justify-center px-0",
-            isHomeActive
-              ? "bg-blue-600 text-white"
-              : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-          )}
-          title={collapsed ? "Home" : undefined}
-        >
-          <House className="h-[18px] w-[18px] shrink-0" />
-          {!collapsed && (
-            <span className="font-[family-name:var(--font-sans)]">Home</span>
-          )}
-        </Link>
+      <nav className="flex-1 overflow-y-auto">
+        {/* Overview */}
+        <div className={cn("px-2 py-3", collapsed && "px-2 py-3")}>
+          <Link
+            href={homeHref}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              collapsed && "justify-center px-0",
+              isHomeActive
+                ? "bg-blue-600 text-white"
+                : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+            )}
+            title={collapsed ? "Overview" : undefined}
+          >
+            <LayoutDashboard className="h-[18px] w-[18px] shrink-0" />
+            {!collapsed && (
+              <span className="font-[family-name:var(--font-sans)]">
+                Overview
+              </span>
+            )}
+          </Link>
+        </div>
 
         {/* STORIES section */}
-        {!collapsed && (
-          <div className="px-3 pt-4 pb-1 text-[11px] uppercase tracking-widest text-zinc-500 font-[family-name:var(--font-mono)]">
-            Stories
-          </div>
-        )}
+        <div
+          className={cn(
+            collapsed && "border-t border-white/5 px-2 py-2",
+            !collapsed && "px-2"
+          )}
+        >
+          {!collapsed && (
+            <div className="px-3 pt-4 pb-1 text-[11px] uppercase tracking-widest text-zinc-500 font-[family-name:var(--font-mono)]">
+              Stories
+            </div>
+          )}
 
-        <div className="space-y-0.5">
-          {stories.map((story) => {
-            const storyHref = `/epics/${epicId}/stories/${story.id}`;
-            const isActive = pathname.includes(`/stories/${story.id}`);
-
-            return (
-              <Link
-                key={story.id}
-                href={storyHref}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  collapsed && "justify-center px-0",
-                  isActive
-                    ? "bg-blue-600/20 text-blue-400"
-                    : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                )}
-                title={collapsed ? story.name : undefined}
-              >
-                <div
-                  className={cn(
-                    "h-1.5 w-1.5 shrink-0 rounded-full",
-                    storyDotColor(story.status)
-                  )}
-                />
-                {!collapsed && (
-                  <span className="truncate text-[13px] font-[family-name:var(--font-sans)]">
-                    {story.name}
+          {collapsed ? (
+            <div
+              className="flex items-center justify-center rounded-lg py-2.5 text-[#8ea2bd] hover:bg-zinc-800 transition-colors cursor-default"
+              title="Stories"
+            >
+              <div className="flex items-start">
+                <BookOpen className="h-[18px] w-[18px]" />
+                {stories.length > 0 && (
+                  <span className="-ml-1.5 -mt-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-500 px-1 text-[9px] font-semibold text-white font-[family-name:var(--font-mono)]">
+                    {stories.length}
                   </span>
                 )}
-              </Link>
-            );
-          })}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-0.5">
+              {stories.map((story) => {
+                const storyHref = `/epics/${epicId}/stories/${story.id}`;
+                const isActive = pathname.includes(`/stories/${story.id}`);
+
+                return (
+                  <Link
+                    key={story.id}
+                    href={storyHref}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-blue-600/20 text-blue-400"
+                        : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "h-1.5 w-1.5 shrink-0 rounded-full",
+                        storyDotColor(story.status)
+                      )}
+                    />
+                    <span className="truncate text-[13px] font-[family-name:var(--font-sans)]">
+                      {story.name}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* MONITOR section */}
-        {!collapsed && (
-          <div className="px-3 pt-5 pb-1 text-[11px] uppercase tracking-widest text-zinc-500 font-[family-name:var(--font-mono)]">
-            Monitor
-          </div>
-        )}
-
-        {/* Approvals */}
-        <Link
-          href={`/epics/${epicId}/approvals`}
+        <div
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-            collapsed && "justify-center px-0",
-            isApprovalsActive
-              ? "bg-zinc-800 text-white"
-              : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+            collapsed && "border-t border-white/5 px-2 py-2",
+            !collapsed && "px-2"
           )}
-          title={collapsed ? "Approvals" : undefined}
         >
-          <ShieldAlert className="h-[18px] w-[18px] shrink-0" />
           {!collapsed && (
-            <span className="font-[family-name:var(--font-sans)]">
-              Approvals
-            </span>
+            <div className="px-3 pt-5 pb-1 text-[11px] uppercase tracking-widest text-zinc-500 font-[family-name:var(--font-mono)]">
+              Monitor
+            </div>
           )}
-          {pendingApprovalCount > 0 && (
-            <span
-              className={cn(
-                "flex items-center justify-center rounded-full bg-red-600 text-[10px] text-white min-w-[18px] h-[18px] px-1 font-[family-name:var(--font-mono)]",
-                collapsed ? "" : "ml-auto"
-              )}
-            >
-              {pendingApprovalCount}
-            </span>
-          )}
-        </Link>
+
+          <Link
+            href={`/epics/${epicId}/approvals`}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              collapsed && "justify-center px-0",
+              isApprovalsActive
+                ? "bg-zinc-800 text-white"
+                : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+            )}
+            title={collapsed ? "Approvals" : undefined}
+          >
+            {collapsed ? (
+              <div className="flex items-start">
+                <ShieldAlert className="h-[18px] w-[18px] shrink-0" />
+                {pendingApprovalCount > 0 && (
+                  <span className="-ml-1.5 -mt-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold text-white font-[family-name:var(--font-mono)]">
+                    {pendingApprovalCount}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <>
+                <ShieldAlert className="h-[18px] w-[18px] shrink-0" />
+                <span className="font-[family-name:var(--font-sans)]">
+                  Approvals
+                </span>
+                {pendingApprovalCount > 0 && (
+                  <span className="ml-auto flex items-center justify-center rounded-full bg-red-600 text-[10px] text-white min-w-[18px] h-[18px] px-1 font-[family-name:var(--font-mono)]">
+                    {pendingApprovalCount}
+                  </span>
+                )}
+              </>
+            )}
+          </Link>
+        </div>
       </nav>
 
       {/* Sidebar Toggle */}
