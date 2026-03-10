@@ -145,6 +145,63 @@ func (s *StoryStore) Delete(epicID int, name string) error {
 	return nil
 }
 
+// ListSummaries returns all stories for the given epicID with aggregated task counts.
+func (s *StoryStore) ListSummaries(epicID int) ([]domain.StorySummary, error) {
+	query := `
+		SELECT
+			s.id, s.epic_id, s.name, s.description, s.approval_status, s.created_at, s.updated_at,
+			COALESCE(tc.total, 0) AS task_count,
+			COALESCE(tc.completed, 0) AS completed_task_count,
+			COALESCE(tc.failed, 0) AS failed_task_count
+		FROM stories s
+		LEFT JOIN (
+			SELECT story_id,
+				COUNT(*) AS total,
+				COUNT(CASE WHEN status = 'completed' THEN 1 END) AS completed,
+				COUNT(CASE WHEN status = 'failed' THEN 1 END) AS failed
+			FROM tasks GROUP BY story_id
+		) tc ON tc.story_id = s.id
+		WHERE s.epic_id = ?
+		ORDER BY s.created_at
+	`
+
+	rows, err := s.db.conn.Query(query, epicID)
+	if err != nil {
+		return nil, fmt.Errorf("list story summaries: %w", err)
+	}
+	defer rows.Close()
+
+	var summaries []domain.StorySummary
+	for rows.Next() {
+		var (
+			ss                   domain.StorySummary
+			createdAt, updatedAt string
+		)
+		if err := rows.Scan(
+			&ss.ID, &ss.EpicID, &ss.Name, &ss.Description, &ss.ApprovalStatus,
+			&createdAt, &updatedAt,
+			&ss.TaskCount, &ss.CompletedTaskCount, &ss.FailedTaskCount,
+		); err != nil {
+			return nil, fmt.Errorf("scan story summary: %w", err)
+		}
+		var parseErr error
+		if ss.CreatedAt, parseErr = time.Parse(sqliteTimeFmt, createdAt); parseErr != nil {
+			return nil, fmt.Errorf("parse created_at: %w", parseErr)
+		}
+		if ss.UpdatedAt, parseErr = time.Parse(sqliteTimeFmt, updatedAt); parseErr != nil {
+			return nil, fmt.Errorf("parse updated_at: %w", parseErr)
+		}
+		summaries = append(summaries, ss)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate story summaries: %w", err)
+	}
+	if summaries == nil {
+		summaries = []domain.StorySummary{}
+	}
+	return summaries, nil
+}
+
 // UpdateApprovalStatus sets the approval status for a story.
 // It returns domain.ErrNotFound when no matching story exists.
 func (s *StoryStore) UpdateApprovalStatus(epicID int, name string, status domain.ApprovalStatus) error {

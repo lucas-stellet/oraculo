@@ -329,6 +329,63 @@ func TestTaskStore_Create_CyclicDependency_TwoNodes(t *testing.T) {
 
 // --- Delete tests ---
 
+func TestTaskStore_ListEnriched(t *testing.T) {
+	database := testDB(t)
+	storyID := createStory(t, database, "test-epic", "story-1")
+	taskStore := NewTaskStore(database)
+
+	if _, _, err := taskStore.Create(storyID, "task-1", "first task", nil); err != nil {
+		t.Fatalf("create task-1: %v", err)
+	}
+	if _, _, err := taskStore.Create(storyID, "task-2", "second task", []string{"task-1"}); err != nil {
+		t.Fatalf("create task-2: %v", err)
+	}
+
+	if _, err := taskStore.Start(storyID, "task-1"); err != nil {
+		t.Fatalf("start task-1: %v", err)
+	}
+	if _, err := taskStore.Complete(storyID, "task-1", domain.TaskResult{
+		Summary:       "did stuff",
+		SkillsUsed:    []string{"tdd"},
+		FilesModified: []string{"foo.go", "bar.go"},
+	}); err != nil {
+		t.Fatalf("complete task-1: %v", err)
+	}
+
+	enriched, err := taskStore.ListEnriched(storyID)
+	if err != nil {
+		t.Fatalf("ListEnriched: %v", err)
+	}
+	if len(enriched) != 2 {
+		t.Fatalf("expected 2 tasks, got %d", len(enriched))
+	}
+
+	t1 := enriched[0]
+	if len(t1.DependsOn) != 0 {
+		t.Errorf("task-1 DependsOn = %v, want empty", t1.DependsOn)
+	}
+	if t1.Result == nil {
+		t.Fatal("task-1 Result should not be nil")
+	}
+	if t1.Result.Summary != "did stuff" {
+		t.Errorf("task-1 Result.Summary = %q, want %q", t1.Result.Summary, "did stuff")
+	}
+	if len(t1.Result.SkillsUsed) != 1 || t1.Result.SkillsUsed[0] != "tdd" {
+		t.Errorf("task-1 Result.SkillsUsed = %v, want [tdd]", t1.Result.SkillsUsed)
+	}
+	if len(t1.Result.FilesModified) != 2 {
+		t.Errorf("task-1 Result.FilesModified = %v, want 2 files", t1.Result.FilesModified)
+	}
+
+	t2 := enriched[1]
+	if len(t2.DependsOn) != 1 || t2.DependsOn[0] != t1.ID {
+		t.Errorf("task-2 DependsOn = %v, want [%d]", t2.DependsOn, t1.ID)
+	}
+	if t2.Result != nil {
+		t.Error("task-2 Result should be nil")
+	}
+}
+
 func TestTaskStore_Delete(t *testing.T) {
 	database := testDB(t)
 	storyID := createStory(t, database, "epic", "story")

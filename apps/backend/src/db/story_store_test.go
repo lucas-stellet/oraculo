@@ -7,6 +7,67 @@ import (
 	"github.com/lucas/oraculo/apps/backend/src/domain"
 )
 
+func TestStoryStore_ListSummaries(t *testing.T) {
+	database := testDB(t)
+	epicStore := NewEpicStore(database)
+	storyStore := NewStoryStore(database)
+	taskStore := NewTaskStore(database)
+
+	epic, _, err := epicStore.Create("test-epic", "desc")
+	if err != nil {
+		t.Fatalf("create epic: %v", err)
+	}
+
+	story, _, err := storyStore.Create(epic.ID, "story-1", "desc")
+	if err != nil {
+		t.Fatalf("create story: %v", err)
+	}
+
+	// Create 3 tasks: 2 completed, 1 failed
+	for _, name := range []string{"task-1", "task-2", "task-3"} {
+		if _, _, err := taskStore.Create(story.ID, name, "d", nil); err != nil {
+			t.Fatalf("create %s: %v", name, err)
+		}
+	}
+
+	if _, err := taskStore.Start(story.ID, "task-1"); err != nil {
+		t.Fatalf("start task-1: %v", err)
+	}
+	if _, err := taskStore.Complete(story.ID, "task-1", domain.TaskResult{Summary: "done"}); err != nil {
+		t.Fatalf("complete task-1: %v", err)
+	}
+	if _, err := taskStore.Start(story.ID, "task-2"); err != nil {
+		t.Fatalf("start task-2: %v", err)
+	}
+	if _, err := taskStore.Complete(story.ID, "task-2", domain.TaskResult{Summary: "done"}); err != nil {
+		t.Fatalf("complete task-2: %v", err)
+	}
+	if _, err := taskStore.Start(story.ID, "task-3"); err != nil {
+		t.Fatalf("start task-3: %v", err)
+	}
+	if _, err := taskStore.Fail(story.ID, "task-3", "oops"); err != nil {
+		t.Fatalf("fail task-3: %v", err)
+	}
+
+	summaries, err := storyStore.ListSummaries(epic.ID)
+	if err != nil {
+		t.Fatalf("ListSummaries: %v", err)
+	}
+	if len(summaries) != 1 {
+		t.Fatalf("expected 1 summary, got %d", len(summaries))
+	}
+	s := summaries[0]
+	if s.TaskCount != 3 {
+		t.Errorf("TaskCount = %d, want 3", s.TaskCount)
+	}
+	if s.CompletedTaskCount != 2 {
+		t.Errorf("CompletedTaskCount = %d, want 2", s.CompletedTaskCount)
+	}
+	if s.FailedTaskCount != 1 {
+		t.Errorf("FailedTaskCount = %d, want 1", s.FailedTaskCount)
+	}
+}
+
 // createEpic is a test helper that creates an epic and returns its ID.
 func createEpic(t *testing.T, database *DB, name string) int {
 	t.Helper()

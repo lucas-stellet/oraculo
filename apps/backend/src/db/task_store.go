@@ -332,6 +332,117 @@ func (s *TaskStore) List(storyID int) ([]domain.Task, error) {
 	return tasks, nil
 }
 
+// ListEnriched returns all tasks for the given storyID with dependencies and results hydrated.
+func (s *TaskStore) ListEnriched(storyID int) ([]domain.TaskEnriched, error) {
+	tasks, err := s.List(storyID)
+	if err != nil {
+		return nil, err
+	}
+	if len(tasks) == 0 {
+		return []domain.TaskEnriched{}, nil
+	}
+
+	ids := make([]int, len(tasks))
+	idxByID := make(map[int]int, len(tasks))
+	for i, t := range tasks {
+		ids[i] = t.ID
+		idxByID[t.ID] = i
+	}
+
+	enriched := make([]domain.TaskEnriched, len(tasks))
+	for i, t := range tasks {
+		enriched[i] = domain.TaskEnriched{
+			Task:      t,
+			DependsOn: []int{},
+		}
+	}
+
+	// Batch fetch dependencies
+	depQuery := fmt.Sprintf(
+		"SELECT task_id, depends_on FROM task_dependencies WHERE task_id IN (%s)",
+		placeholders(len(ids)),
+	)
+	depArgs := intsToAny(ids)
+	depRows, err := s.db.conn.Query(depQuery, depArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("fetch dependencies: %w", err)
+	}
+	defer depRows.Close()
+	for depRows.Next() {
+		var taskID, dependsOn int
+		if err := depRows.Scan(&taskID, &dependsOn); err != nil {
+			return nil, fmt.Errorf("scan dependency: %w", err)
+		}
+		if idx, ok := idxByID[taskID]; ok {
+			enriched[idx].DependsOn = append(enriched[idx].DependsOn, dependsOn)
+		}
+	}
+	if err := depRows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate dependencies: %w", err)
+	}
+
+	// Batch fetch results
+	resQuery := fmt.Sprintf(
+		"SELECT id, task_id, summary, logs, skills_used, files_modified, created_at FROM task_results WHERE task_id IN (%s)",
+		placeholders(len(ids)),
+	)
+	resRows, err := s.db.conn.Query(resQuery, depArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("fetch results: %w", err)
+	}
+	defer resRows.Close()
+	for resRows.Next() {
+		var (
+			r                   domain.TaskResult
+			skillsStr, filesStr string
+			createdAt           string
+		)
+		if err := resRows.Scan(&r.ID, &r.TaskID, &r.Summary, &r.Logs, &skillsStr, &filesStr, &createdAt); err != nil {
+			return nil, fmt.Errorf("scan result: %w", err)
+		}
+		if skillsStr != "" {
+			r.SkillsUsed = strings.Split(skillsStr, ",")
+		} else {
+			r.SkillsUsed = []string{}
+		}
+		if filesStr != "" {
+			r.FilesModified = strings.Split(filesStr, ",")
+		} else {
+			r.FilesModified = []string{}
+		}
+		parsedAt, parseErr := time.Parse(sqliteTimeFmt, createdAt)
+		if parseErr != nil {
+			return nil, fmt.Errorf("parse result created_at: %w", parseErr)
+		}
+		r.CreatedAt = parsedAt
+		if idx, ok := idxByID[r.TaskID]; ok {
+			enriched[idx].Result = &r
+		}
+	}
+	if err := resRows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate results: %w", err)
+	}
+
+	return enriched, nil
+}
+
+// placeholders returns "?,?,?" for n items.
+func placeholders(n int) string {
+	if n == 0 {
+		return ""
+	}
+	return strings.Repeat("?,", n-1) + "?"
+}
+
+// intsToAny converts []int to []any for query args.
+func intsToAny(ids []int) []any {
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		args[i] = id
+	}
+	return args
+}
+
 // Delete removes a task by (storyID, name).
 // It returns domain.ErrNotFound when no matching task exists.
 func (s *TaskStore) Delete(storyID int, name string) error {

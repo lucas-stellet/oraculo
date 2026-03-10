@@ -132,6 +132,39 @@ func (s *ApprovalStore) List(pendingOnly bool) ([]domain.Approval, error) {
 	return approvals, nil
 }
 
+// ListByEpic returns approvals for a specific epic, optionally filtered to pending only.
+func (s *ApprovalStore) ListByEpic(epicID int, pendingOnly bool) ([]domain.Approval, error) {
+	query := `SELECT id, type, epic_id, story_id, content, previous_version, status,
+	                 verdict_comment, requested_at, decided_at
+	          FROM approvals WHERE epic_id = ?`
+	if pendingOnly {
+		query += " AND status = 'pending'"
+	}
+	query += " ORDER BY requested_at"
+
+	rows, err := s.db.conn.Query(query, epicID)
+	if err != nil {
+		return nil, fmt.Errorf("list approvals by epic: %w", err)
+	}
+	defer rows.Close()
+
+	var approvals []domain.Approval
+	for rows.Next() {
+		approval, err := scanApproval(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan approval: %w", err)
+		}
+		approvals = append(approvals, *approval)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate approvals: %w", err)
+	}
+	if approvals == nil {
+		approvals = []domain.Approval{}
+	}
+	return approvals, nil
+}
+
 // Verdict records a decision on a pending approval.
 // It returns domain.ErrInvalidTransition if the approval is not pending.
 // If verdict is "needs_revision", the current content is copied to previous_version.

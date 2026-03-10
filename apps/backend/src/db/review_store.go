@@ -139,3 +139,35 @@ func (s *ReviewStore) ListByVersion(versionID int, versionType domain.VersionTyp
 	}
 	return reviews, nil
 }
+
+// ListByStory returns all reviews for all versions of a story, ordered by created_at.
+func (s *ReviewStore) ListByStory(storyID int) ([]domain.Review, error) {
+	query := `
+		SELECT r.id, r.version_id, r.version_type, r.verdict, r.comment, r.created_at
+		FROM reviews r
+		JOIN story_versions sv ON r.version_id = sv.id AND r.version_type = 'story'
+		WHERE sv.story_id = ?
+		ORDER BY r.created_at
+	`
+	rows, err := s.db.conn.Query(query, storyID)
+	if err != nil {
+		return nil, fmt.Errorf("list reviews by story: %w", err)
+	}
+	defer rows.Close()
+
+	var reviews []domain.Review
+	for rows.Next() {
+		review, err := scanReview(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan review: %w", err)
+		}
+		reviews = append(reviews, *review)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate reviews: %w", err)
+	}
+	if reviews == nil {
+		reviews = []domain.Review{}
+	}
+	return reviews, nil
+}

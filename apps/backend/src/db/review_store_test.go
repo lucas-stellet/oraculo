@@ -144,3 +144,44 @@ func TestReviewStore_ListByVersion(t *testing.T) {
 		t.Errorf("reviews[1].Comment = %q, want %q", reviews[1].Comment, "second review")
 	}
 }
+
+func TestReviewStore_ListByStory(t *testing.T) {
+	database := testDB(t)
+	epicStore := NewEpicStore(database)
+	storyStore := NewStoryStore(database)
+	versionStore := NewVersionStore(database)
+	reviewStore := NewReviewStore(database)
+
+	epic, _, err := epicStore.Create("epic", "")
+	if err != nil {
+		t.Fatalf("create epic: %v", err)
+	}
+	story, _, err := storyStore.Create(epic.ID, "story", "")
+	if err != nil {
+		t.Fatalf("create story: %v", err)
+	}
+
+	v1, err := versionStore.CreateStoryVersion(story.ID, "v1 content")
+	if err != nil {
+		t.Fatalf("create v1: %v", err)
+	}
+	v2, err := versionStore.CreateStoryVersion(story.ID, "v2 content")
+	if err != nil {
+		t.Fatalf("create v2: %v", err)
+	}
+
+	if _, err := reviewStore.Create(v1.ID, domain.VersionTypeStory, domain.ReviewRejected, "needs work"); err != nil {
+		t.Fatalf("create review 1: %v", err)
+	}
+	if _, err := reviewStore.Create(v2.ID, domain.VersionTypeStory, domain.ReviewApproved, "LGTM"); err != nil {
+		t.Fatalf("create review 2: %v", err)
+	}
+
+	reviews, err := reviewStore.ListByStory(story.ID)
+	if err != nil {
+		t.Fatalf("ListByStory: %v", err)
+	}
+	if len(reviews) != 2 {
+		t.Fatalf("expected 2 reviews, got %d", len(reviews))
+	}
+}

@@ -133,6 +133,36 @@ func TestApprovalStore_List_PendingOnly(t *testing.T) {
 	}
 }
 
+func TestApprovalStore_ListByEpic(t *testing.T) {
+	database := testDB(t)
+	epicStore := NewEpicStore(database)
+	approvalStore := NewApprovalStore(database)
+
+	epic1, _, err := epicStore.Create("epic-1", "")
+	if err != nil {
+		t.Fatalf("create epic-1: %v", err)
+	}
+	epic2, _, err := epicStore.Create("epic-2", "")
+	if err != nil {
+		t.Fatalf("create epic-2: %v", err)
+	}
+
+	if _, err := approvalStore.Request(domain.ApprovalDesign, &epic1.ID, nil, "content-1"); err != nil {
+		t.Fatalf("request approval 1: %v", err)
+	}
+	if _, err := approvalStore.Request(domain.ApprovalDesign, &epic2.ID, nil, "content-2"); err != nil {
+		t.Fatalf("request approval 2: %v", err)
+	}
+
+	result, err := approvalStore.ListByEpic(epic1.ID, false)
+	if err != nil {
+		t.Fatalf("ListByEpic: %v", err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 approval, got %d", len(result))
+	}
+}
+
 func TestApprovalStore_Verdict_Approved(t *testing.T) {
 	database := testDB(t)
 	store := NewApprovalStore(database)
