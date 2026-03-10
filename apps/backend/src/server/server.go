@@ -74,6 +74,11 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 	mux.HandleFunc("POST /hooks/session-start", hook.handleSessionStart)
 	mux.HandleFunc("POST /hooks/session-end", hook.handleSessionEnd)
 
+	// System endpoints
+	sys := newSystemHandler()
+	mux.HandleFunc("GET /api/system/status", sys.handleStatus)
+	mux.HandleFunc("POST /api/system/restart", sys.handleRestart)
+
 	// API endpoints
 	mux.HandleFunc("GET /api/epics", api.handleListEpics)
 	mux.HandleFunc("POST /api/epics", api.handleCreateEpic)

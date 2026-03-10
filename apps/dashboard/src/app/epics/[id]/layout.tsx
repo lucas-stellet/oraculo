@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { RefreshCw } from "lucide-react";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarProvider } from "@/lib/sidebar-context";
 import { WebSocketProvider, useWebSocket } from "@/lib/ws";
@@ -29,6 +30,9 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
   const epicName = pathname.split("/").filter(Boolean)[1];
   const [stories, setStories] = useState<Story[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+  const restartingRef = useRef(false);
 
   useEffect(() => {
     api.listStories(epicName).then(setStories).catch(() => setStories([]));
@@ -36,6 +40,18 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
       setPendingCount(approvals.length);
     }).catch(() => setPendingCount(0));
   }, [epicName]);
+
+  // Poll for new binary every 30s
+  useEffect(() => {
+    function check() {
+      api.getSystemStatus()
+        .then((s) => setUpdateAvailable(s.update_available))
+        .catch(() => {});
+    }
+    check();
+    const id = setInterval(check, 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   const handleWS = useCallback((evt: WSEvent) => {
     if (evt.event === "approval_requested" || evt.event === "approval_decided") {
@@ -47,15 +63,51 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
 
   useWebSocket(handleWS);
 
+  function handleRestart() {
+    if (restartingRef.current) return;
+    restartingRef.current = true;
+    setRestarting(true);
+    api.restartServer().catch(() => {}).finally(() => {
+      // Poll /health until the server is back, then reload
+      function poll() {
+        fetch("/health").then((r) => {
+          if (r.ok) {
+            window.location.reload();
+          } else {
+            setTimeout(poll, 500);
+          }
+        }).catch(() => setTimeout(poll, 500));
+      }
+      setTimeout(poll, 600);
+    });
+  }
+
   return (
-    <div className="flex h-screen overflow-hidden bg-[#020617]">
-      <Sidebar
-        epicId={epicName}
-        epicName={epicName}
-        stories={stories.map((s) => ({ id: s.id, name: s.name, status: deriveStoryStatus(s) }))}
-        pendingApprovalCount={pendingCount}
-      />
-      <div className="flex-1 overflow-y-auto">{children}</div>
+    <div className="flex flex-col h-screen overflow-hidden bg-[#020617]">
+      {updateAvailable && (
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-blue-800/50 bg-blue-950/40 px-5 py-2.5">
+          <span className="text-sm text-blue-200 font-[family-name:var(--font-sans)]">
+            A new version of Oraculo is available.
+          </span>
+          <button
+            onClick={handleRestart}
+            disabled={restarting}
+            className="flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-[family-name:var(--font-sans)]"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${restarting ? "animate-spin" : ""}`} />
+            {restarting ? "Restarting…" : "Restart server"}
+          </button>
+        </div>
+      )}
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar
+          epicId={epicName}
+          epicName={epicName}
+          stories={stories.map((s) => ({ id: s.id, name: s.name, status: deriveStoryStatus(s) }))}
+          pendingApprovalCount={pendingCount}
+        />
+        <div className="flex-1 overflow-y-auto">{children}</div>
+      </div>
     </div>
   );
 }

@@ -62,4 +62,10 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ verdict, comment }),
     }).then((r) => r.json()),
+
+  getSystemStatus: () =>
+    fetchJSON<{ update_available: boolean; started_at: string }>("/api/system/status"),
+
+  restartServer: () =>
+    fetch("/api/system/restart", { method: "POST" }).then((r) => r.json()),
 };
