@@ -18,6 +18,8 @@ func NewRoot(version string) *cobra.Command {
 	hookCmd := newHookCmd()
 	hookCmd.AddCommand(newHookSessionStartCmd())
 	hookCmd.AddCommand(newHookSessionEndCmd())
+	hookCmd.AddCommand(newHookAgentStartCmd())
+	hookCmd.AddCommand(newHookTaskStartedCmd())
 	root.AddCommand(
 		newVersionCmd(version),
 		newStartCmd(),
