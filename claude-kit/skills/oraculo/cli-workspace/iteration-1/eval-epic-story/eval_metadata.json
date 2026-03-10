@@ -1,0 +1,27 @@
+{
+  "eval_id": 0,
+  "eval_name": "eval-epic-story",
+  "prompt": "Você está iniciando o desenvolvimento do epic `sistema-pagamentos`. Usando a CLI do Oraculo: (1) crie o epic com a descrição 'Sistema de processamento de pagamentos'; (2) salve estes requisitos no epic: '# Requisitos\\n\\nO sistema deve processar pagamentos via cartão de crédito e PIX.'; (3) liste os stories existentes nesse epic. Mostre os comandos executados e os resultados de cada um.",
+  "assertions": [
+    {
+      "id": "uses-epic-init",
+      "description": "Calls `oraculo tools epic init sistema-pagamentos` with --description flag"
+    },
+    {
+      "id": "uses-epic-save-via-stdin",
+      "description": "Pipes markdown content via stdin to `oraculo tools epic save` (uses echo, heredoc, or printf)"
+    },
+    {
+      "id": "uses-story-list-with-epic-flag",
+      "description": "Calls `oraculo tools story list --epic sistema-pagamentos`"
+    },
+    {
+      "id": "correct-command-namespace",
+      "description": "All commands use the `oraculo tools` namespace (no invented subcommands like `oraculo epic` or `oraculo create`)"
+    },
+    {
+      "id": "shows-json-output",
+      "description": "Shows expected JSON output for at least the epic init command"
+    }
+  ]
+}

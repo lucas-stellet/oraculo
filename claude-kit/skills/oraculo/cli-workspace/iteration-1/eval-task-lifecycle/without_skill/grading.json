@@ -1,0 +1,36 @@
+{
+  "run_id": "eval-task-lifecycle-without_skill",
+  "assertions": [
+    {
+      "text": "creates-all-three-tasks: Calls `oraculo tools task init` three times for create-order, process-payment, and send-receipt",
+      "passed": false,
+      "evidence": "Used `oraculo task init` instead of `oraculo tools task init` — missing the `tools` subcommand namespace throughout the entire eval"
+    },
+    {
+      "text": "uses-depends-on-flag: process-payment has --depends-on create-order and send-receipt has --depends-on process-payment",
+      "passed": true,
+      "evidence": "Correctly uses `--depends-on create-order` and `--depends-on process-payment`"
+    },
+    {
+      "text": "uses-task-start: Calls `oraculo tools task start create-order --epic sistema-pagamentos --story checkout`",
+      "passed": false,
+      "evidence": "Used `oraculo task start` instead of `oraculo tools task start`"
+    },
+    {
+      "text": "complete-uses-json-stdin: Task complete receives JSON via stdin (not via flags)",
+      "passed": true,
+      "evidence": "`echo '{...}' | oraculo task complete create-order ...` — stdin pattern correct even though namespace is wrong"
+    },
+    {
+      "text": "complete-json-has-correct-fields: The stdin JSON includes `summary` and `files_modified` fields",
+      "passed": true,
+      "evidence": "JSON has `summary` and `files_modified` fields"
+    },
+    {
+      "text": "uses-task-list: Calls `oraculo tools task list --epic sistema-pagamentos --story checkout` at the end",
+      "passed": false,
+      "evidence": "Used `oraculo task list` instead of `oraculo tools task list`"
+    }
+  ],
+  "pass_rate": 0.5
+}

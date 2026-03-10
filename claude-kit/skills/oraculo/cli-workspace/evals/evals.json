@@ -1,0 +1,100 @@
+{
+  "skill_name": "oraculo:cli",
+  "evals": [
+    {
+      "id": 0,
+      "name": "eval-epic-story",
+      "prompt": "Você está iniciando o desenvolvimento do epic `sistema-pagamentos`. Usando a CLI do Oraculo: (1) crie o epic com a descrição 'Sistema de processamento de pagamentos'; (2) salve estes requisitos no epic: '# Requisitos\\n\\nO sistema deve processar pagamentos via cartão de crédito e PIX.'; (3) liste os stories existentes nesse epic. Mostre os comandos executados e os resultados de cada um.",
+      "expected_output": "Agent uses: epic init, echo pipe to epic save, story list. All three commands are called correctly with proper flags.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "uses-epic-init",
+          "description": "Calls `oraculo tools epic init sistema-pagamentos` with --description flag"
+        },
+        {
+          "id": "uses-epic-save-via-stdin",
+          "description": "Pipes markdown content via stdin to `oraculo tools epic save` (uses echo, heredoc, or printf)"
+        },
+        {
+          "id": "uses-story-list-with-epic-flag",
+          "description": "Calls `oraculo tools story list --epic sistema-pagamentos`"
+        },
+        {
+          "id": "correct-command-namespace",
+          "description": "All commands use the `oraculo tools` namespace (no invented subcommands like `oraculo epic` or `oraculo create`)"
+        },
+        {
+          "id": "shows-json-output",
+          "description": "Shows expected JSON output for at least the epic init command"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "eval-task-lifecycle",
+      "prompt": "O story `checkout` no epic `sistema-pagamentos` precisa de 3 tasks: `create-order` (sem dependências), `process-payment` (depende de create-order), e `send-receipt` (depende de process-payment). Usando a CLI do Oraculo: (1) registre as 3 tasks com suas dependências; (2) inicie a task `create-order`; (3) complete-a com o sumário 'Order created successfully', sem logs, sem skills_used, com files_modified=['src/order.go']; (4) liste todas as tasks para ver o estado atual. Mostre os comandos e resultados.",
+      "expected_output": "Agent uses: task init x3 (with --depends-on), task start, task complete with JSON stdin, task list. Stdin JSON is correctly formatted.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "creates-all-three-tasks",
+          "description": "Calls `oraculo tools task init` three times for create-order, process-payment, and send-receipt"
+        },
+        {
+          "id": "uses-depends-on-flag",
+          "description": "process-payment has `--depends-on create-order` and send-receipt has `--depends-on process-payment`"
+        },
+        {
+          "id": "uses-task-start",
+          "description": "Calls `oraculo tools task start create-order --epic sistema-pagamentos --story checkout`"
+        },
+        {
+          "id": "complete-uses-json-stdin",
+          "description": "Task complete receives JSON via stdin (not via flags)"
+        },
+        {
+          "id": "complete-json-has-correct-fields",
+          "description": "The stdin JSON for task complete includes `summary` and `files_modified` fields"
+        },
+        {
+          "id": "uses-task-list",
+          "description": "Calls `oraculo tools task list --epic sistema-pagamentos --story checkout` at the end"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "eval-approval-knowledge",
+      "prompt": "O design do story `autenticacao` no epic `user-management` está pronto. Usando a CLI do Oraculo: (1) solicite uma aprovação do tipo 'design' com o conteúdo '## Design\\n\\nUsaremos JWT com expiração de 24h'; (2) liste as aprovações pendentes; (3) persista no knowledge um padrão: domain='auth-service', category='pattern', finding='JWT tokens expiram em 24h; refresh tokens em cookies HttpOnly', source='design.md', confidence='medium'. Mostre os comandos e resultados.",
+      "expected_output": "Agent uses: echo pipe to approval request --type design, approval list --pending, memory store with all required flags.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "approval-request-type-design",
+          "description": "Calls `oraculo tools approval request --type design` with --epic and --story flags"
+        },
+        {
+          "id": "approval-content-via-stdin",
+          "description": "The design content is passed to approval request via stdin (echo, heredoc, or printf pipe)"
+        },
+        {
+          "id": "uses-approval-list-pending",
+          "description": "Calls `oraculo tools approval list --pending`"
+        },
+        {
+          "id": "memory-store-all-flags",
+          "description": "Calls `oraculo tools memory store` with --domain, --category, --finding, --source, and --confidence flags"
+        },
+        {
+          "id": "memory-store-correct-category",
+          "description": "Uses `pattern` as the --category value"
+        },
+        {
+          "id": "memory-store-correct-confidence",
+          "description": "Uses `medium` as the --confidence value"
+        }
+      ]
+    }
+  ]
+}

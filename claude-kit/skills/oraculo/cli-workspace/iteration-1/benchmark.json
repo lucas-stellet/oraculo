@@ -1,0 +1,90 @@
+{
+  "skill_name": "oraculo:cli",
+  "iteration": 1,
+  "configurations": [
+    {
+      "name": "with_skill",
+      "evals": [
+        {
+          "eval_name": "eval-epic-story",
+          "pass_rate": 1.0,
+          "passed": 5,
+          "total": 5,
+          "duration_ms": 25954,
+          "total_tokens": 16803
+        },
+        {
+          "eval_name": "eval-task-lifecycle",
+          "pass_rate": 1.0,
+          "passed": 6,
+          "total": 6,
+          "duration_ms": 30392,
+          "total_tokens": 17622
+        },
+        {
+          "eval_name": "eval-approval-knowledge",
+          "pass_rate": 1.0,
+          "passed": 6,
+          "total": 6,
+          "duration_ms": 37849,
+          "total_tokens": 17161
+        }
+      ],
+      "aggregate": {
+        "pass_rate": 1.0,
+        "passed": 17,
+        "total": 17,
+        "mean_duration_ms": 31398,
+        "mean_tokens": 17195
+      }
+    },
+    {
+      "name": "without_skill",
+      "evals": [
+        {
+          "eval_name": "eval-epic-story",
+          "pass_rate": 1.0,
+          "passed": 5,
+          "total": 5,
+          "duration_ms": 66268,
+          "total_tokens": 35662
+        },
+        {
+          "eval_name": "eval-task-lifecycle",
+          "pass_rate": 0.5,
+          "passed": 3,
+          "total": 6,
+          "duration_ms": 44825,
+          "total_tokens": 22443
+        },
+        {
+          "eval_name": "eval-approval-knowledge",
+          "pass_rate": 1.0,
+          "passed": 6,
+          "total": 6,
+          "duration_ms": 43460,
+          "total_tokens": 19216
+        }
+      ],
+      "aggregate": {
+        "pass_rate": 0.824,
+        "passed": 14,
+        "total": 17,
+        "mean_duration_ms": 51518,
+        "mean_tokens": 25774
+      }
+    }
+  ],
+  "delta": {
+    "pass_rate": "+17.6pp (100% vs 82.4%)",
+    "tokens": "-33% (17195 vs 25774 mean)",
+    "duration_ms": "-39% (31398ms vs 51518ms mean)"
+  },
+  "analyst_notes": [
+    "Eval-0 (epic-story): Non-discriminating on correctness — baseline read source code and produced correct commands. Discriminates only on efficiency (2x tokens, 2.5x time).",
+    "Eval-1 (task-lifecycle): Key discriminating eval. Baseline read source code but still got the `tools` namespace wrong for task commands (used `oraculo task *` instead of `oraculo tools task *`). This is the most important correctness signal.",
+    "Eval-2 (approval-knowledge): Non-discriminating on correctness — baseline read source code and got it right. Discriminates on efficiency only.",
+    "The `correct-command-namespace` assertion in eval-0 is non-discriminating when the agent has access to the source code. Consider adding it to eval-1 explicitly.",
+    "The skill provides both correctness AND efficiency gains. In production installs (no source code), the gap would be much larger — the skill is the only reference available."
+  ]
+}

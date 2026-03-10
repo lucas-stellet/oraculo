@@ -1,0 +1,31 @@
+{
+  "eval_id": 1,
+  "eval_name": "eval-task-lifecycle",
+  "prompt": "O story `checkout` no epic `sistema-pagamentos` precisa de 3 tasks: `create-order` (sem dependências), `process-payment` (depende de create-order), e `send-receipt` (depende de process-payment). Usando a CLI do Oraculo: (1) registre as 3 tasks com suas dependências; (2) inicie a task `create-order`; (3) complete-a com o sumário 'Order created successfully', sem logs, sem skills_used, com files_modified=['src/order.go']; (4) liste todas as tasks para ver o estado atual. Mostre os comandos e resultados.",
+  "assertions": [
+    {
+      "id": "creates-all-three-tasks",
+      "description": "Calls `oraculo tools task init` three times for create-order, process-payment, and send-receipt"
+    },
+    {
+      "id": "uses-depends-on-flag",
+      "description": "process-payment has `--depends-on create-order` and send-receipt has `--depends-on process-payment`"
+    },
+    {
+      "id": "uses-task-start",
+      "description": "Calls `oraculo tools task start create-order --epic sistema-pagamentos --story checkout`"
+    },
+    {
+      "id": "complete-uses-json-stdin",
+      "description": "Task complete receives JSON via stdin (not via flags)"
+    },
+    {
+      "id": "complete-json-has-correct-fields",
+      "description": "The stdin JSON for task complete includes `summary` and `files_modified` fields"
+    },
+    {
+      "id": "uses-task-list",
+      "description": "Calls `oraculo tools task list --epic sistema-pagamentos --story checkout` at the end"
+    }
+  ]
+}

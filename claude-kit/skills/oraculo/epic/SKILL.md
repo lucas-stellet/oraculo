@@ -47,6 +47,7 @@ disable-model-invocation: true
 
 ## Rules
 
+- For complete CLI command syntax and all available commands, see `/oraculo:cli`.
 - Always communicate in the user's `preferred_language` from `.oraculo/config.json`. If not set, ask in the first interaction.
 - Read exactly one phase file at a time.
 - Load reference files only when the active phase instructs you to.

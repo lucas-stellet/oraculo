@@ -40,6 +40,7 @@ disable-model-invocation: true
 
 ## Rules
 
+- For complete CLI command syntax and all available commands, see `/oraculo:cli`.
 - Read exactly one phase file at a time.
 - QA never fixes code.
 - Rejected work must be routed explicitly to execute, plan, story, or epic.

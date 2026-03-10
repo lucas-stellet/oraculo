@@ -44,6 +44,7 @@ disable-model-invocation: true
 
 ## Rules
 
+- For complete CLI command syntax and all available commands, see `/oraculo:cli`.
 - Always communicate in the user's `preferred_language` from `.oraculo/config.json`. If not set, ask in the first interaction.
 - Read exactly one phase file at a time.
 - The story is an executable specification: context, business rules, expected behavior, and acceptance criteria. Methodology jargon (JTBD, Four Forces, Double Diamond, INVEST, Assumption Mapping) must never appear in the final story document — these frameworks guide the conversation only.

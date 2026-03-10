@@ -1,0 +1,36 @@
+{
+  "run_id": "eval-approval-knowledge-with_skill",
+  "assertions": [
+    {
+      "text": "approval-request-type-design: Calls `oraculo tools approval request --type design` with --epic and --story flags",
+      "passed": true,
+      "evidence": "`oraculo tools approval request --type design --epic user-management --story autenticacao`"
+    },
+    {
+      "text": "approval-content-via-stdin: The design content is passed to approval request via stdin",
+      "passed": true,
+      "evidence": "`printf '## Design\\n\\nUsaremos JWT com expiração de 24h' | oraculo tools approval request ...`"
+    },
+    {
+      "text": "uses-approval-list-pending: Calls `oraculo tools approval list --pending`",
+      "passed": true,
+      "evidence": "`oraculo tools approval list --pending`"
+    },
+    {
+      "text": "memory-store-all-flags: Calls `oraculo tools memory store` with --domain, --category, --finding, --source, and --confidence flags",
+      "passed": true,
+      "evidence": "All five flags present: `--domain auth-service --category pattern --finding '...' --source design.md --confidence medium`"
+    },
+    {
+      "text": "memory-store-correct-category: Uses `pattern` as the --category value",
+      "passed": true,
+      "evidence": "`--category pattern`"
+    },
+    {
+      "text": "memory-store-correct-confidence: Uses `medium` as the --confidence value",
+      "passed": true,
+      "evidence": "`--confidence medium`"
+    }
+  ],
+  "pass_rate": 1.0
+}

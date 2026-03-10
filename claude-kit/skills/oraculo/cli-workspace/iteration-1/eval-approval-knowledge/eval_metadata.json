@@ -1,0 +1,31 @@
+{
+  "eval_id": 2,
+  "eval_name": "eval-approval-knowledge",
+  "prompt": "O design do story `autenticacao` no epic `user-management` está pronto. Usando a CLI do Oraculo: (1) solicite uma aprovação do tipo 'design' com o conteúdo '## Design\\n\\nUsaremos JWT com expiração de 24h'; (2) liste as aprovações pendentes; (3) persista no knowledge um padrão: domain='auth-service', category='pattern', finding='JWT tokens expiram em 24h; refresh tokens em cookies HttpOnly', source='design.md', confidence='medium'. Mostre os comandos e resultados.",
+  "assertions": [
+    {
+      "id": "approval-request-type-design",
+      "description": "Calls `oraculo tools approval request --type design` with --epic and --story flags"
+    },
+    {
+      "id": "approval-content-via-stdin",
+      "description": "The design content is passed to approval request via stdin (echo, heredoc, or printf pipe)"
+    },
+    {
+      "id": "uses-approval-list-pending",
+      "description": "Calls `oraculo tools approval list --pending`"
+    },
+    {
+      "id": "memory-store-all-flags",
+      "description": "Calls `oraculo tools memory store` with --domain, --category, --finding, --source, and --confidence flags"
+    },
+    {
+      "id": "memory-store-correct-category",
+      "description": "Uses `pattern` as the --category value"
+    },
+    {
+      "id": "memory-store-correct-confidence",
+      "description": "Uses `medium` as the --confidence value"
+    }
+  ]
+}

@@ -44,6 +44,7 @@ disable-model-invocation: true
 
 ## Rules
 
+- For complete CLI command syntax and all available commands, see `/oraculo:cli`.
 - Communicate in `preferred_language` from config.
 - Read exactly one phase file at a time.
 - Keep the output DAG-oriented and deterministic.

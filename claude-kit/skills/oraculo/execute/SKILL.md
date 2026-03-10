@@ -41,6 +41,7 @@ disable-model-invocation: true
 
 ## Rules
 
+- For complete CLI command syntax and all available commands, see `/oraculo:cli`.
 - Read exactly one phase file at a time.
 - Treat agent dispatch as orchestration guidance, not direct implementation.
 - Do not auto-invoke `/oraculo:validate`; recommend it explicitly.
