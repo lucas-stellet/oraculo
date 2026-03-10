@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { deriveStoryStatus } from "@/lib/utils";
 import type { Story, StoryTask, StoryVersion, Review, Validation, ApprovalStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useWebSocket } from "@/lib/ws";
+import type { WSEvent } from "@/lib/ws";
 import { TasksTab } from "./_components/tasks-tab";
 import { RequirementsTab } from "./_components/requirements-tab";
 import { DesignTab } from "./_components/design-tab";
@@ -41,6 +43,35 @@ export default function StoryDetailPage() {
   const [validations, setValidations] = useState<Validation[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("Tasks");
+  const [activeAgents, setActiveAgents] = useState<Record<number, string>>({});
+
+  const handleWS = useCallback((evt: WSEvent) => {
+    if (evt.event === "task_started" || evt.event === "task_completed") {
+      api.listTasks(epicName, storyName).then(setTasks).catch(() => {});
+      api.listStories(epicName).then((stories) => {
+        const found = stories.find((s) => s.name === storyName);
+        if (found) setStory(found);
+      }).catch(() => {});
+    }
+    if (evt.event === "agent_started") {
+      const data = evt.data as { task_id?: number; name?: string } | undefined;
+      if (data?.task_id && data?.name) {
+        setActiveAgents((prev) => ({ ...prev, [data.task_id!]: data.name! }));
+      }
+    }
+    if (evt.event === "agent_stopped") {
+      const data = evt.data as { task_id?: number } | undefined;
+      if (data?.task_id) {
+        setActiveAgents((prev) => {
+          const next = { ...prev };
+          delete next[data.task_id!];
+          return next;
+        });
+      }
+    }
+  }, [epicName, storyName]);
+
+  useWebSocket(handleWS);
 
   useEffect(() => {
     Promise.all([
@@ -145,7 +176,7 @@ export default function StoryDetailPage() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "Tasks" && <TasksTab tasks={tasks} />}
+      {activeTab === "Tasks" && <TasksTab tasks={tasks} activeAgents={activeAgents} />}
       {activeTab === "Requirements" && <RequirementsTab versions={versions} reviews={reviews} />}
       {activeTab === "Design" && <DesignTab epicName={epicName} />}
       {activeTab === "QA" && <QATab validations={validations} />}

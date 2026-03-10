@@ -39,7 +39,7 @@ const taskStatusConfig: Record<
   },
 };
 
-export function TasksTab({ tasks }: { tasks: StoryTask[] }) {
+export function TasksTab({ tasks, activeAgents }: { tasks: StoryTask[]; activeAgents?: Record<number, string> }) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   return (
@@ -90,6 +90,14 @@ export function TasksTab({ tasks }: { tasks: StoryTask[] }) {
               >
                 {config.label}
               </span>
+
+              {/* Agent Badge */}
+              {task.status === "in_progress" && activeAgents?.[task.id] && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-blue-900/50 px-2 py-0.5 text-[11px] text-blue-300 font-[family-name:var(--font-mono)]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+                  {activeAgents[task.id]}
+                </span>
+              )}
 
               {/* Duration */}
               <span className="w-16 shrink-0 text-right text-xs text-zinc-500 font-[family-name:var(--font-mono)]">
