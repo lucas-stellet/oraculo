@@ -8,13 +8,10 @@ DASHBOARD_DIR := ./apps/dashboard
 .PHONY: build rebuild install test vet clean web-dev
 
 build:
-	@# Build dashboard if not already built
-	@if [ ! -d "$(DASHBOARD_DIR)/out" ]; then \
-		cd $(DASHBOARD_DIR) && bun run build; \
-	fi
-	@# Copy static files to embedded directory
-	@mkdir -p apps/backend/src/server/dashboard_assets
-	@cp -r $(DASHBOARD_DIR)/out/* apps/backend/src/server/dashboard_assets/
+	rm -rf $(DASHBOARD_DIR)/out apps/backend/src/server/dashboard_assets
+	cd $(DASHBOARD_DIR) && bun run build
+	mkdir -p apps/backend/src/server/dashboard_assets
+	cp -r $(DASHBOARD_DIR)/out/* apps/backend/src/server/dashboard_assets/
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(BUILD)
 
 rebuild:
