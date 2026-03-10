@@ -54,6 +54,43 @@ Do NOT assume the filesystem is clean.
 - `{orchestrator_analysis_of_failure}`: your analysis of root cause based on the failure signal
 - `{suggested_alternative_approach}`: concrete guidance for an alternative approach that avoids the same failure
 
+## Pre-Dispatch Hooks
+
+Before dispatching each agent via the Agent tool, the orchestrator MUST call two hooks:
+
+### 1. `oraculo hook task-started`
+Broadcasts `task_started` WS event so the dashboard re-fetches and shows the task as in-progress.
+
+```bash
+oraculo hook task-started \
+  --task-name "<task_name>" \
+  --story-name "<story_name>" \
+  --epic-name "<epic_name>"
+```
+
+### 2. `oraculo hook agent-start`
+Registers the agent with its task association. The dashboard uses this to show "executing · {agent_name}" on the task row.
+
+```bash
+oraculo hook agent-start \
+  --agent-name "<agent_name>" \
+  --agent-type "<code|research>" \
+  --task-name "<task_name>" \
+  --story-name "<story_name>" \
+  --epic-name "<epic_name>"
+```
+
+`--session-id` is optional. If provided, it should be the Claude Code session ID of the dispatched agent (not always known before dispatch — omit if unknown).
+
+Both calls are best-effort: failure logs a warning but does not block dispatch.
+
+> **Ordem obrigatória:** O frontend, ao receber `task_started`, chama `api.listTasks()` e espera ver o status `in_progress` no banco. `handleTaskStarted` no backend apenas faz broadcast — não altera o DB. Portanto, `oraculo task start` **deve ser chamado antes** de `oraculo hook task-started`, para que o banco já esteja atualizado quando o frontend consultar. A sequência completa antes de cada dispatch é:
+>
+> 1. `oraculo task start --story-id <id> --name <task_name>` — muda status para `in_progress` no DB
+> 2. `oraculo hook task-started ...` — broadcast WS para o dashboard atualizar
+> 3. `oraculo hook agent-start ...` — registra associação agente↔task
+> 4. Dispatch via Agent tool
+
 ## No Direct Agent Coordination
 
 Agents do not coordinate directly with each other. Oraculo coordinates through the DAG and task state.

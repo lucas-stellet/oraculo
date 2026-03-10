@@ -47,6 +47,28 @@ Give each agent:
 
 Follow the prompt template in references/agent-dispatch.md section "Prompt Template".
 
+Before dispatching each agent, call both hooks in this order:
+
+1. Notify task start:
+   ```bash
+   oraculo hook task-started \
+     --task-name "<task_name>" \
+     --story-name "<story_name>" \
+     --epic-name "<epic_name>"
+   ```
+
+2. Register agent with task association:
+   ```bash
+   oraculo hook agent-start \
+     --agent-name "<agent_name>" \
+     --agent-type "<code|research>" \
+     --task-name "<task_name>" \
+     --story-name "<story_name>" \
+     --epic-name "<epic_name>"
+   ```
+
+These calls are best-effort. If they fail (server offline), log a warning and proceed with dispatch.
+
 Use the persisted DAG and known file conflicts to decide what can run in parallel.
 
 <halt>
