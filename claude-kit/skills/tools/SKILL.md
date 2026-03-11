@@ -197,7 +197,9 @@ oraculo tools approval verdict <id> \
 
 ## MCP Tools
 
-MCP tools are blocking/interactive operations available through the Oraculo MCP server. They are used by agents that need to wait for human decisions.
+MCP tools are blocking/interactive operations exposed by the Oraculo MCP server. They are **Claude tool calls** — NOT bash commands. Call them directly as tools (the same way you call Read, Bash, etc.), not via `oraculo tools ...`.
+
+> If the `request_approval` or `approval_status` tools do not appear in your tool list, the Oraculo MCP server is not connected. In that case fall back to `oraculo tools approval status <id>` via Bash, which also returns inline comments.
 
 ### request_approval
 
@@ -232,6 +234,15 @@ Blocks until a human verdict is recorded. Use this instead of polling `approval 
 ### approval_status
 
 Non-blocking check of an approval's current state. Returns the same enriched format as `request_approval`.
+
+**Call it as a tool, not bash:**
+```
+# CORRECT — direct tool call:
+approval_status({ "id": "775900e9-..." })
+
+# WRONG — this is the CLI command, not the MCP tool:
+oraculo tools approval status 775900e9-...
+```
 
 ---
 

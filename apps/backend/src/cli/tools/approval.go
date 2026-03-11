@@ -90,7 +90,7 @@ func newApprovalRequestCmd() *cobra.Command {
 func newApprovalStatusCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "status <id>",
-		Short: "Get the status of an approval request",
+		Short: "Get the status of an approval request (includes inline comments)",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			w := cmd.OutOrStdout()
@@ -102,7 +102,15 @@ func newApprovalStatusCmd() *cobra.Command {
 				output.WriteError(w, err)
 				return err
 			}
-			return output.WriteJSON(w, approval)
+			comments, err := store.ListComments(id)
+			if err != nil {
+				output.WriteError(w, err)
+				return err
+			}
+			return output.WriteJSON(w, struct {
+				*domain.Approval
+				Comments []domain.ApprovalComment `json:"comments"`
+			}{approval, comments})
 		},
 	}
 }
