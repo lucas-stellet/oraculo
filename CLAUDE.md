@@ -66,7 +66,15 @@ Monorepo application code.
 
 ### `claude-kit/`
 
-Distributable kit of Claude Code skills/commands. This folder is meant to be copied into the user's project under `.claude/` when they adopt Oraculo. During development, skills live here and are referenced from this repo.
+Claude Code plugin and distributable skill kit. This directory serves dual purpose:
+- **Plugin mode:** Claude Code plugin root (`.claude-plugin/plugin.json`), installed via marketplace
+- **CLI mode:** Embedded in the Go binary via `embed.FS`, copied during `oraculo install`
+
+### `npm/`
+
+npm package templates for distributing the Go binary. CI cross-compiles and publishes:
+- `@oraculo/cli` — JS launcher with optionalDependencies
+- `@oraculo/cli-{darwin,linux}-{arm64,x64}` — platform-specific Go binaries
 
 ```
 apps/
@@ -75,63 +83,23 @@ apps/
 │   └── src/                — Go packages (cli, db, domain, config, etc.)
 └── dashboard/              — Web UI (Next.js)
 claude-kit/
+├── .claude-plugin/
+│   └── plugin.json         — Claude Code plugin manifest
+├── .mcp.json               — MCP server config (npx @oraculo/cli)
+├── embed.go                — Go embed directive for CLI distribution
 └── skills/
-    └── oraculo/
-        ├── epic/
-        │   ├── SKILL.md
-        │   ├── phases/
-        │   │   ├── 00-setup.md
-        │   │   ├── 01-reframing.md
-        │   │   ├── 02-divergence.md
-        │   │   ├── 03-codebase-analysis.md
-        │   │   ├── 04-convergence.md
-        │   │   ├── 05-assumptions.md
-        │   │   ├── 06-exit-gate.md
-        │   │   ├── 07-artifact.md
-        │   │   └── 08-approval.md
-        │   └── references/
-        │       ├── question-bank.md
-        │       ├── frameworks.md
-        │       └── artifact-templates.md
-        └── story/
-            ├── SKILL.md
-            ├── phases/
-            │   ├── 00-setup.md
-            │   ├── 01-reframing.md
-            │   ├── 02-assumptions.md
-            │   ├── 03-exit-gate.md
-            │   ├── 04-artifact.md
-            │   └── 05-approval.md
-            └── references/
-                ├── question-bank.md
-                └── artifact-templates.md
-        ├── plan/
-        │   ├── SKILL.md
-        │   ├── phases/
-        │   │   ├── 00-setup.md
-        │   │   ├── 01-decomposition.md
-        │   │   ├── 02-dependencies.md
-        │   │   ├── 03-optimization.md
-        │   │   └── 04-artifact.md
-        │   └── references/
-        │       └── decomposition-patterns.md
-        ├── execute/
-        │   ├── SKILL.md
-        │   ├── phases/
-        │   │   ├── 00-setup.md
-        │   │   ├── 01-team-assembly.md
-        │   │   ├── 02-monitoring.md
-        │   │   └── 03-completion.md
-        │   └── references/
-        │       └── agent-dispatch.md
-        └── validate/
-            ├── SKILL.md
-            ├── phases/
-            │   ├── 00-setup.md
-            │   ├── 01-qa-dispatch.md
-            │   └── 02-verdict.md
-            └── references/
-                └── qa-criteria.md
+    ├── epic/               — Epic discovery skill
+    ├── story/              — Story definition skill
+    ├── plan/               — Planning and decomposition skill
+    ├── execute/            — Execution orchestration skill
+    ├── validate/           — QA validation skill
+    └── tools/              — CLI/MCP reference (always loaded)
+npm/
+├── cli/                    — @oraculo/cli (JS launcher)
+├── cli-darwin-arm64/       — macOS ARM binary
+├── cli-darwin-x64/         — macOS Intel binary
+├── cli-linux-x64/          — Linux x64 binary
+└── cli-linux-arm64/        — Linux ARM binary
 ```
 
 Only `SKILL.md` files appear as slash commands. Reference files inside skill directories are internal — they don't pollute the command list.
