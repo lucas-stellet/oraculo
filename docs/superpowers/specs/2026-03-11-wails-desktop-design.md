@@ -117,8 +117,9 @@ Note: `oraculo restart` CLI command survives (useful for headless users without 
 - **System tray built-in** -- `app.SystemTray.New()` replaces external `fyne-io/systray` dependency and avoids macOS main thread conflicts
 - **Multi-window native** -- each project can open its own dashboard window via `app.NewWebviewWindowWithOptions()`
 - **Service pattern** -- dependency injection replaces global context threading, more testable
-- **Better build system** -- Task-based, transparent, customizable
+- **Better build system** -- `Taskfile.yml` replaces `wails.json`, transparent and customizable
 - **Auto-generated TypeScript bindings** -- `wails3 generate bindings` produces typed TS functions in `./bindings/`
+- **Tray-attached windows** -- `tray.AttachWindow(win)` auto-toggles window near tray icon with focus-loss hiding
 
 v3 is in alpha (v3.0.0-alpha.68+) with daily releases. Acceptable risk for an internal tool used by ~5 people.
 
@@ -134,8 +135,7 @@ apps/desktop/
 ├── tray.go              -- built-in system tray (app.SystemTray.New())
 ├── ws_monitor.go        -- Go-side WS client for event monitoring
 ├── spa.go               -- SPA routing for asset server (reuses withPlaceholders/spaShell)
-├── Taskfile.yml          -- Wails v3 build tasks
-├── wails.json           -- Wails config
+├── Taskfile.yml          -- Wails v3 build tasks (replaces wails.json)
 ├── build/               -- icons, platform manifests
 └── frontend/            -- copied from apps/frontend/out/ at build time
 ```

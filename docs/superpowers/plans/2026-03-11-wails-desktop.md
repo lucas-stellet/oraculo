@@ -967,17 +967,24 @@ func main() {
 			Handler: NewSPAHandler(assets),
 		},
 		Mac: application.MacOptions{
-			TerminateOnLastWindowClosed: false,
+			// No dock icon — tray-only app
+			ActivationPolicy: application.ActivationPolicyAccessory,
+			ApplicationShouldTerminateAfterLastWindowClosed: false,
+		},
+		Windows: application.WindowsOptions{
+			DisableQuitOnLastWindowClosed: true,
 		},
 	})
 
-	app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+	launcherWindow := app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
 		Title:  "Oraculo",
 		Name:   "launcher",
 		Width:  1024,
 		Height: 700,
 		URL:    "/",
 	})
+
+	setupTray(app, launcherWindow)
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)
@@ -1036,35 +1043,37 @@ func NewSPAHandler(rawAssets embed.FS) http.Handler {
 
 Note: In Wails v3, `Assets.Handler` is the **primary** handler — it receives all requests. Unlike v2 (fallback-only), we must check for exact file matches first.
 
-- [ ] **Step 6: Create wails.json**
+- [ ] **Step 6: Create Taskfile.yml**
 
-```json
-{
-  "name": "oraculo-desktop",
-  "outputfilename": "oraculo-desktop",
-  "frontend:dir": "../frontend",
-  "frontend:install": "bun install",
-  "frontend:build": "bun run build && rm -rf ../desktop/frontend/dist && mkdir -p ../desktop/frontend/dist && cp -r out/* ../desktop/frontend/dist/",
-  "author": {
-    "name": "Lucas Stellet"
-  }
-}
-```
-
-Note: `frontend:build` runs inside `frontend:dir` (which is `../frontend`). So `bun run build` runs in `apps/frontend/`, and the copy paths are relative to that directory.
-
-- [ ] **Step 7: Create Taskfile.yml**
+Wails v3 replaces `wails.json` with `Taskfile.yml` (go-task):
 
 ```yaml
 version: '3'
 
+vars:
+  APP_NAME: oraculo-desktop
+  BIN_DIR: bin
+  FRONTEND_DIR: ../frontend
+
 tasks:
+  build:frontend:
+    dir: '{{.FRONTEND_DIR}}'
+    cmds:
+      - bun install
+      - bun run build
+      - rm -rf ../desktop/frontend/dist
+      - mkdir -p ../desktop/frontend/dist
+      - cp -r out/* ../desktop/frontend/dist/
+
+  build:
+    deps: [build:frontend]
+    cmds:
+      - go build -tags production -trimpath -ldflags="-w -s" -o {{.BIN_DIR}}/{{.APP_NAME}}
+
   dev:
     cmds:
       - wails3 dev
-  build:
-    cmds:
-      - wails3 build
+
   generate:
     cmds:
       - wails3 generate bindings
@@ -1179,14 +1188,24 @@ type ProjectWithStatus struct {
 
 type LauncherService struct {
 	binaryPath string
+	wsMonitor  *wsMonitor
 }
 
 func NewLauncherService() *LauncherService {
-	return &LauncherService{}
+	return &LauncherService{
+		wsMonitor: newWSMonitor(),
+	}
 }
 
+// ServiceStartup is called by Wails v3 during app initialization.
 func (s *LauncherService) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
 	s.binaryPath = findBinary()
+	return nil
+}
+
+// ServiceShutdown is called by Wails v3 during app teardown.
+func (s *LauncherService) ServiceShutdown() error {
+	s.wsMonitor.DisconnectAll()
 	return nil
 }
 
@@ -1435,14 +1454,21 @@ Create `apps/desktop/tray.go`:
 package main
 
 import (
+	"runtime"
+
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
+	"github.com/wailsapp/wails/v3/pkg/icons"
 )
 
 func setupTray(app *application.App, launcherWindow *application.WebviewWindow) {
 	tray := app.NewSystemTray()
 
-	// TODO: Set icon from embedded resource
+	// macOS: use template icon (system handles light/dark automatically)
+	if runtime.GOOS == "darwin" {
+		tray.SetTemplateIcon(icons.SystrayMacTemplate)
+	}
+	// TODO: Set custom icon from embedded resource
 	// tray.SetIcon(iconBytes)
 	// tray.SetDarkModeIcon(darkIconBytes)
 	tray.SetTooltip("Oraculo Desktop")
@@ -1459,20 +1485,19 @@ func setupTray(app *application.App, launcherWindow *application.WebviewWindow) 
 
 	tray.SetMenu(menu)
 
-	// Click tray icon -> toggle window
-	tray.OnClick(func() {
-		if launcherWindow.IsVisible() {
-			launcherWindow.Hide()
-		} else {
-			launcherWindow.Show()
-			launcherWindow.Focus()
-		}
-	})
+	// AttachWindow auto-toggles the window near the tray icon on click.
+	// Also hides the window when it loses focus.
+	tray.AttachWindow(launcherWindow).WindowOffset(5)
 
 	// Hide window instead of quitting when close button is clicked
 	launcherWindow.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
-		e.Cancel()
 		launcherWindow.Hide()
+		e.Cancel()
+	})
+
+	// macOS: re-open window on Dock icon click
+	app.OnApplicationEvent(events.Mac.ApplicationShouldHandleReopen, func(e *application.ApplicationEvent) {
+		launcherWindow.Show()
 	})
 }
 ```
@@ -1701,8 +1726,8 @@ build-backend:
 build: build-backend
 
 build-desktop: build-backend
-	cp $(BINARY) apps/desktop/build/bin/oraculo
-	cd apps/desktop && wails3 build
+	cp $(BINARY) apps/desktop/bin/oraculo
+	cd apps/desktop && task build
 
 install: build
 	install -m 755 $(BINARY) $(DESTDIR)$(PREFIX)/bin/$(BINARY)
