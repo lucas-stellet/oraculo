@@ -27,6 +27,7 @@ func NewRoot(version string) *cobra.Command {
 		newKillCmd(),
 		newLogsCmd(),
 		newInstallCmd(),
+		newSetupCmd(),
 		newUninstallCmd(),
 		newStatusCmd(),
 		tools.NewToolsCmd(),
