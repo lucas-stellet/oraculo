@@ -61,8 +61,9 @@ Design index: [docs/ui/design.md](docs/ui/design.md)
 
 Monorepo application code.
 
-- **`apps/backend/`** — Go backend: CLI binary (`cmd/oraculo/`) and packages (`src/` — cli, db, domain, config, etc.)
+- **`apps/backend/`** — Go backend: CLI binary (`cmd/oraculo/`) and packages (`src/` — cli, db, domain, config, spa, registry, etc.)
 - **`apps/frontend/`** — Web UI (Next.js) — the observation and control surface
+- **`apps/desktop/`** — Wails v3 native app — embeds the frontend and bundles the oraculo binary
 
 ### `claude-kit/`
 
@@ -80,8 +81,9 @@ npm package templates for distributing the Go binary. CI cross-compiles and publ
 apps/
 ├── backend/
 │   ├── cmd/oraculo/        — CLI entrypoint
-│   └── src/                — Go packages (cli, db, domain, config, etc.)
-└── frontend/               — Web UI (Next.js)
+│   └── src/                — Go packages (cli, db, domain, config, spa, registry, etc.)
+├── frontend/               — Web UI (Next.js)
+└── desktop/                — Wails v3 native app (embeds frontend, bundles oraculo binary)
 claude-kit/
 ├── .claude-plugin/
 │   └── plugin.json         — Claude Code plugin manifest
@@ -104,17 +106,19 @@ npm/
 
 Only `SKILL.md` files appear as slash commands. Reference files inside skill directories are internal — they don't pollute the command list.
 
-## Dashboard Static Assets and SPA Routing
+## SPA Routing
 
-The dashboard is a Next.js app with `output: "export"`, embedded in the Go binary via `embed.FS`. Dynamic routes are pre-rendered with the `__placeholder__` param (e.g. `/epics/__placeholder__/approvals.html`).
+The frontend is a Next.js app with `output: "export"`. It is embedded in the Wails desktop app (`apps/desktop/`) via `embed.FS` — not in the Go backend binary. Dynamic routes are pre-rendered with the `__placeholder__` param (e.g. `/epics/__placeholder__/approvals.html`).
 
-### How the Go server routes requests (`apps/backend/src/server/server.go`)
+The SPA routing logic lives in the shared package `apps/backend/src/spa/` and is wired into the desktop app via `apps/desktop/spa.go`.
 
-The SPA handler follows three steps in order:
+### How the SPA handler routes requests
+
+The handler follows three steps in order:
 
 1. **Exact file** — if `fs.Stat(assets, fsPath)` finds the file, serve it directly.
-2. **Placeholder substitution** — if the file doesn't exist, replace dynamic segments in the URL with `__placeholder__` (via `withPlaceholders`) and serve the resulting file if it exists.
-3. **HTML/TXT shell** — fallback to `spaShell`, which maps the route to the `.html` shell (direct navigation) or `.txt` payload (RSC requests with `?_rsc=`).
+2. **Placeholder substitution** — if the file doesn't exist, replace dynamic segments in the URL with `__placeholder__` (via `WithPlaceholders`) and serve the resulting file if it exists.
+3. **HTML/TXT shell** — fallback to `Shell`, which maps the route to the `.html` shell (direct navigation) or `.txt` payload (RSC requests with `?_rsc=`).
 
 ### Why step 2 is necessary
 
@@ -125,12 +129,12 @@ GET /epics/gastos-pessoais/approvals/__next.epics.$d$id.approvals.__PAGE__.txt
 GET /epics/gastos-pessoais/approvals/__next._full.txt
 ```
 
-These files live under `epics/__placeholder__/approvals/`, not `epics/gastos-pessoais/approvals/`. Without substitution, the handler falls through to `spaShell` and returns HTML — the router receives HTML where it expects RSC data and navigates to the wrong page.
+These files live under `epics/__placeholder__/approvals/`, not `epics/gastos-pessoais/approvals/`. Without substitution, the handler falls through to `Shell` and returns HTML — the router receives HTML where it expects RSC data and navigates to the wrong page.
 
 ### When adding new dynamic routes to the dashboard
 
-- Add the dynamic segment to `withPlaceholders` in `server.go`.
-- Also update `spaShell` with the corresponding shell mapping.
+- Add the dynamic segment to `WithPlaceholders` in `apps/backend/src/spa/`.
+- Also update `Shell` with the corresponding shell mapping.
 - Every new dynamic page must use `generateStaticParams()` returning `[{ id: "__placeholder__" }]` (or the equivalent param name).
 - Never add client-side redirect logic based on SSR params — always use `usePathname()` to read the real ID from the URL.
 
