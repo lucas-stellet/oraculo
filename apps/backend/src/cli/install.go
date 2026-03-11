@@ -120,7 +120,7 @@ func runInstall(cmd *cobra.Command) error {
 		MCPServers: map[string]mcpServer{
 			"oraculo": {
 				Command: "oraculo",
-				Args:    []string{"start", "mcp"},
+				Args:    []string{"start"},
 			},
 		},
 	}
