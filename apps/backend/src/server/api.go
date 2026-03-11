@@ -243,10 +243,85 @@ func (a *APIHandler) handleVerdict(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if verdict == domain.VerdictApproved {
+		a.approvals.DeleteCommentsByApproval(id)
+	}
+
 	updated, err := a.bridge.Status(id)
 	if err != nil {
 		writeAPIError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	writeJSON(w, updated)
+}
+
+// handleCreateComment creates a new comment on an approval.
+// POST /api/approvals/{id}/comments
+// Body: {"selected_text":"...","comment":"..."}
+func (a *APIHandler) handleCreateComment(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		writeAPIError(w, http.StatusBadRequest, "missing approval id")
+		return
+	}
+
+	var body struct {
+		SelectedText string `json:"selected_text"`
+		Comment      string `json:"comment"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeAPIError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if body.SelectedText == "" || body.Comment == "" {
+		writeAPIError(w, http.StatusBadRequest, "selected_text and comment are required")
+		return
+	}
+
+	comment, err := a.approvals.CreateComment(id, body.SelectedText, body.Comment)
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	writeJSON(w, comment)
+}
+
+// handleListComments returns all comments for an approval.
+// GET /api/approvals/{id}/comments
+func (a *APIHandler) handleListComments(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		writeAPIError(w, http.StatusBadRequest, "missing approval id")
+		return
+	}
+
+	comments, err := a.approvals.ListComments(id)
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if comments == nil {
+		comments = []domain.ApprovalComment{}
+	}
+	writeJSON(w, comments)
+}
+
+// handleDeleteComment deletes a single comment by ID.
+// DELETE /api/approvals/{id}/comments/{commentId}
+func (a *APIHandler) handleDeleteComment(w http.ResponseWriter, r *http.Request) {
+	commentIDStr := r.PathValue("commentId")
+	commentID, err := strconv.Atoi(commentIDStr)
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, "invalid comment id")
+		return
+	}
+
+	if err := a.approvals.DeleteComment(commentID); err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

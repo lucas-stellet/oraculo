@@ -90,6 +90,9 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 	mux.HandleFunc("GET /api/approvals", api.handleListApprovals)
 	mux.HandleFunc("GET /api/approvals/{id}", api.handleGetApproval)
 	mux.HandleFunc("POST /api/approvals/{id}/verdict", api.handleVerdict)
+	mux.HandleFunc("POST /api/approvals/{id}/comments", api.handleCreateComment)
+	mux.HandleFunc("GET /api/approvals/{id}/comments", api.handleListComments)
+	mux.HandleFunc("DELETE /api/approvals/{id}/comments/{commentId}", api.handleDeleteComment)
 
 	// WebSocket
 	mux.HandleFunc("GET /ws", hub.ServeWS)
