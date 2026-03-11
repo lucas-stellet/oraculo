@@ -52,7 +52,7 @@ func newRestartCmd() *cobra.Command {
 				&os.ProcAttr{
 					Files: []*os.File{nil, nil, nil},
 					Sys:   &syscall.SysProcAttr{Setsid: true},
-					Env:   append(os.Environ(), "ORACULO_NO_BROWSER=1"),
+					Env:   os.Environ(),
 				},
 			)
 			if err != nil {

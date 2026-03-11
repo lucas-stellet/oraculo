@@ -2,13 +2,9 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
-	"net"
 	"os"
-	"os/exec"
 	"os/signal"
-	"runtime"
 	"syscall"
 	"time"
 
@@ -106,61 +102,15 @@ func runStartAll(cmd *cobra.Command, version string) error {
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return hub.Run(ctx) })
-
-	if isPortInUse(port) {
-		logger.Info("server.http_already_running", "port", port)
-	} else {
-		go func() {
-			logger.Info("server.started", "port", port)
-			if err := srv.ListenAndServe(ctx, port, 0); err != nil {
-				logger.Warn("server.http_unavailable", "port", port, "error", err)
-			}
-		}()
-
-		if os.Getenv("ORACULO_NO_BROWSER") == "" {
-			go func() {
-				time.Sleep(500 * time.Millisecond)
-				url := fmt.Sprintf("http://localhost:%d", port)
-				if err := openBrowser(url); err != nil {
-					logger.Error("browser.open_failed", "url", url, "error", err)
-				} else {
-					logger.Info("browser.opened", "url", url)
-				}
-			}()
-		}
-	}
-
+	g.Go(func() error {
+		logger.Info("server.started", "port", port)
+		return srv.ListenAndServe(ctx, port, 0)
+	})
 	g.Go(func() error { return mcpSrv.RunStdio(ctx) })
 
 	err = g.Wait()
 	logger.Info("server.stopping")
 	return err
-}
-
-// isPortInUse reports whether something is already listening on the given TCP port.
-func isPortInUse(port int) bool {
-	conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", port), 200*time.Millisecond)
-	if err != nil {
-		return false
-	}
-	conn.Close()
-	return true
-}
-
-// openBrowser opens the given URL in the default browser.
-func openBrowser(url string) error {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = exec.Command("open", url)
-	case "linux":
-		cmd = exec.Command("xdg-open", url)
-	case "windows":
-		cmd = exec.Command("cmd", "/c", "start", url)
-	default:
-		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
-	}
-	return cmd.Start()
 }
 
 // runStartMCP starts only the MCP server on stdio.
@@ -239,18 +189,6 @@ func runStartHTTP(cmd *cobra.Command, version string) error {
 		logger.Info("server.started", "port", port, "idle_timeout", defaultIdleTimeout)
 		return srv.ListenAndServe(ctx, port, defaultIdleTimeout)
 	})
-
-	if os.Getenv("ORACULO_NO_BROWSER") == "" {
-		go func() {
-			time.Sleep(500 * time.Millisecond)
-			url := fmt.Sprintf("http://localhost:%d", port)
-			if err := openBrowser(url); err != nil {
-				logger.Error("browser.open_failed", "url", url, "error", err)
-			} else {
-				logger.Info("browser.opened", "url", url)
-			}
-		}()
-	}
 
 	err = g.Wait()
 	logger.Info("server.stopping")

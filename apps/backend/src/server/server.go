@@ -3,11 +3,9 @@ package server
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -80,7 +78,6 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 	// System endpoints
 	sys := newSystemHandler(version)
 	mux.HandleFunc("GET /api/system/status", sys.handleStatus)
-	mux.HandleFunc("POST /api/system/restart", sys.handleRestart)
 
 	// API endpoints
 	mux.HandleFunc("GET /api/epics", api.handleListEpics)
@@ -104,9 +101,6 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 	if logs != nil {
 		mux.HandleFunc("GET /logs", logs.ServeSSE)
 	}
-
-	// Static files for dashboard (embedded) with SPA fallback
-	mux.Handle("GET /", newSPAHandler(DashboardAssets))
 
 	s := &Server{mux: mux, database: database, lastActivity: time.Now(), projectName: projectName}
 	s.handler = corsMiddleware(mux)
@@ -179,115 +173,4 @@ func (s *Server) ListenAndServe(ctx context.Context, port int, idleTimeout time.
 		return err
 	}
 	return nil
-}
-
-// newSPAHandler returns a handler that serves static files from assets,
-// falling back to the best-matching HTML shell for unknown routes.
-// Dynamic routes are matched to their placeholder HTML so Next.js
-// hydrates with the correct component tree.
-// For RSC payload requests (?_rsc=...), the corresponding .txt file is served.
-func newSPAHandler(assets fs.FS) http.Handler {
-	fileServer := http.FileServer(http.FS(assets))
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Strip leading slash to get the filesystem path
-		fsPath := r.URL.Path
-		if len(fsPath) > 0 && fsPath[0] == '/' {
-			fsPath = fsPath[1:]
-		}
-		if fsPath == "" {
-			fileServer.ServeHTTP(w, r)
-			return
-		}
-		// Check if the file exists in the embedded FS
-		info, err := fs.Stat(assets, fsPath)
-		if err == nil && !info.IsDir() {
-			fileServer.ServeHTTP(w, r)
-			return
-		}
-		// Try with dynamic segments replaced by __placeholder__.
-		// Next.js fetches RSC segment files (e.g. __next.*.txt) directly under
-		// the route path — these live under __placeholder__ in the build output.
-		if phPath := withPlaceholders(fsPath); phPath != fsPath {
-			if info, err = fs.Stat(assets, phPath); err == nil && !info.IsDir() {
-				r2 := r.Clone(r.Context())
-				r2.URL.Path = "/" + phPath
-				fileServer.ServeHTTP(w, r2)
-				return
-			}
-		}
-		// Unknown path: resolve to the best shell for this route.
-		// RSC fetches (Next.js client navigation) need the .txt payload;
-		// regular browser navigations need the .html shell.
-		isRSC := r.URL.Query().Get("_rsc") != ""
-		shell := spaShell(r.URL.Path, isRSC)
-		r2 := r.Clone(r.Context())
-		r2.URL.Path = shell
-		fileServer.ServeHTTP(w, r2)
-	})
-}
-
-// withPlaceholders replaces dynamic route segments with "__placeholder__".
-// Known dynamic positions: epics/{id} at index 1, approvals/{approvalId} at index 3.
-// Returns the original path unchanged if no substitution is needed.
-func withPlaceholders(fsPath string) string {
-	segs := strings.Split(strings.Trim(fsPath, "/"), "/")
-	if len(segs) < 2 || segs[0] != "epics" {
-		return fsPath
-	}
-	result := make([]string, len(segs))
-	copy(result, segs)
-	changed := false
-	if result[1] != "__placeholder__" {
-		result[1] = "__placeholder__"
-		changed = true
-	}
-	if len(result) >= 4 && result[2] == "approvals" && result[3] != "__placeholder__" {
-		result[3] = "__placeholder__"
-		changed = true
-	}
-	if !changed {
-		return fsPath
-	}
-	return strings.Join(result, "/")
-}
-
-// spaShell maps a URL path to the most appropriate pre-rendered shell file.
-// Dynamic segments are mapped to placeholder paths generated during the build.
-// When isRSC is true, returns the .txt RSC payload; otherwise returns the .html shell.
-func spaShell(urlPath string, isRSC bool) string {
-	ext := ".html"
-	if isRSC {
-		ext = ".txt"
-	}
-	segs := splitPath(urlPath)
-	n := len(segs)
-
-	// /epics/{id}/approvals/{approvalId}/review
-	if n >= 5 && segs[0] == "epics" && segs[2] == "approvals" && segs[4] == "review" {
-		return "/epics/__placeholder__/approvals/__placeholder__/review" + ext
-	}
-	// /epics/{id}/approvals
-	if n >= 3 && segs[0] == "epics" && segs[2] == "approvals" {
-		return "/epics/__placeholder__/approvals" + ext
-	}
-	// /epics/{id}/stories/{storyId}
-	if n >= 4 && segs[0] == "epics" && segs[2] == "stories" {
-		return "/epics/__placeholder__/stories/__placeholder__" + ext
-	}
-	// /epics/{id} and any sub-paths not matched above
-	if n >= 2 && segs[0] == "epics" {
-		return "/epics/__placeholder__" + ext
-	}
-	return "/"
-}
-
-// splitPath splits a URL path into non-empty segments.
-func splitPath(p string) []string {
-	var segs []string
-	for _, s := range strings.Split(strings.Trim(p, "/"), "/") {
-		if s != "" {
-			segs = append(segs, s)
-		}
-	}
-	return segs
 }

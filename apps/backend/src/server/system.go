@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -38,28 +37,15 @@ func (h *SystemHandler) handleStatus(w http.ResponseWriter, r *http.Request) {
 		"update_available": updateAvailable,
 		"started_at":       h.startedAt,
 		"version":          h.version,
-		"project_commit":   projectVersion(),
+		"project_commit":   projectCommit(),
 		"new_version":      newVersion,
 	})
 }
 
-func (h *SystemHandler) handleRestart(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, map[string]string{"status": "restarting"})
-	if f, ok := w.(http.Flusher); ok {
-		f.Flush()
-	}
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		env := append(os.Environ(), "ORACULO_NO_BROWSER=1")
-		_ = syscall.Exec(h.binaryPath, []string{h.binaryPath, "start", "http"}, env)
-	}()
-}
-
-// projectVersion returns the git tag version of the current working directory
-// (e.g. "v0.1.0" or "v0.1.0-3-gabcdef-dirty"), or an empty string if git is
-// unavailable or the repository has no tags.
-func projectVersion() string {
-	out, err := exec.Command("git", "describe", "--tags", "--always", "--dirty").Output()
+// projectCommit returns the short git commit hash of the current working directory,
+// or an empty string if git is unavailable or not a repository.
+func projectCommit() string {
+	out, err := exec.Command("git", "rev-parse", "--short", "HEAD").Output()
 	if err != nil {
 		return ""
 	}
