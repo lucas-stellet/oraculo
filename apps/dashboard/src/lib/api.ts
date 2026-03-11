@@ -1,6 +1,6 @@
 import type {
   EpicSummary, Story, StoryTask, StoryVersion,
-  Review, Validation, Approval,
+  Review, Validation, Approval, InlineComment,
 } from "./types";
 
 async function fetchJSON<T>(path: string): Promise<T> {
@@ -62,6 +62,21 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ verdict, comment }),
     }).then((r) => r.json()),
+
+  createComment: (approvalId: string, selectedText: string, comment: string) =>
+    fetch(`/api/approvals/${approvalId}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ selected_text: selectedText, comment }),
+    }).then((r) => r.json()),
+
+  listComments: (approvalId: string) =>
+    fetchJSON<InlineComment[]>(`/api/approvals/${approvalId}/comments`),
+
+  deleteComment: (approvalId: string, commentId: number) =>
+    fetch(`/api/approvals/${approvalId}/comments/${commentId}`, {
+      method: "DELETE",
+    }),
 
   getSystemStatus: () =>
     fetchJSON<{ update_available: boolean; started_at: string; version: string; project_commit: string; new_version: string }>("/api/system/status"),

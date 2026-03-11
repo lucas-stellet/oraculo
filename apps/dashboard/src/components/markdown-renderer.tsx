@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import mermaid from "mermaid";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { InlineComment } from "@/lib/types";
 
@@ -164,12 +165,14 @@ interface MarkdownRendererProps {
   content: string;
   comments?: InlineComment[];
   onAddComment?: (comment: Omit<InlineComment, "id" | "created_at">) => void;
+  onDeleteComment?: (commentId: number) => void;
 }
 
 export function MarkdownRenderer({
   content,
   comments,
   onAddComment,
+  onDeleteComment,
 }: MarkdownRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [popover, setPopover] = useState<PopoverState | null>(null);
@@ -355,14 +358,21 @@ export function MarkdownRenderer({
           </h4>
           <div className="space-y-3">
             {comments.map((c) => (
-              <div
-                key={c.id}
-                className="rounded-xl border border-[#22324a] bg-[#0b1120] p-3"
-              >
-                <p className="mb-1 truncate text-xs text-[#525e6e] font-[family-name:var(--font-mono)]">
-                  On: &ldquo;{c.selected_text.slice(0, 80)}
-                  {c.selected_text.length > 80 ? "…" : ""}&rdquo;
-                </p>
+              <div key={c.id} className="rounded-xl border border-[#22324a] bg-[#0b1120] p-3">
+                <div className="flex items-start justify-between">
+                  <p className="mb-1 truncate text-xs text-[#525e6e] font-[family-name:var(--font-mono)]">
+                    On: &ldquo;{c.selected_text.slice(0, 80)}
+                    {c.selected_text.length > 80 ? "…" : ""}&rdquo;
+                  </p>
+                  {onDeleteComment && (
+                    <button
+                      onClick={() => onDeleteComment(c.id)}
+                      className="ml-2 shrink-0 rounded p-1 text-[#525e6e] transition-colors hover:bg-[#22324a] hover:text-red-400"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
                 <p className="text-sm text-[#8ea2bd] font-[family-name:var(--font-sans)]">
                   {c.comment}
                 </p>

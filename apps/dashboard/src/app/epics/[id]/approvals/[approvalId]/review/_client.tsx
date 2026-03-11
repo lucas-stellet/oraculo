@@ -60,6 +60,13 @@ export default function ReviewPage() {
     }
   }, [approval]);
 
+  // Load existing comments from backend
+  useEffect(() => {
+    if (approvalId) {
+      api.listComments(approvalId).then(setComments).catch(() => {});
+    }
+  }, [approvalId]);
+
   const syncContent = useCallback(() => {
     if (textareaRef.current) {
       editContentRef.current = textareaRef.current.value;
@@ -83,17 +90,33 @@ export default function ReviewPage() {
   );
 
   const handleAddComment = useCallback(
-    (comment: Omit<InlineComment, "id" | "created_at">) => {
-      setComments((prev) => [
-        ...prev,
-        {
-          ...comment,
-          id: prev.length + 1,
-          created_at: "Just now",
-        },
-      ]);
+    async (comment: Omit<InlineComment, "id" | "created_at">) => {
+      if (!approvalId) return;
+      try {
+        const created = await api.createComment(
+          approvalId,
+          comment.selected_text,
+          comment.comment
+        );
+        setComments((prev) => [...prev, created]);
+      } catch {
+        // Silently handle error
+      }
     },
-    []
+    [approvalId]
+  );
+
+  const handleDeleteComment = useCallback(
+    async (commentId: number) => {
+      if (!approvalId) return;
+      try {
+        await api.deleteComment(approvalId, commentId);
+        setComments((prev) => prev.filter((c) => c.id !== commentId));
+      } catch {
+        // Silently handle error
+      }
+    },
+    [approvalId]
   );
 
   const handleVerdict = useCallback(
@@ -101,18 +124,19 @@ export default function ReviewPage() {
       if (!approval || submitting) return;
       setSubmitting(true);
       try {
-        const commentText = comments.map((c) => `[${c.selected_text}]: ${c.comment}`).join("\n") || "";
-        await api.submitVerdict(approval.id, verdict, commentText);
-        // Refetch to update UI
+        await api.submitVerdict(approval.id, verdict, "");
         const updated = await api.getApproval(approvalId);
         setApproval(updated);
+        if (verdict === "approved") {
+          setComments([]); // Comments deleted by backend
+        }
       } catch {
         // Silently handle error
       } finally {
         setSubmitting(false);
       }
     },
-    [approval, approvalId, comments, submitting]
+    [approval, approvalId, submitting]
   );
 
   if (loading) {
@@ -231,6 +255,7 @@ export default function ReviewPage() {
               content={displayContent}
               comments={comments}
               onAddComment={handleAddComment}
+              onDeleteComment={handleDeleteComment}
             />
           </div>
         ) : (
