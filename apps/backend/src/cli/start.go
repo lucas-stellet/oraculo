@@ -2,9 +2,11 @@ package cli
 
 import (
 	"context"
+	"io"
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -22,6 +24,21 @@ import (
 )
 
 const defaultIdleTimeout = 15 * time.Minute
+
+// openLogFile opens .oraculo/server.log in the working directory (append mode).
+// Falls back to stderr if the file cannot be opened.
+func openLogFile() io.Writer {
+	wd, err := os.Getwd()
+	if err != nil {
+		return os.Stderr
+	}
+	logPath := filepath.Join(wd, ".oraculo", "server.log")
+	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return os.Stderr
+	}
+	return io.MultiWriter(f, os.Stderr)
+}
 
 func newStartCmd(version string) *cobra.Command {
 	cmd := &cobra.Command{
@@ -162,7 +179,8 @@ func runStartHTTP(cmd *cobra.Command, version string) error {
 		port = 3100
 	}
 
-	broadcaster := applog.NewBroadcaster(os.Stderr)
+	logOut := openLogFile()
+	broadcaster := applog.NewBroadcaster(logOut)
 	logger := slog.New(broadcaster)
 
 	hub := ws.NewHub()

@@ -1296,7 +1296,8 @@
                   "fill": "#93c5fd",
                   "content": "A new version of Oraculo is available.",
                   "fontFamily": "IBM Plex Sans",
-                  "fontSize": 13
+                  "fontSize": 13,
+                  "fontWeight": "normal"
                 }
               ]
             },
@@ -11410,6 +11411,32 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "CV4wV",
+      "x": 6160,
+      "y": 0,
+      "name": "App Icon — 1024×1024",
+      "width": 1024,
+      "height": 1024,
+      "fill": "#2563eb",
+      "cornerRadius": 224,
+      "layout": "vertical",
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "icon_font",
+          "id": "X8PIy",
+          "name": "appIconGlyph",
+          "width": 480,
+          "height": 480,
+          "iconFontName": "scan-eye",
+          "iconFontFamily": "lucide",
+          "fill": "#ffffff"
         }
       ]
     }

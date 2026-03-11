@@ -23,7 +23,7 @@ func main() {
 			Middleware: NewSPAMiddleware(assets),
 		},
 		Mac: application.MacOptions{
-			ActivationPolicy:                                application.ActivationPolicyAccessory,
+			ActivationPolicy:                                application.ActivationPolicyRegular,
 			ApplicationShouldTerminateAfterLastWindowClosed: false,
 		},
 		Windows: application.WindowsOptions{
@@ -37,6 +37,10 @@ func main() {
 		Width:  1024,
 		Height: 700,
 		URL:    "/",
+		Mac: application.MacWindow{
+			TitleBar:                application.MacTitleBarHidden,
+			InvisibleTitleBarHeight: 28,
+		},
 	})
 
 	setupTray(app, launcherWindow)
