@@ -1,0 +1,95 @@
+name: Publish npm packages
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - uses: oven-sh/setup-bun@v2
+
+      # Parse version from tag (strip leading "v")
+      - name: Set version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # Build dashboard assets (needed for embed)
+      - name: Build dashboard
+        run: |
+          cd apps/dashboard && bun install && bun run build
+          mkdir -p ../backend/src/server/dashboard_assets
+          cp -r out/* ../backend/src/server/dashboard_assets/
+
+      # Create bin directories for cross-compiled binaries
+      - name: Create bin directories
+        run: |
+          for pkg in npm/cli-darwin-arm64 npm/cli-darwin-x64 npm/cli-linux-x64 npm/cli-linux-arm64; do
+            mkdir -p "$pkg/bin"
+          done
+
+      # Cross-compile Go binary
+      - name: Cross-compile
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          LDFLAGS: "-s -w -X main.version=${{ steps.version.outputs.VERSION }}"
+        run: |
+          GOOS=darwin  GOARCH=arm64 go build -ldflags "$LDFLAGS" -o npm/cli-darwin-arm64/bin/oraculo  ./apps/backend/cmd/oraculo
+          GOOS=darwin  GOARCH=amd64 go build -ldflags "$LDFLAGS" -o npm/cli-darwin-x64/bin/oraculo    ./apps/backend/cmd/oraculo
+          GOOS=linux   GOARCH=amd64 go build -ldflags "$LDFLAGS" -o npm/cli-linux-x64/bin/oraculo     ./apps/backend/cmd/oraculo
+          GOOS=linux   GOARCH=arm64 go build -ldflags "$LDFLAGS" -o npm/cli-linux-arm64/bin/oraculo   ./apps/backend/cmd/oraculo
+
+      # Set version in all package.json files
+      - name: Set package versions
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          for pkg in npm/cli-darwin-arm64 npm/cli-darwin-x64 npm/cli-linux-x64 npm/cli-linux-arm64; do
+            cd "$pkg"
+            npm version "$VERSION" --no-git-tag-version --allow-same-version
+            cd "$GITHUB_WORKSPACE"
+          done
+          cd npm/cli
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          # Update optionalDependencies versions
+          node -e "
+            const pkg = require('./package.json');
+            for (const dep of Object.keys(pkg.optionalDependencies || {})) {
+              pkg.optionalDependencies[dep] = '$VERSION';
+            }
+            require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      # Publish platform packages first
+      - name: Publish platform packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          for pkg in npm/cli-darwin-arm64 npm/cli-darwin-x64 npm/cli-linux-x64 npm/cli-linux-arm64; do
+            cd "$pkg"
+            npm publish --access public
+            cd "$GITHUB_WORKSPACE"
+          done
+
+      # Publish main package
+      - name: Publish main package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        working-directory: npm/cli
+        run: npm publish --access public
