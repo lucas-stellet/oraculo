@@ -25,15 +25,15 @@ import (
 
 const defaultIdleTimeout = 15 * time.Minute
 
-func newStartCmd() *cobra.Command {
+func newStartCmd(version string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start Oraculo services",
 		Long:  "Start Oraculo services. Without subcommand, starts both MCP and HTTP servers.",
-		RunE:  runStartAll,
+		RunE:  makeStartAll(version),
 	}
 	cmd.AddCommand(newStartMCPCmd())
-	cmd.AddCommand(newStartHTTPCmd())
+	cmd.AddCommand(newStartHTTPCmd(version))
 	return cmd
 }
 
@@ -45,16 +45,22 @@ func newStartMCPCmd() *cobra.Command {
 	}
 }
 
-func newStartHTTPCmd() *cobra.Command {
+func newStartHTTPCmd(version string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "http",
 		Short: "Start HTTP + WebSocket server as daemon",
-		RunE:  runStartHTTP,
+		RunE:  makeStartHTTP(version),
 	}
 }
 
-// runStartAll starts both MCP and HTTP servers (backwards compatible).
-func runStartAll(cmd *cobra.Command, _ []string) error {
+// makeStartAll returns a RunE that starts both MCP and HTTP servers.
+func makeStartAll(version string) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, _ []string) error {
+		return runStartAll(cmd, version)
+	}
+}
+
+func runStartAll(cmd *cobra.Command, version string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -81,7 +87,7 @@ func runStartAll(cmd *cobra.Command, _ []string) error {
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
 
 	// Dashboard is embedded in the binary, pass empty string
-	srv := server.New(database, bridge, hub, broadcaster, "")
+	srv := server.New(database, bridge, hub, broadcaster, "", version)
 	mcpSrv := mcpserver.New(bridge, db.NewApprovalStore(database), logger)
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -147,8 +153,15 @@ func runStartMCP(cmd *cobra.Command, _ []string) error {
 	return mcpSrv.RunStdio(ctx)
 }
 
+// makeStartHTTP returns a RunE that starts the HTTP + WebSocket server.
+func makeStartHTTP(version string) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, _ []string) error {
+		return runStartHTTP(cmd, version)
+	}
+}
+
 // runStartHTTP starts the HTTP + WebSocket server as a daemon with idle timeout.
-func runStartHTTP(cmd *cobra.Command, _ []string) error {
+func runStartHTTP(cmd *cobra.Command, version string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -175,7 +188,7 @@ func runStartHTTP(cmd *cobra.Command, _ []string) error {
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
 
 	// Dashboard is embedded in the binary, pass empty string
-	srv := server.New(database, bridge, hub, broadcaster, "")
+	srv := server.New(database, bridge, hub, broadcaster, "", version)
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return hub.Run(ctx) })

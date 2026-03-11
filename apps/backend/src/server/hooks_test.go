@@ -18,7 +18,7 @@ func testServer(t *testing.T) *server.Server {
 	database := dbtest.Open(t)
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
-	return server.New(database, bridge, hub, nil, "")
+	return server.New(database, bridge, hub, nil, "", "test")
 }
 
 func TestHealthEndpoint(t *testing.T) {

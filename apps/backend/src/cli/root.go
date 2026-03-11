@@ -22,7 +22,7 @@ func NewRoot(version string) *cobra.Command {
 	hookCmd.AddCommand(newHookTaskStartedCmd())
 	root.AddCommand(
 		newVersionCmd(version),
-		newStartCmd(),
+		newStartCmd(version),
 		newRestartCmd(),
 		newKillCmd(),
 		newLogsCmd(),

@@ -24,7 +24,7 @@ func testServerWithDB(t *testing.T) (*server.Server, *db.DB) {
 	database := dbtest.Open(t)
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
-	return server.New(database, bridge, hub, nil, ""), database
+	return server.New(database, bridge, hub, nil, "", "test"), database
 }
 
 func TestListEpics_Empty(t *testing.T) {
@@ -180,7 +180,7 @@ func TestLogsEndpoint_ReturnsSSE(t *testing.T) {
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
 	logs := applog.NewBroadcaster(io.Discard)
-	srv := server.New(database, bridge, hub, logs, "")
+	srv := server.New(database, bridge, hub, logs, "", "test")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // cancel immediately so ServeSSE returns after replay

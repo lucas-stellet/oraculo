@@ -7,7 +7,7 @@ import (
 )
 
 func TestDashboardStaticFiles(t *testing.T) {
-	srv := New(nil, nil, nil, nil, "")
+	srv := New(nil, nil, nil, nil, "", "test")
 
 	// Test root path returns HTML
 	req := httptest.NewRequest("GET", "/", nil)
@@ -25,7 +25,7 @@ func TestDashboardStaticFiles(t *testing.T) {
 }
 
 func TestDashboardSPAFallback(t *testing.T) {
-	srv := New(nil, nil, nil, nil, "")
+	srv := New(nil, nil, nil, nil, "", "test")
 
 	// Unknown paths fall back to the root shell (SPA behavior)
 	req := httptest.NewRequest("GET", "/nonexistent", nil)

@@ -27,7 +27,7 @@ type Server struct {
 }
 
 // New constructs a Server wired with all stores, bridge, and hub.
-func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Broadcaster, staticPath string) *Server {
+func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Broadcaster, staticPath string, version string) *Server {
 	var logger *slog.Logger
 	if logs != nil {
 		logger = slog.New(logs)
@@ -75,7 +75,7 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 	mux.HandleFunc("POST /hooks/session-end", hook.handleSessionEnd)
 
 	// System endpoints
-	sys := newSystemHandler()
+	sys := newSystemHandler(version)
 	mux.HandleFunc("GET /api/system/status", sys.handleStatus)
 	mux.HandleFunc("POST /api/system/restart", sys.handleRestart)
 

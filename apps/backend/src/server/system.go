@@ -12,13 +12,15 @@ import (
 type SystemHandler struct {
 	startedAt  time.Time
 	binaryPath string
+	version    string
 }
 
-func newSystemHandler() *SystemHandler {
+func newSystemHandler(version string) *SystemHandler {
 	binaryPath, _ := os.Executable()
 	return &SystemHandler{
 		startedAt:  time.Now(),
 		binaryPath: binaryPath,
+		version:    version,
 	}
 }
 
@@ -35,6 +37,7 @@ func (h *SystemHandler) handleStatus(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]any{
 		"update_available": updateAvailable,
 		"started_at":       h.startedAt,
+		"version":          h.version,
 		"project_commit":   projectCommit(),
 		"new_version":      newVersion,
 	})
