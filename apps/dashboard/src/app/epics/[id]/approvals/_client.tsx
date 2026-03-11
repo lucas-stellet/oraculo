@@ -285,7 +285,7 @@ export default function ApprovalsPage() {
                     className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#22324a] bg-[#0b1120] px-3 text-[11px] font-medium text-[#8ea2bd] transition-colors hover:border-[#3b5068] hover:text-[#f5f9ff] font-[family-name:var(--font-mono)]"
                   >
                     <Eye className="h-3 w-3" />
-                    Ver
+                    View
                   </Link>
                 </div>
               );

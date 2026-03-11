@@ -134,6 +134,10 @@ These files live under `epics/__placeholder__/approvals/`, not `epics/gastos-pes
 - Every new dynamic page must use `generateStaticParams()` returning `[{ id: "__placeholder__" }]` (or the equivalent param name).
 - Never add client-side redirect logic based on SSR params — always use `usePathname()` to read the real ID from the URL.
 
+## Dashboard Language
+
+The dashboard (`apps/dashboard/`) is written entirely in **English**. All UI text, labels, buttons, and copy must be in English — no Portuguese in the interface.
+
 ## Package Manager
 
 **ALWAYS use `bun`** — never npm, yarn, or pnpm. This applies to installing dependencies, running scripts, and any other package manager operation across the entire project.
