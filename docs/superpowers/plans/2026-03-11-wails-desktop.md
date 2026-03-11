@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Split Oraculo into two binaries — `oraculo` (headless CLI/server) and `oraculo-desktop` (Wails v2 native app) — connected via HTTP/WS, with server registry, system tray, and native notifications.
+**Goal:** Split Oraculo into two binaries — `oraculo` (headless CLI/server) and `oraculo-desktop` (Wails v3 native app) — connected via HTTP/WS, with server registry, system tray, and native notifications.
 
-**Architecture:** The `oraculo` backend drops its embedded frontend and gains a global server registry (`~/.oraculo/servers.json`). The Next.js dashboard is renamed to `apps/frontend/` and gains a `ServerContext` for dynamic base URLs. A new `apps/desktop/` Wails v2 app embeds the frontend build, connects to multiple project servers, and provides native desktop features (tray, notifications).
+**Architecture:** The `oraculo` backend drops its embedded frontend and gains a global server registry (`~/.oraculo/servers.json`). The Next.js dashboard is renamed to `apps/frontend/` and gains a `ServerContext` for dynamic base URLs. A new `apps/desktop/` Wails v3 app embeds the frontend build, connects to multiple project servers, and provides native desktop features (tray, notifications, multi-window).
 
-**Tech Stack:** Go 1.24, Wails v2, Next.js (static export), `github.com/gofrs/flock`, `fyne-io/systray`, `gen2brain/beeep`
+**Tech Stack:** Go 1.24, Wails v3 alpha (`github.com/wailsapp/wails/v3`), Next.js (static export), `github.com/gofrs/flock`, `gen2brain/beeep`
 
 **Spec:** `docs/superpowers/specs/2026-03-11-wails-desktop-design.md`
 
@@ -20,17 +20,22 @@
 - `apps/backend/src/registry/registry_test.go` — Registry tests
 - `apps/backend/src/server/cors.go` — CORS middleware
 - `apps/backend/src/server/cors_test.go` — CORS tests
+- `apps/backend/src/spa/spa.go` — Extracted SPA routing (withPlaceholders/spaShell)
+- `apps/backend/src/spa/spa_test.go` — SPA routing tests
 - `apps/frontend/src/lib/server-context.tsx` — React context for dynamic server URL
-- `apps/desktop/main.go` — Wails entrypoint
-- `apps/desktop/app.go` — App struct with bindings (ListServers, StartServer, StopServer, etc.)
-- `apps/desktop/tray.go` — System tray integration
-- `apps/desktop/notifications.go` — Native notification dispatch
+- `apps/desktop/main.go` — Wails v3 entrypoint (application.New + app.Run)
+- `apps/desktop/services/launcher.go` — LauncherService (ListProjects, AddProject, RemoveProject, StartServer, StopServer)
+- `apps/desktop/services/server.go` — ServerService (SelectServer, GetCurrentServer)
+- `apps/desktop/services/notifications.go` — NotificationService (settings)
+- `apps/desktop/tray.go` — System tray (built-in v3 API)
+- `apps/desktop/notifications.go` — Native notification dispatch (beeep)
 - `apps/desktop/ws_monitor.go` — Go-side WS client for event monitoring
-- `apps/desktop/projects.go` — Known projects file management
+- `apps/desktop/spa.go` — SPA routing handler for Wails asset server
+- `apps/desktop/detach_unix.go` — Unix process detachment (build-tagged)
+- `apps/desktop/detach_windows.go` — Windows process detachment (build-tagged)
+- `apps/desktop/go.mod` — Separate Go module
+- `apps/desktop/Taskfile.yml` — Wails v3 build tasks
 - `apps/desktop/wails.json` — Wails config
-- `apps/desktop/spa.go` — SPA routing for Wails asset server (reuses withPlaceholders/spaShell)
-- `apps/desktop/go.mod` — Separate Go module (with `replace github.com/lucas/oraculo => ../..` for root module access)
-- `apps/desktop/build_copy.sh` — Script to copy frontend/out/ and oraculo binary into desktop bundle
 - `apps/desktop/build/` — Icons, platform manifests
 
 ### Modified files
@@ -57,7 +62,7 @@
 
 ---
 
-## Chunk 1: Backend — Registry Package
+## Chunk 1: Backend — Registry, CORS, Health, Cleanup
 
 ### Task 1: Create registry package with Register/Unregister
 
@@ -151,13 +156,11 @@ type Entry struct {
 }
 
 // Register adds or updates an entry in the registry file.
-// Creates the file and parent directories if they don't exist.
 func Register(registryPath string, entry Entry) error {
 	if entry.StartedAt.IsZero() {
 		entry.StartedAt = time.Now()
 	}
 	return withLock(registryPath, func(entries []Entry) ([]Entry, error) {
-		// Update existing entry for the same path, or append.
 		for i, e := range entries {
 			if e.Path == entry.Path {
 				entries[i] = entry
@@ -176,12 +179,11 @@ func Unregister(registryPath string, projectPath string) error {
 				return append(entries[:i], entries[i+1:]...), nil
 			}
 		}
-		return entries, nil // not found is not an error
+		return entries, nil
 	})
 }
 
 // List reads all entries from the registry file.
-// Returns an empty slice if the file does not exist.
 func List(registryPath string) ([]Entry, error) {
 	data, err := os.ReadFile(registryPath)
 	if err != nil {
@@ -197,6 +199,13 @@ func List(registryPath string) ([]Entry, error) {
 	return entries, nil
 }
 
+// WriteAll atomically replaces all entries in the registry file.
+func WriteAll(registryPath string, entries []Entry) error {
+	return withLock(registryPath, func(_ []Entry) ([]Entry, error) {
+		return entries, nil
+	})
+}
+
 // DefaultPath returns ~/.oraculo/servers.json.
 func DefaultPath() (string, error) {
 	home, err := os.UserHomeDir()
@@ -206,7 +215,6 @@ func DefaultPath() (string, error) {
 	return filepath.Join(home, ".oraculo", "servers.json"), nil
 }
 
-// withLock acquires a file lock, reads entries, applies fn, and writes back.
 func withLock(registryPath string, fn func([]Entry) ([]Entry, error)) error {
 	if err := os.MkdirAll(filepath.Dir(registryPath), 0o755); err != nil {
 		return err
@@ -245,7 +253,7 @@ cd apps/backend && go test ./src/registry/ -v -run TestRegister_CreatesFileAndAd
 ```
 Expected: PASS
 
-- [ ] **Step 6: Write test for Unregister**
+- [ ] **Step 6: Write remaining registry tests**
 
 Append to `registry_test.go`:
 
@@ -315,12 +323,12 @@ git commit -m "feat(registry): add server registry package with file locking"
 ### Task 2: Wire registry into server startup/shutdown
 
 **Files:**
-- Modify: `apps/backend/src/cli/start.go:63-117` (runStartAll), `apps/backend/src/cli/start.go:164-215` (runStartHTTP)
-- Modify: `apps/backend/src/config/config.go` (add Name field)
+- Modify: `apps/backend/src/cli/start.go`
+- Modify: `apps/backend/src/config/config.go`
 
-- [ ] **Step 1: Add Name field to Config**
+- [ ] **Step 1: Add Name field to Config and ProjectName helper**
 
-In `apps/backend/src/config/config.go`, add `Name` field to the `Config` struct:
+In `apps/backend/src/config/config.go`, add `Name` field to the `Config` struct and a `ProjectName()` method:
 
 ```go
 type Config struct {
@@ -329,13 +337,7 @@ type Config struct {
 	PreferredLanguage string      `json:"preferred_language,omitempty"`
 	Skills            AgentSkills `json:"skills,omitempty"`
 }
-```
 
-- [ ] **Step 2: Add helper to derive project name**
-
-Append to `apps/backend/src/config/config.go`:
-
-```go
 // ProjectName returns the configured name, or falls back to the working directory basename.
 func (c *Config) ProjectName() string {
 	if c.Name != "" {
@@ -349,7 +351,7 @@ func (c *Config) ProjectName() string {
 }
 ```
 
-- [ ] **Step 3: Write test for ProjectName**
+- [ ] **Step 2: Write test for ProjectName**
 
 Add to `apps/backend/src/config/config_test.go` (create if needed):
 
@@ -372,9 +374,9 @@ func TestConfig_ProjectName_FallsBackToBasename(t *testing.T) {
 
 Run: `cd apps/backend && go test ./src/config/ -v -run TestConfig_ProjectName`
 
-- [ ] **Step 4: Add registry register/unregister to runStartAll**
+- [ ] **Step 3: Add registry register/unregister to runStartAll and runStartHTTP**
 
-In `apps/backend/src/cli/start.go`, in `runStartAll`, after the server starts listening, register with the registry. Add defer unregister. Insert after the `g.Go` for the HTTP server (around line 98):
+In `apps/backend/src/cli/start.go`, after the server starts listening, register with the registry. Add defer unregister:
 
 ```go
 // Register in global server registry.
@@ -393,21 +395,19 @@ if regErr == nil {
 
 Add the import: `"github.com/lucas/oraculo/apps/backend/src/registry"`
 
-- [ ] **Step 4: Add same registry calls to runStartHTTP**
+Apply the same pattern to both `runStartAll` and `runStartHTTP`.
 
-Same pattern in `runStartHTTP`, after the `g.Go` for the HTTP server (around line 198).
-
-- [ ] **Step 5: Run existing tests to verify nothing breaks**
+- [ ] **Step 4: Run existing tests**
 
 ```bash
 cd apps/backend && go test ./... -count=1
 ```
 Expected: All PASS
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add apps/backend/src/cli/start.go apps/backend/src/config/config.go
+git add apps/backend/src/cli/start.go apps/backend/src/config/
 git commit -m "feat(cli): register/unregister server in global registry on start/stop"
 ```
 
@@ -416,7 +416,7 @@ git commit -m "feat(cli): register/unregister server in global registry on start
 **Files:**
 - Create: `apps/backend/src/server/cors.go`
 - Create: `apps/backend/src/server/cors_test.go`
-- Modify: `apps/backend/src/server/server.go:127-130` (ServeHTTP)
+- Modify: `apps/backend/src/server/server.go`
 
 - [ ] **Step 1: Write failing test for CORS headers**
 
@@ -484,7 +484,6 @@ package server
 
 import "net/http"
 
-// corsMiddleware adds permissive CORS headers for local desktop access.
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -510,9 +509,8 @@ Expected: PASS
 
 - [ ] **Step 5: Wire CORS into server constructor**
 
-In `apps/backend/src/server/server.go`, add a `handler` field to the Server struct and wrap the mux once in the constructor:
+In `apps/backend/src/server/server.go`, add a `handler` field to Server and wrap the mux once in the constructor:
 
-Add field to Server struct:
 ```go
 type Server struct {
 	mux          *http.ServeMux
@@ -523,21 +521,9 @@ type Server struct {
 }
 ```
 
-At the end of `New()`, before the return, wrap the mux:
-```go
-handler := corsMiddleware(mux)
-return &Server{mux: mux, handler: handler, database: database, lastActivity: time.Now()}
-```
+At end of `New()`: `s.handler = corsMiddleware(mux)`
 
-Update `ServeHTTP` to use the stored handler:
-```go
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.touchActivity()
-	s.handler.ServeHTTP(w, r)
-}
-```
-
-This avoids creating a new handler on every request.
+Update `ServeHTTP`: `s.handler.ServeHTTP(w, r)`
 
 - [ ] **Step 6: Run all server tests**
 
@@ -556,25 +542,21 @@ git commit -m "feat(server): add CORS middleware for desktop cross-origin access
 ### Task 4: Add project_name to health endpoint
 
 **Files:**
-- Modify: `apps/backend/src/server/server.go:181-183` (handleHealth)
+- Modify: `apps/backend/src/server/server.go`
 
 - [ ] **Step 1: Write failing test**
 
-Add to an existing or new test file:
-
 ```go
 func TestHealth_IncludesProjectName(t *testing.T) {
-	srv := New(nil, nil, nil, nil, "", "test")
-
+	srv := New(nil, nil, nil, nil, "test-project", "test")
 	req := httptest.NewRequest("GET", "/health", nil)
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
 
 	var body map[string]string
 	json.NewDecoder(rec.Body).Decode(&body)
-
-	if _, ok := body["project_name"]; !ok {
-		t.Error("expected project_name in health response")
+	if body["project_name"] != "test-project" {
+		t.Errorf("expected project_name 'test-project', got %q", body["project_name"])
 	}
 }
 ```
@@ -584,31 +566,12 @@ func TestHealth_IncludesProjectName(t *testing.T) {
 ```bash
 cd apps/backend && go test ./src/server/ -v -run TestHealth_IncludesProjectName
 ```
-Expected: FAIL
 
 - [ ] **Step 3: Modify handleHealth to include project_name**
 
-In `server.go`, change `handleHealth` to accept a project name and return it. Update the constructor to pass the config-derived name.
+Update `New()` signature to accept `projectName string` (replacing the old `staticPath` parameter). Replace `handleHealth` with a closure that includes `project_name` in the JSON response.
 
-Modify `New()` signature to accept `projectName string`:
-```go
-func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Broadcaster, projectName string, version string) *Server {
-```
-
-Replace the `handleHealth` line with a closure:
-```go
-mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, map[string]string{"status": "ok", "project_name": projectName})
-})
-```
-
-Remove the standalone `handleHealth` function.
-
-Update all callers of `New()` in `start.go` to pass `cfg.ProjectName()` instead of the empty `staticPath` string:
-- `runStartAll` line 90: `server.New(database, bridge, hub, broadcaster, cfg.ProjectName(), version)`
-- `runStartHTTP` line 191: `server.New(database, bridge, hub, broadcaster, cfg.ProjectName(), version)`
-
-Note: existing test callers (`api_test.go`, `hooks_test.go`, `cors_test.go`) already pass `""` as the 5th arg — no code change needed since the parameter position and type are unchanged (both `string`).
+Update callers in `start.go` to pass `cfg.ProjectName()`.
 
 - [ ] **Step 4: Run all tests**
 
@@ -629,7 +592,10 @@ git commit -m "feat(server): add project_name to health endpoint"
 **Files:**
 - Delete: `apps/backend/src/server/assets.go`
 - Delete: `apps/backend/src/server/assets_test.go`
-- Modify: `apps/backend/src/server/server.go` — Remove SPA handler, withPlaceholders, spaShell, splitPath, static route
+- Modify: `apps/backend/src/server/server.go`
+- Modify: `apps/backend/src/server/system.go`
+- Modify: `apps/backend/src/cli/start.go`
+- Modify: `apps/backend/src/cli/restart.go`
 
 - [ ] **Step 1: Delete assets.go and assets_test.go**
 
@@ -639,50 +605,26 @@ rm apps/backend/src/server/assets.go apps/backend/src/server/assets_test.go
 
 - [ ] **Step 2: Remove SPA handler from server.go**
 
-In `server.go`, remove:
-- The `"io/fs"` and `"strings"` imports (if no longer needed)
-- Line 108: `mux.Handle("GET /", newSPAHandler(DashboardAssets))`
-- Lines 103-107: The static path logging block
-- The `staticPath` field from `Server` struct (line 27)
-- The entire `newSPAHandler` function (lines 190-228)
-- The entire `withPlaceholders` function (lines 230-253)
-- The entire `spaShell` function (lines 255-283)
-- The entire `splitPath` function (lines 285-294)
-
-Note: before deleting `withPlaceholders` and `spaShell`, copy them to a new file `apps/backend/src/spa/spa.go` for reuse by the desktop app (see Task 10).
+Remove: `newSPAHandler`, `withPlaceholders`, `spaShell`, `splitPath`, the `"GET /"` route, `staticPath` field, and unused imports.
 
 - [ ] **Step 3: Remove openBrowser and ORACULO_NO_BROWSER from start.go**
 
-In `apps/backend/src/cli/start.go`:
-- Remove the `openBrowser` function (lines 120-133)
-- Remove the browser-opening goroutine in `runStartAll` (lines 100-110)
-- Remove the browser-opening goroutine in `runStartHTTP` (lines 200-210)
-- Remove unused imports (`"os/exec"`, `"runtime"`)
+Remove the `openBrowser` function and the browser-opening goroutines in `runStartAll` and `runStartHTTP`. Remove unused imports (`"os/exec"`, `"runtime"`).
 
 - [ ] **Step 4: Remove handleRestart from system.go**
 
-In `apps/backend/src/server/system.go`:
-- Remove the `handleRestart` method (lines 46-56)
-- Remove `"syscall"` import
-- Remove the route in `server.go`: `mux.HandleFunc("POST /api/system/restart", sys.handleRestart)`
+Remove `handleRestart` method and `"syscall"` import. Remove the route in `server.go`.
 
 - [ ] **Step 5: Remove ORACULO_NO_BROWSER from restart.go**
 
-In `apps/backend/src/cli/restart.go`, line 55: change:
-```go
-Env: append(os.Environ(), "ORACULO_NO_BROWSER=1"),
-```
-to:
-```go
-Env: os.Environ(),
-```
+Change `Env: append(os.Environ(), "ORACULO_NO_BROWSER=1")` to `Env: os.Environ()`.
 
 - [ ] **Step 6: Run all backend tests**
 
 ```bash
 cd apps/backend && go test ./... -count=1
 ```
-Expected: All PASS (assets_test.go is deleted, remaining tests should not depend on SPA handler)
+Expected: All PASS
 
 - [ ] **Step 7: Commit**
 
@@ -691,15 +633,13 @@ git add -A apps/backend/src/server/ apps/backend/src/cli/start.go apps/backend/s
 git commit -m "refactor(server): remove embedded frontend, SPA handler, and browser auto-open"
 ```
 
-> **Note:** The frontend's restart banner in `apps/dashboard/src/app/epics/[id]/layout.tsx` (lines 75-103) will break after this change. This is addressed in Task 15 which removes `restartServer` from the frontend.
-
 ### Task 6: Extract SPA routing to shared package
 
 **Files:**
 - Create: `apps/backend/src/spa/spa.go`
 - Create: `apps/backend/src/spa/spa_test.go`
 
-- [ ] **Step 1: Write test for withPlaceholders**
+- [ ] **Step 1: Write test for WithPlaceholders and Shell**
 
 Create `apps/backend/src/spa/spa_test.go`:
 
@@ -720,7 +660,6 @@ func TestWithPlaceholders(t *testing.T) {
 		{"epics/__placeholder__/approvals", "epics/__placeholder__/approvals"},
 		{"epics/gastos/approvals/abc-123/review", "epics/__placeholder__/approvals/__placeholder__/review"},
 		{"epics/gastos/stories/registro", "epics/__placeholder__/stories/__placeholder__"},
-		{"epics/gastos/stories/registro/somefile.txt", "epics/__placeholder__/stories/__placeholder__/somefile.txt"},
 		{"other/path", "other/path"},
 		{"epics", "epics"},
 	}
@@ -732,7 +671,7 @@ func TestWithPlaceholders(t *testing.T) {
 	}
 }
 
-func TestSPAShell(t *testing.T) {
+func TestShell(t *testing.T) {
 	tests := []struct {
 		path  string
 		isRSC bool
@@ -759,75 +698,10 @@ func TestSPAShell(t *testing.T) {
 ```bash
 cd apps/backend && go test ./src/spa/ -v
 ```
-Expected: FAIL
 
 - [ ] **Step 3: Create spa package**
 
-Create `apps/backend/src/spa/spa.go` with the functions extracted from the deleted server.go code, renamed to exported:
-
-```go
-package spa
-
-import "strings"
-
-// WithPlaceholders replaces dynamic route segments with "__placeholder__".
-// Known dynamic positions: epics/{id} at index 1, approvals/{approvalId} or stories/{storyId} at index 3.
-func WithPlaceholders(fsPath string) string {
-	segs := strings.Split(strings.Trim(fsPath, "/"), "/")
-	if len(segs) < 2 || segs[0] != "epics" {
-		return fsPath
-	}
-	result := make([]string, len(segs))
-	copy(result, segs)
-	changed := false
-	if result[1] != "__placeholder__" {
-		result[1] = "__placeholder__"
-		changed = true
-	}
-	if len(result) >= 4 && (result[2] == "approvals" || result[2] == "stories") && result[3] != "__placeholder__" {
-		result[3] = "__placeholder__"
-		changed = true
-	}
-	if !changed {
-		return fsPath
-	}
-	return strings.Join(result, "/")
-}
-
-// Shell maps a URL path to the most appropriate pre-rendered shell file.
-func Shell(urlPath string, isRSC bool) string {
-	ext := ".html"
-	if isRSC {
-		ext = ".txt"
-	}
-	segs := splitPath(urlPath)
-	n := len(segs)
-
-	if n >= 5 && segs[0] == "epics" && segs[2] == "approvals" && segs[4] == "review" {
-		return "/epics/__placeholder__/approvals/__placeholder__/review" + ext
-	}
-	if n >= 3 && segs[0] == "epics" && segs[2] == "approvals" {
-		return "/epics/__placeholder__/approvals" + ext
-	}
-	if n >= 4 && segs[0] == "epics" && segs[2] == "stories" {
-		return "/epics/__placeholder__/stories/__placeholder__" + ext
-	}
-	if n >= 2 && segs[0] == "epics" {
-		return "/epics/__placeholder__" + ext
-	}
-	return "/"
-}
-
-func splitPath(p string) []string {
-	var segs []string
-	for _, s := range strings.Split(strings.Trim(p, "/"), "/") {
-		if s != "" {
-			segs = append(segs, s)
-		}
-	}
-	return segs
-}
-```
+Create `apps/backend/src/spa/spa.go` with the `WithPlaceholders` and `Shell` functions extracted from the deleted server.go code (renamed to exported). Include `splitPath` as unexported helper.
 
 - [ ] **Step 4: Run tests**
 
@@ -853,7 +727,6 @@ git commit -m "refactor(spa): extract SPA routing to shared package for desktop 
 - Rename: `apps/dashboard/` → `apps/frontend/`
 - Modify: `Makefile`
 - Modify: `CLAUDE.md`
-- Modify: `apps/frontend/next.config.ts` (if any self-references)
 
 - [ ] **Step 1: Rename the directory**
 
@@ -863,20 +736,7 @@ git mv apps/dashboard apps/frontend
 
 - [ ] **Step 2: Update Makefile**
 
-In `Makefile`, replace all `DASHBOARD_DIR` references:
-
-Replace line 6:
-```makefile
-DASHBOARD_DIR := ./apps/dashboard
-```
-With:
-```makefile
-FRONTEND_DIR := ./apps/frontend
-```
-
-Replace all `$(DASHBOARD_DIR)` with `$(FRONTEND_DIR)` throughout.
-
-Remove the `dashboard_assets` copy steps from `build` and `rebuild` targets (the server no longer embeds the frontend). Simplify:
+Replace `DASHBOARD_DIR := ./apps/dashboard` with `FRONTEND_DIR := ./apps/frontend`. Replace all `$(DASHBOARD_DIR)` with `$(FRONTEND_DIR)`. Remove the `dashboard_assets` copy steps from `build` and `rebuild` targets. Simplify:
 
 ```makefile
 build-frontend:
@@ -885,32 +745,23 @@ build-frontend:
 build-backend:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(BUILD)
 
-build: build-frontend build-backend
+build: build-backend
 ```
 
-Update `clean` to remove `$(FRONTEND_DIR)/out` instead of `dashboard_assets`.
-
-Update `web-dev` to reference `$(FRONTEND_DIR)`.
+Update `clean` and `web-dev` to reference `$(FRONTEND_DIR)`.
 
 - [ ] **Step 3: Update CLAUDE.md references**
 
-Replace all occurrences of `apps/dashboard` with `apps/frontend` in `CLAUDE.md`.
+Replace all occurrences of `apps/dashboard` with `apps/frontend`.
 
-- [ ] **Step 4: Verify frontend still builds**
+- [ ] **Step 4: Verify frontend and backend still build**
 
 ```bash
 cd apps/frontend && bun run build
-```
-Expected: Build succeeds
-
-- [ ] **Step 5: Verify backend still builds**
-
-```bash
 cd apps/backend && go build ./cmd/oraculo
 ```
-Expected: Build succeeds (no longer depends on dashboard_assets)
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -923,8 +774,10 @@ git commit -m "refactor: rename apps/dashboard to apps/frontend"
 - Create: `apps/frontend/src/lib/server-context.tsx`
 - Modify: `apps/frontend/src/lib/api.ts`
 - Modify: `apps/frontend/src/lib/ws.tsx`
-- Modify: `apps/frontend/src/app/layout.tsx` (wrap with provider)
-- Modify: `apps/frontend/src/app/page.tsx` (use api.ts instead of direct fetch)
+- Modify: `apps/frontend/src/app/layout.tsx`
+- Modify: `apps/frontend/src/app/page.tsx`
+- Modify: `apps/frontend/src/app/epics/[id]/layout.tsx`
+- Modify: 6 files that import `{ api }` from `@/lib/api`
 
 - [ ] **Step 1: Create ServerContext provider**
 
@@ -934,6 +787,7 @@ Create `apps/frontend/src/lib/server-context.tsx`:
 "use client";
 
 import { createContext, useContext, useMemo } from "react";
+import { createApi } from "./api";
 
 interface ServerContextValue {
   baseUrl: string;
@@ -965,109 +819,6 @@ export function ServerProvider({
 export function useServerUrl(): string {
   return useContext(ServerContext).baseUrl;
 }
-```
-
-- [ ] **Step 2: Refactor api.ts to accept a base URL**
-
-Replace `apps/frontend/src/lib/api.ts` — change `fetchJSON` and all endpoints to accept a base URL parameter. Use a factory pattern:
-
-```typescript
-import type {
-  EpicSummary, Story, StoryTask, StoryVersion,
-  Review, Validation, Approval, InlineComment,
-} from "./types";
-
-async function fetchJSON<T>(baseUrl: string, path: string): Promise<T> {
-  const res = await fetch(`${baseUrl}${path}`);
-  if (!res.ok) {
-    throw new Error(`API ${res.status}: ${path}`);
-  }
-  return res.json();
-}
-
-export function createApi(baseUrl: string) {
-  return {
-    listEpics: () =>
-      fetchJSON<EpicSummary[]>(baseUrl, "/api/epics"),
-
-    createEpic: (name: string, description: string) =>
-      fetch(`${baseUrl}/api/epics`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description }),
-      }).then((r) => r.json()),
-
-    listStories: (epicName: string) =>
-      fetchJSON<Story[]>(baseUrl, `/api/epics/${encodeURIComponent(epicName)}/stories`),
-
-    listTasks: (epicName: string, storyName: string) =>
-      fetchJSON<StoryTask[]>(baseUrl,
-        `/api/epics/${encodeURIComponent(epicName)}/stories/${encodeURIComponent(storyName)}/tasks`
-      ),
-
-    listStoryVersions: (epicName: string, storyName: string) =>
-      fetchJSON<StoryVersion[]>(baseUrl,
-        `/api/epics/${encodeURIComponent(epicName)}/stories/${encodeURIComponent(storyName)}/versions`
-      ),
-
-    listStoryReviews: (epicName: string, storyName: string) =>
-      fetchJSON<Review[]>(baseUrl,
-        `/api/epics/${encodeURIComponent(epicName)}/stories/${encodeURIComponent(storyName)}/reviews`
-      ),
-
-    listValidations: (epicName: string, storyName: string) =>
-      fetchJSON<Validation[]>(baseUrl,
-        `/api/epics/${encodeURIComponent(epicName)}/stories/${encodeURIComponent(storyName)}/validations`
-      ),
-
-    listApprovals: (epicId?: number, status?: string) => {
-      const params = new URLSearchParams();
-      if (epicId) params.set("epic_id", String(epicId));
-      if (status) params.set("status", status);
-      const qs = params.toString();
-      return fetchJSON<Approval[]>(baseUrl, `/api/approvals${qs ? `?${qs}` : ""}`);
-    },
-
-    getApproval: (id: string) =>
-      fetchJSON<Approval>(baseUrl, `/api/approvals/${id}`),
-
-    submitVerdict: (id: string, verdict: string, comment: string) =>
-      fetch(`${baseUrl}/api/approvals/${id}/verdict`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verdict, comment }),
-      }).then((r) => r.json()),
-
-    createComment: (approvalId: string, selectedText: string, comment: string) =>
-      fetch(`${baseUrl}/api/approvals/${approvalId}/comments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selected_text: selectedText, comment }),
-      }).then((r) => r.json()),
-
-    listComments: (approvalId: string) =>
-      fetchJSON<InlineComment[]>(baseUrl, `/api/approvals/${approvalId}/comments`),
-
-    deleteComment: (approvalId: string, commentId: number) =>
-      fetch(`${baseUrl}/api/approvals/${approvalId}/comments/${commentId}`, {
-        method: "DELETE",
-      }),
-
-    getSystemStatus: () =>
-      fetchJSON<{ update_available: boolean; started_at: string; version: string; project_commit: string; new_version: string }>(baseUrl, "/api/system/status"),
-  };
-}
-
-// Default api instance for backward compatibility (same-origin).
-export const api = createApi("");
-```
-
-- [ ] **Step 3: Create useApi hook**
-
-Add to `apps/frontend/src/lib/server-context.tsx`:
-
-```tsx
-import { createApi } from "./api";
 
 export function useApi() {
   const baseUrl = useServerUrl();
@@ -1075,438 +826,168 @@ export function useApi() {
 }
 ```
 
-- [ ] **Step 4: Refactor ws.tsx to use ServerContext**
+- [ ] **Step 2: Refactor api.ts to accept a base URL**
 
-In `apps/frontend/src/lib/ws.tsx`, modify the `connect` callback (lines 36-39) to accept baseUrl. Change the `WebSocketProvider` to accept an optional `serverUrl` prop:
+Change `fetchJSON` to accept `baseUrl` parameter. Add `createApi(baseUrl)` factory. Keep `export const api = createApi("")` for backward compatibility.
 
-Replace lines 36-41:
 ```typescript
-const connect = useCallback(() => {
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const url = `${protocol}//${window.location.host}/ws`;
+export function createApi(baseUrl: string) {
+  return {
+    listEpics: () => fetchJSON<EpicSummary[]>(baseUrl, "/api/epics"),
+    // ... all methods use ${baseUrl}${path}
+  };
+}
+
+export const api = createApi("");
 ```
 
-With:
-```typescript
-const connect = useCallback(() => {
-  let wsBase: string;
-  if (serverUrl) {
-    wsBase = serverUrl.replace(/^http/, "ws");
-  } else {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    wsBase = `${protocol}//${window.location.host}`;
-  }
-  const url = `${wsBase}/ws`;
-```
+- [ ] **Step 3: Refactor ws.tsx to accept serverUrl prop**
 
-Add `serverUrl` prop to `WebSocketProvider`:
+Add `serverUrl` prop to `WebSocketProvider`. Use it to construct the WS URL:
+
 ```typescript
 export function WebSocketProvider({ serverUrl, children }: { serverUrl?: string; children: React.ReactNode }) {
-```
-
-Add `serverUrl` to the `useCallback` dependency array.
-
-- [ ] **Step 5: Refactor page.tsx to use api.ts**
-
-In `apps/frontend/src/app/page.tsx`, replace direct fetch calls with the `useApi` hook:
-
-```tsx
-import { useApi } from "@/lib/server-context";
-
-// Inside component:
-const api = useApi();
-
-useEffect(() => {
-  api.listEpics()
-    .then((data) => setEpics(data ?? []))
-    .catch(() => setEpics([]));
-}, [api]);
-
-async function handleCreate(name: string, description: string) {
-  await api.createEpic(name, description);
-  const updated = await api.listEpics();
-  setEpics(updated ?? []);
+  // ...
+  const connect = useCallback(() => {
+    let wsBase: string;
+    if (serverUrl) {
+      wsBase = serverUrl.replace(/^http/, "ws");
+    } else {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      wsBase = `${protocol}//${window.location.host}`;
+    }
+    const url = `${wsBase}/ws`;
+    // ...
+  }, [serverUrl]);
 }
 ```
 
-- [ ] **Step 6: Wire ServerProvider into root layout**
+- [ ] **Step 4: Wire ServerProvider into root layout**
 
-In `apps/frontend/src/app/layout.tsx`, wrap the children with `ServerProvider`. Do NOT add `WebSocketProvider` here — it already lives in `apps/frontend/src/app/epics/[id]/layout.tsx`.
+In `apps/frontend/src/app/layout.tsx`, wrap children with `<ServerProvider>`. Do NOT add WebSocketProvider here — it stays in the epic layout.
 
-```tsx
-import { ServerProvider } from "@/lib/server-context";
+- [ ] **Step 5: Pass serverUrl to WebSocketProvider in epic layout**
 
-// In the layout body, wrap the existing content:
-<ThemeProvider>
-  <ServerProvider>
-    <main className="min-h-screen bg-background">
-      {children}
-    </main>
-  </ServerProvider>
-</ThemeProvider>
-```
+In `apps/frontend/src/app/epics/[id]/layout.tsx`, use `useServerUrl()` and pass it to `<WebSocketProvider serverUrl={serverUrl}>`.
 
-Then in `apps/frontend/src/app/epics/[id]/layout.tsx`, pass serverUrl to the existing `WebSocketProvider`:
+- [ ] **Step 6: Update all components using `{ api }` import**
 
-```tsx
-import { useServerUrl } from "@/lib/server-context";
+Replace `import { api } from "@/lib/api"` with `import { useApi } from "@/lib/server-context"` in these files:
+1. `apps/frontend/src/app/page.tsx`
+2. `apps/frontend/src/app/epics/[id]/_client.tsx`
+3. `apps/frontend/src/app/epics/[id]/layout.tsx`
+4. `apps/frontend/src/app/epics/[id]/approvals/_client.tsx`
+5. `apps/frontend/src/app/epics/[id]/stories/[storyId]/_client.tsx`
+6. `apps/frontend/src/app/epics/[id]/approvals/[approvalId]/review/_client.tsx`
 
-// Inside the component:
-const serverUrl = useServerUrl();
+Add `const api = useApi();` inside each component body.
 
-// In JSX:
-<WebSocketProvider serverUrl={serverUrl}>
-```
+- [ ] **Step 7: Remove restart feature from frontend**
 
-- [ ] **Step 7: Update all components using `api` import to use `useApi` hook**
-
-These 6 files import `{ api }` from `@/lib/api` and need updating:
-
-1. `apps/frontend/src/app/epics/[id]/_client.tsx`
-2. `apps/frontend/src/app/epics/[id]/layout.tsx`
-3. `apps/frontend/src/app/epics/[id]/approvals/_client.tsx`
-4. `apps/frontend/src/app/epics/[id]/stories/[storyId]/_client.tsx`
-5. `apps/frontend/src/app/epics/[id]/approvals/[approvalId]/review/_client.tsx`
-6. `apps/frontend/src/app/epics/[id]/stories/[storyId]/_components/design-tab.tsx`
-
-For each file:
-- Replace `import { api } from "@/lib/api"` with `import { useApi } from "@/lib/server-context"`
-- Add `const api = useApi();` inside the component function body
-- All existing `api.xxx()` calls remain unchanged (the hook returns the same interface)
+In `apps/frontend/src/app/epics/[id]/layout.tsx`, remove the restart banner and `restartServer` call. Remove `restartServer` from `api.ts`.
 
 - [ ] **Step 8: Verify frontend builds**
 
 ```bash
 cd apps/frontend && bun run build
 ```
-Expected: Build succeeds
 
-- [ ] **Step 9: Verify dev mode works**
-
-Start the backend: `cd apps/backend && go run ./cmd/oraculo start http`
-Start the frontend: `cd apps/frontend && bun dev`
-Open `http://localhost:3000` — should work as before.
-
-- [ ] **Step 10: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add apps/frontend/src/
-git commit -m "feat(frontend): add ServerContext for dynamic server URLs"
+git commit -m "feat(frontend): add ServerContext for dynamic server URLs; remove restart feature"
 ```
 
 ---
 
-## Chunk 3: Desktop App — Wails Setup and Bindings
+## Chunk 3: Desktop App — Wails v3 Setup
 
-### Task 9: Initialize Wails project
+### Task 9: Initialize Wails v3 project
 
 **Files:**
 - Create: `apps/desktop/main.go`
-- Create: `apps/desktop/app.go`
-- Create: `apps/desktop/wails.json`
 - Create: `apps/desktop/go.mod`
+- Create: `apps/desktop/wails.json`
+- Create: `apps/desktop/Taskfile.yml`
+- Create: `apps/desktop/spa.go`
 
-- [ ] **Step 1: Install Wails CLI**
+- [ ] **Step 1: Install Wails v3 CLI**
 
 ```bash
-go install github.com/wailsapp/wails/v2/cmd/wails@latest
+go install -v github.com/wailsapp/wails/v3/cmd/wails3@latest
 ```
 
-- [ ] **Step 2: Initialize Wails project**
+- [ ] **Step 2: Create go.mod with local replace**
 
 ```bash
-cd apps && wails init -n desktop -t vanilla
-```
-
-This creates the skeleton. Then clean up the generated files and customize.
-
-- [ ] **Step 3: Set up go.mod with local replace**
-
-The desktop is a separate Go module that imports the root module's packages (`registry`, `spa`):
-
-```bash
+mkdir -p apps/desktop
 cd apps/desktop && go mod init github.com/lucas/oraculo/apps/desktop
 ```
 
-Add a replace directive for the root module (the root `go.mod` is at `github.com/lucas/oraculo`, two directories up):
+Add replace directive:
 ```
 replace github.com/lucas/oraculo => ../..
 ```
 
-Then: `cd apps/desktop && go get github.com/wailsapp/wails/v2`
+Then: `cd apps/desktop && go get github.com/wailsapp/wails/v3`
 
-- [ ] **Step 4: Set up frontend asset copy**
+- [ ] **Step 3: Set up frontend asset directory**
 
-Go's `//go:embed` cannot reference paths outside the module directory (`..` is not allowed). The build step must copy the frontend output into the desktop directory.
-
-Add to `wails.json` a build command that copies the frontend:
-```json
-"frontend:build": "cd ../frontend && bun run build && rm -rf ../desktop/frontend/dist && mkdir -p ../desktop/frontend/dist && cp -r out/* ../desktop/frontend/dist/"
-```
-
-Add `frontend/dist/` to `.gitignore` in `apps/desktop/`.
-
-Create a placeholder so the embed directive works even without a build:
 ```bash
 mkdir -p apps/desktop/frontend/dist
 echo '<!DOCTYPE html><html><body>Build required</body></html>' > apps/desktop/frontend/dist/index.html
+echo 'frontend/dist/' >> apps/desktop/.gitignore
 ```
 
-- [ ] **Step 5: Create main.go**
+- [ ] **Step 4: Create main.go**
 
 ```go
 package main
 
 import (
 	"embed"
+	"log"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
-	app := NewApp()
-
-	err := wails.Run(&options.App{
-		Title:  "Oraculo",
-		Width:  1280,
-		Height: 800,
-		AssetServer: &assetserver.Options{
-			Assets:  assets,
+	app := application.New(application.Options{
+		Name:        "Oraculo",
+		Description: "Oraculo Desktop — multi-project launcher",
+		Services: []application.Service{
+			application.NewService(NewLauncherService()),
+			application.NewService(NewServerService()),
+		},
+		Assets: application.AssetOptions{
 			Handler: NewSPAHandler(assets),
 		},
-		OnStartup:     app.startup,
-		OnBeforeClose: app.beforeClose,
-		OnShutdown:    app.shutdown,
-		Bind: []interface{}{
-			app,
+		Mac: application.MacOptions{
+			TerminateOnLastWindowClosed: false,
 		},
 	})
-	if err != nil {
-		panic(err)
-	}
-}
-```
 
-Note: `AssetServer.Handler` is a **fallback** — Wails first checks the embedded FS for an exact match, and only calls the handler if the file is not found. This is exactly what we need: exact files are served directly, and the handler provides SPA routing for missing paths.
-
-- [ ] **Step 6: Create app.go with basic bindings**
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"sync"
-	"time"
-
-	"github.com/lucas/oraculo/apps/backend/src/registry"
-	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
-)
-
-type App struct {
-	ctx            context.Context
-	binaryPath     string
-	wsMonitor      *wsMonitor
-	selectedServer string
-	mu             sync.Mutex
-}
-
-func NewApp() *App {
-	return &App{
-		wsMonitor: newWSMonitor(),
-	}
-}
-
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
-	a.binaryPath = a.findBinary()
-	a.setupTray()
-}
-
-func (a *App) beforeClose(ctx context.Context) bool {
-	// Hide instead of quit — tray keeps running
-	wailsRuntime.Hide(ctx)
-	return true // prevent default close
-}
-
-func (a *App) shutdown(ctx context.Context) {
-	a.wsMonitor.DisconnectAll()
-}
-
-// findBinary locates the bundled oraculo binary.
-func (a *App) findBinary() string {
-	exe, err := os.Executable()
-	if err != nil {
-		return "oraculo" // fallback to PATH
-	}
-	// macOS .app bundle: binary is in Contents/MacOS/
-	bundled := filepath.Join(filepath.Dir(exe), "oraculo")
-	if _, err := os.Stat(bundled); err == nil {
-		return bundled
-	}
-	return "oraculo"
-}
-
-type ServerInfo struct {
-	Project   string    `json:"project"`
-	Path      string    `json:"path"`
-	Port      int       `json:"port"`
-	PID       int       `json:"pid"`
-	StartedAt time.Time `json:"started_at"`
-	Online    bool      `json:"online"`
-}
-
-// ListServers reads the registry, validates PIDs, cleans orphans.
-func (a *App) ListServers() ([]ServerInfo, error) {
-	regPath, err := registry.DefaultPath()
-	if err != nil {
-		return nil, err
-	}
-	entries, err := registry.List(regPath)
-	if err != nil {
-		return nil, err
-	}
-
-	var servers []ServerInfo
-	var alive []registry.Entry
-	for _, e := range entries {
-		online := processAlive(e.PID)
-		if online {
-			alive = append(alive, e)
-		}
-		servers = append(servers, ServerInfo{
-			Project:   e.Project,
-			Path:      e.Path,
-			Port:      e.Port,
-			PID:       e.PID,
-			StartedAt: e.StartedAt,
-			Online:    online,
-		})
-	}
-
-	// Clean orphaned entries atomically
-	if len(alive) != len(entries) {
-		_ = registry.WriteAll(regPath, alive)
-	}
-
-	return servers, nil
-}
-
-// StartServer spawns oraculo start http in the given project directory.
-func (a *App) StartServer(projectPath string) error {
-	cmd := exec.Command(a.binaryPath, "start", "http")
-	cmd.Dir = projectPath
-	// Detach the child process so it survives desktop app exit.
-	detachProcess(cmd)
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("start server: %w", err)
-	}
-	cmd.Process.Release()
-
-	// Poll registry for the new entry (up to 5s).
-	regPath, _ := registry.DefaultPath()
-	for range 50 {
-		time.Sleep(100 * time.Millisecond)
-		entries, _ := registry.List(regPath)
-		for _, e := range entries {
-			if e.Path == projectPath {
-				return nil
-			}
-		}
-	}
-	return fmt.Errorf("server did not register within 5s")
-}
-
-// StopServer kills the server for the given project.
-func (a *App) StopServer(projectPath string) error {
-	cmd := exec.Command(a.binaryPath, "kill")
-	cmd.Dir = projectPath
-	return cmd.Run()
-}
-
-// SelectServer sets the active project and returns its base URL.
-func (a *App) SelectServer(port int) string {
-	url := fmt.Sprintf("http://localhost:%d", port)
-	a.mu.Lock()
-	a.selectedServer = url
-	a.mu.Unlock()
-	return url
-}
-
-// GetCurrentServer returns the base URL for the currently selected project.
-func (a *App) GetCurrentServer() string {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	return a.selectedServer
-}
-
-func processAlive(pid int) bool {
-	proc, err := os.FindProcess(pid)
-	if err != nil {
-		return false
-	}
-	return proc.Signal(syscall.Signal(0)) == nil
-}
-```
-
-Create `apps/desktop/detach_unix.go` (build-tagged for Unix):
-```go
-//go:build !windows
-
-package main
-
-import (
-	"os/exec"
-	"syscall"
-)
-
-func detachProcess(cmd *exec.Cmd) {
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-}
-```
-
-Create `apps/desktop/detach_windows.go`:
-```go
-//go:build windows
-
-package main
-
-import (
-	"os/exec"
-	"syscall"
-)
-
-func detachProcess(cmd *exec.Cmd) {
-	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP}
-}
-```
-
-Also add `WriteAll` to the registry package (`apps/backend/src/registry/registry.go`):
-```go
-// WriteAll atomically replaces all entries in the registry file.
-func WriteAll(registryPath string, entries []Entry) error {
-	return withLock(registryPath, func(_ []Entry) ([]Entry, error) {
-		return entries, nil
+	app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+		Title:  "Oraculo",
+		Name:   "launcher",
+		Width:  1024,
+		Height: 700,
+		URL:    "/",
 	})
+
+	if err := app.Run(); err != nil {
+		log.Fatal(err)
+	}
 }
 ```
 
-- [ ] **Step 7: Create SPA handler for Wails asset server**
+- [ ] **Step 5: Create SPA handler**
 
-Create `apps/desktop/spa.go`.
-
-**Important:** Wails' `AssetServer.Handler` is a **fallback** — it is only called when the embedded FS does NOT contain the requested file. So we never need to check for exact file matches; Wails already did that. We only handle:
-1. Placeholder substitution (dynamic routes stored under `__placeholder__`)
-2. SPA shell fallback (HTML/TXT for unknown paths)
+Create `apps/desktop/spa.go`:
 
 ```go
 package main
@@ -1515,24 +996,25 @@ import (
 	"embed"
 	"io/fs"
 	"net/http"
+	"strings"
 
 	"github.com/lucas/oraculo/apps/backend/src/spa"
 )
 
-// NewSPAHandler creates an http.Handler for Wails' AssetServer fallback.
-// Only called when the exact file is NOT found in the embedded FS.
 func NewSPAHandler(rawAssets embed.FS) http.Handler {
 	assets, _ := fs.Sub(rawAssets, "frontend/dist")
 	fileServer := http.FileServer(http.FS(assets))
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fsPath := r.URL.Path
-		if len(fsPath) > 0 && fsPath[0] == '/' {
-			fsPath = fsPath[1:]
+		fsPath := strings.TrimPrefix(r.URL.Path, "/")
+
+		// 1. Try exact file match.
+		if info, err := fs.Stat(assets, fsPath); err == nil && !info.IsDir() {
+			fileServer.ServeHTTP(w, r)
+			return
 		}
 
-		// Try placeholder substitution for dynamic routes.
-		// e.g., /epics/gastos/approvals -> /epics/__placeholder__/approvals
+		// 2. Try placeholder substitution for dynamic routes.
 		if phPath := spa.WithPlaceholders(fsPath); phPath != fsPath {
 			if info, err := fs.Stat(assets, phPath); err == nil && !info.IsDir() {
 				r2 := r.Clone(r.Context())
@@ -1542,7 +1024,7 @@ func NewSPAHandler(rawAssets embed.FS) http.Handler {
 			}
 		}
 
-		// Fallback: serve the best-matching SPA shell.
+		// 3. Fallback: serve the SPA shell.
 		isRSC := r.URL.Query().Get("_rsc") != ""
 		shell := spa.Shell(r.URL.Path, isRSC)
 		r2 := r.Clone(r.Context())
@@ -1552,48 +1034,66 @@ func NewSPAHandler(rawAssets embed.FS) http.Handler {
 }
 ```
 
-- [ ] **Step 8: Configure wails.json**
+Note: In Wails v3, `Assets.Handler` is the **primary** handler — it receives all requests. Unlike v2 (fallback-only), we must check for exact file matches first.
 
-Create `apps/desktop/wails.json`:
+- [ ] **Step 6: Create wails.json**
+
 ```json
 {
   "name": "oraculo-desktop",
   "outputfilename": "oraculo-desktop",
   "frontend:dir": "../frontend",
   "frontend:install": "bun install",
-  "frontend:build": "cd ../frontend && bun run build && rm -rf ../desktop/frontend/dist && mkdir -p ../desktop/frontend/dist && cp -r out/* ../desktop/frontend/dist/",
-  "frontend:dev:watcher": "bun dev",
-  "frontend:dev:serverUrl": "auto",
+  "frontend:build": "bun run build && rm -rf ../desktop/frontend/dist && mkdir -p ../desktop/frontend/dist && cp -r out/* ../desktop/frontend/dist/",
   "author": {
     "name": "Lucas Stellet"
   }
 }
 ```
 
-The `frontend:build` command builds Next.js then copies the output into `apps/desktop/frontend/dist/` where the `//go:embed` directive can find it.
+Note: `frontend:build` runs inside `frontend:dir` (which is `../frontend`). So `bun run build` runs in `apps/frontend/`, and the copy paths are relative to that directory.
 
-- [ ] **Step 9: Verify Wails builds**
+- [ ] **Step 7: Create Taskfile.yml**
+
+```yaml
+version: '3'
+
+tasks:
+  dev:
+    cmds:
+      - wails3 dev
+  build:
+    cmds:
+      - wails3 build
+  generate:
+    cmds:
+      - wails3 generate bindings
+```
+
+- [ ] **Step 8: Verify it compiles**
 
 ```bash
-cd apps/desktop && wails build
+cd apps/desktop && go build .
 ```
-Expected: Produces `build/bin/oraculo-desktop`
+Expected: Compiles (may not run without window manager, but should compile)
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add apps/desktop/
-git commit -m "feat(desktop): initialize Wails app with launcher bindings and SPA routing"
+git commit -m "feat(desktop): initialize Wails v3 app with SPA routing"
 ```
 
-### Task 10: Add project management bindings
+### Task 10: Add LauncherService and ServerService
 
 **Files:**
+- Create: `apps/desktop/launcher_service.go`
+- Create: `apps/desktop/server_service.go`
 - Create: `apps/desktop/projects.go`
+- Create: `apps/desktop/detach_unix.go`
+- Create: `apps/desktop/detach_windows.go`
 
-- [ ] **Step 1: Implement projects file management**
-
-Create `apps/desktop/projects.go`:
+- [ ] **Step 1: Create projects.go (known projects file management)**
 
 ```go
 package main
@@ -1603,8 +1103,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-
-	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type KnownProject struct {
@@ -1650,26 +1148,98 @@ func writeProjects(projects []KnownProject) error {
 	}
 	return os.WriteFile(path, append(data, '\n'), 0o644)
 }
+```
 
-// AddProject opens a directory picker and adds the selected project.
-func (a *App) AddProject() (*KnownProject, error) {
-	dir, err := wailsRuntime.OpenDirectoryDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+- [ ] **Step 2: Create LauncherService**
+
+Create `apps/desktop/launcher_service.go`:
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"time"
+
+	"github.com/lucas/oraculo/apps/backend/src/registry"
+	"github.com/wailsapp/wails/v3/pkg/application"
+)
+
+type ProjectWithStatus struct {
+	Name   string `json:"name"`
+	Path   string `json:"path"`
+	Online bool   `json:"online"`
+	Port   int    `json:"port,omitempty"`
+}
+
+type LauncherService struct {
+	binaryPath string
+}
+
+func NewLauncherService() *LauncherService {
+	return &LauncherService{}
+}
+
+func (s *LauncherService) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
+	s.binaryPath = findBinary()
+	return nil
+}
+
+func (s *LauncherService) ListProjects(ctx context.Context) ([]ProjectWithStatus, error) {
+	projects, _ := readProjects()
+	regPath, err := registry.DefaultPath()
+	if err != nil {
+		return nil, err
+	}
+	entries, _ := registry.List(regPath)
+
+	serverMap := make(map[string]registry.Entry)
+	var alive []registry.Entry
+	for _, e := range entries {
+		if processAlive(e.PID) {
+			serverMap[e.Path] = e
+			alive = append(alive, e)
+		}
+	}
+
+	// Clean orphaned entries
+	if len(alive) != len(entries) {
+		_ = registry.WriteAll(regPath, alive)
+	}
+
+	var result []ProjectWithStatus
+	for _, p := range projects {
+		ps := ProjectWithStatus{Name: p.Name, Path: p.Path}
+		if e, ok := serverMap[p.Path]; ok {
+			ps.Online = true
+			ps.Port = e.Port
+		}
+		result = append(result, ps)
+	}
+	return result, nil
+}
+
+func (s *LauncherService) AddProject(ctx context.Context) (*KnownProject, error) {
+	dir, err := application.OpenDirectoryDialog(ctx, application.OpenDialogOptions{
 		Title: "Select Oraculo Project",
 	})
 	if err != nil || dir == "" {
 		return nil, err
 	}
 
-	// Verify it has .oraculo/ directory
 	if _, err := os.Stat(filepath.Join(dir, ".oraculo")); err != nil {
-		return nil, errors.New("selected directory is not an Oraculo project (missing .oraculo/)")
+		return nil, fmt.Errorf("selected directory is not an Oraculo project (missing .oraculo/)")
 	}
 
 	name := filepath.Base(dir)
 	project := KnownProject{Path: dir, Name: name}
 
 	projects, _ := readProjects()
-	// Avoid duplicates
 	for _, p := range projects {
 		if p.Path == dir {
 			return &project, nil
@@ -1682,8 +1252,7 @@ func (a *App) AddProject() (*KnownProject, error) {
 	return &project, nil
 }
 
-// RemoveProject removes a project from the known projects list.
-func (a *App) RemoveProject(projectPath string) error {
+func (s *LauncherService) RemoveProject(ctx context.Context, projectPath string) error {
 	projects, err := readProjects()
 	if err != nil {
 		return err
@@ -1697,60 +1266,168 @@ func (a *App) RemoveProject(projectPath string) error {
 	return nil
 }
 
-// ListProjects returns all known projects with their server status.
-func (a *App) ListProjects() ([]ProjectWithStatus, error) {
-	projects, _ := readProjects()
-	servers, _ := a.ListServers()
-
-	serverMap := make(map[string]ServerInfo)
-	for _, s := range servers {
-		serverMap[s.Path] = s
+func (s *LauncherService) StartServer(ctx context.Context, projectPath string) error {
+	cmd := exec.Command(s.binaryPath, "start", "http")
+	cmd.Dir = projectPath
+	detachProcess(cmd)
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("start server: %w", err)
 	}
+	cmd.Process.Release()
 
-	var result []ProjectWithStatus
-	for _, p := range projects {
-		status := ProjectWithStatus{
-			Name: p.Name,
-			Path: p.Path,
+	// Poll health endpoint until ready (up to 5s).
+	regPath, _ := registry.DefaultPath()
+	for range 50 {
+		time.Sleep(100 * time.Millisecond)
+		entries, _ := registry.List(regPath)
+		for _, e := range entries {
+			if e.Path == projectPath {
+				// Confirm HTTP is actually ready
+				resp, err := http.Get(fmt.Sprintf("http://localhost:%d/health", e.Port))
+				if err == nil {
+					resp.Body.Close()
+					return nil
+				}
+			}
 		}
-		if s, ok := serverMap[p.Path]; ok && s.Online {
-			status.Online = true
-			status.Port = s.Port
-		}
-		result = append(result, status)
 	}
-	return result, nil
+	return fmt.Errorf("server did not become ready within 5s")
 }
 
-type ProjectWithStatus struct {
-	Name   string `json:"name"`
-	Path   string `json:"path"`
-	Online bool   `json:"online"`
-	Port   int    `json:"port,omitempty"`
+func (s *LauncherService) StopServer(ctx context.Context, projectPath string) error {
+	cmd := exec.Command(s.binaryPath, "kill")
+	cmd.Dir = projectPath
+	return cmd.Run()
+}
+
+func findBinary() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return "oraculo"
+	}
+	bundled := filepath.Join(filepath.Dir(exe), "oraculo")
+	if _, err := os.Stat(bundled); err == nil {
+		return bundled
+	}
+	return "oraculo"
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 3: Create ServerService**
+
+Create `apps/desktop/server_service.go`:
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"sync"
+)
+
+type ServerService struct {
+	selectedServer string
+	mu             sync.Mutex
+}
+
+func NewServerService() *ServerService {
+	return &ServerService{}
+}
+
+func (s *ServerService) SelectServer(ctx context.Context, port int) string {
+	url := fmt.Sprintf("http://localhost:%d", port)
+	s.mu.Lock()
+	s.selectedServer = url
+	s.mu.Unlock()
+	return url
+}
+
+func (s *ServerService) GetCurrentServer(ctx context.Context) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.selectedServer
+}
+```
+
+- [ ] **Step 4: Create platform-specific process detachment**
+
+Create `apps/desktop/detach_unix.go`:
+```go
+//go:build !windows
+
+package main
+
+import (
+	"os/exec"
+	"syscall"
+)
+
+func detachProcess(cmd *exec.Cmd) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+}
+
+func processAlive(pid int) bool {
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return false
+	}
+	return proc.Signal(syscall.Signal(0)) == nil
+}
+```
+
+Create `apps/desktop/detach_windows.go`:
+```go
+//go:build windows
+
+package main
+
+import (
+	"os"
+	"os/exec"
+	"syscall"
+)
+
+func detachProcess(cmd *exec.Cmd) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP}
+}
+
+func processAlive(pid int) bool {
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return false
+	}
+	// On Windows, FindProcess always succeeds. Try opening the process.
+	handle, err := syscall.OpenProcess(syscall.PROCESS_QUERY_INFORMATION, false, uint32(pid))
+	if err != nil {
+		return false
+	}
+	syscall.CloseHandle(handle)
+	_ = proc
+	return true
+}
+```
+
+- [ ] **Step 5: Verify it compiles**
 
 ```bash
-git add apps/desktop/projects.go
-git commit -m "feat(desktop): add project management bindings"
+cd apps/desktop && go build .
 ```
 
-### Task 11: Add system tray
+- [ ] **Step 6: Commit**
+
+```bash
+git add apps/desktop/
+git commit -m "feat(desktop): add LauncherService and ServerService with project management"
+```
+
+### Task 11: Add system tray (built-in v3)
 
 **Files:**
 - Create: `apps/desktop/tray.go`
+- Modify: `apps/desktop/main.go`
 
-- [ ] **Step 1: Add systray dependency**
-
-```bash
-cd apps/desktop && go get fyne.io/systray
-```
-
-- [ ] **Step 2: Implement tray**
-
-**Important macOS caveat:** `systray.Run()` calls into Cocoa APIs that must run on the main thread on macOS. Running it in a goroutine will crash. The `fyne-io/systray` fork provides `systray.Register(onReady, onExit)` which registers callbacks without taking over the main thread — use this instead of `systray.Run()`.
+- [ ] **Step 1: Implement tray**
 
 Create `apps/desktop/tray.go`:
 
@@ -1758,47 +1435,68 @@ Create `apps/desktop/tray.go`:
 package main
 
 import (
-	"fyne.io/systray"
-	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
-func (a *App) setupTray() {
-	// Use Register (not Run) to avoid conflicting with Wails' event loop on macOS.
-	systray.Register(func() {
-		systray.SetTitle("Oraculo")
-		systray.SetTooltip("Oraculo Desktop")
-		// TODO: Set icon from embedded resource
-		// systray.SetIcon(iconBytes)
+func setupTray(app *application.App, launcherWindow *application.WebviewWindow) {
+	tray := app.NewSystemTray()
 
-		mShow := systray.AddMenuItem("Open Window", "Show Oraculo window")
-		systray.AddSeparator()
-		mQuit := systray.AddMenuItem("Quit", "Quit Oraculo Desktop")
+	// TODO: Set icon from embedded resource
+	// tray.SetIcon(iconBytes)
+	// tray.SetDarkModeIcon(darkIconBytes)
+	tray.SetTooltip("Oraculo Desktop")
 
-		go func() {
-			for {
-				select {
-				case <-mShow.ClickedCh:
-					wailsRuntime.Show(a.ctx)
-				case <-mQuit.ClickedCh:
-					systray.Quit()
-					wailsRuntime.Quit(a.ctx)
-					return
-				}
-			}
-		}()
-	}, func() {
-		// Cleanup
+	menu := app.NewMenu()
+	menu.Add("Open Window").OnClick(func(ctx *application.Context) {
+		launcherWindow.Show()
+		launcherWindow.Focus()
+	})
+	menu.AddSeparator()
+	menu.Add("Quit").OnClick(func(ctx *application.Context) {
+		app.Quit()
+	})
+
+	tray.SetMenu(menu)
+
+	// Click tray icon -> toggle window
+	tray.OnClick(func() {
+		if launcherWindow.IsVisible() {
+			launcherWindow.Hide()
+		} else {
+			launcherWindow.Show()
+			launcherWindow.Focus()
+		}
+	})
+
+	// Hide window instead of quitting when close button is clicked
+	launcherWindow.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
+		e.Cancel()
+		launcherWindow.Hide()
 	})
 }
 ```
 
-Note: if `fyne-io/systray.Register` is not available in the version used, fall back to `go systray.Run(...)` and test on macOS. If it crashes, the systray will need to be integrated differently (e.g., via Wails' own tray support when available, or via a helper process).
+- [ ] **Step 2: Wire tray into main.go**
 
-- [ ] **Step 3: Commit**
+After creating the launcher window, call `setupTray(app, launcherWindow)`:
+
+```go
+launcherWindow := app.NewWebviewWindowWithOptions(...)
+setupTray(app, launcherWindow)
+```
+
+- [ ] **Step 3: Verify it compiles**
 
 ```bash
-git add apps/desktop/tray.go apps/desktop/app.go
-git commit -m "feat(desktop): add system tray with show/quit menu"
+cd apps/desktop && go build .
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add apps/desktop/tray.go apps/desktop/main.go
+git commit -m "feat(desktop): add system tray with show/hide toggle"
 ```
 
 ### Task 12: Add WS monitor and native notifications
@@ -1807,7 +1505,7 @@ git commit -m "feat(desktop): add system tray with show/quit menu"
 - Create: `apps/desktop/ws_monitor.go`
 - Create: `apps/desktop/notifications.go`
 
-- [ ] **Step 1: Add beeep and websocket dependencies**
+- [ ] **Step 1: Add dependencies**
 
 ```bash
 cd apps/desktop && go get github.com/gen2brain/beeep
@@ -1867,19 +1565,17 @@ import (
 
 type wsMonitor struct {
 	mu      sync.Mutex
-	cancels map[string]context.CancelFunc // projectPath -> cancel
+	cancels map[string]context.CancelFunc
 }
 
 func newWSMonitor() *wsMonitor {
 	return &wsMonitor{cancels: make(map[string]context.CancelFunc)}
 }
 
-// Connect starts monitoring a server's WebSocket for events.
 func (m *wsMonitor) Connect(project string, port int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Already connected
 	if _, ok := m.cancels[project]; ok {
 		return
 	}
@@ -1890,7 +1586,6 @@ func (m *wsMonitor) Connect(project string, port int) {
 	go m.listen(ctx, project, port)
 }
 
-// Disconnect stops monitoring a server.
 func (m *wsMonitor) Disconnect(project string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -1901,7 +1596,6 @@ func (m *wsMonitor) Disconnect(project string) {
 	}
 }
 
-// DisconnectAll stops all monitors.
 func (m *wsMonitor) DisconnectAll() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -1966,34 +1660,14 @@ func (m *wsMonitor) readLoop(ctx context.Context, conn *websocket.Conn, project 
 }
 ```
 
-- [ ] **Step 4: Wire monitor into App**
+- [ ] **Step 4: Wire monitor into LauncherService**
 
-In `app.go`, add the monitor field and wire connect/disconnect:
-
-```go
-type App struct {
-	ctx        context.Context
-	binaryPath string
-	wsMonitor  *wsMonitor
-}
-
-func NewApp() *App {
-	return &App{
-		wsMonitor: newWSMonitor(),
-	}
-}
-
-func (a *App) shutdown(ctx context.Context) {
-	a.wsMonitor.DisconnectAll()
-}
-```
-
-Update `StartServer` to auto-connect the monitor after a server starts, and `StopServer` to disconnect.
+Update `StartServer` to auto-connect the WS monitor after a server starts, and `StopServer` to disconnect. Add a `wsMonitor` field to `LauncherService`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/desktop/ws_monitor.go apps/desktop/notifications.go apps/desktop/app.go
+git add apps/desktop/ws_monitor.go apps/desktop/notifications.go apps/desktop/launcher_service.go
 git commit -m "feat(desktop): add WS event monitor and native notifications"
 ```
 
@@ -2026,11 +1700,9 @@ build-backend:
 
 build: build-backend
 
-# Bundle the oraculo binary alongside the desktop app.
-# wails.json frontend:build handles copying frontend/out/ -> desktop/frontend/dist/.
 build-desktop: build-backend
 	cp $(BINARY) apps/desktop/build/bin/oraculo
-	cd apps/desktop && wails build
+	cd apps/desktop && wails3 build
 
 install: build
 	install -m 755 $(BINARY) $(DESTDIR)$(PREFIX)/bin/$(BINARY)
@@ -2058,8 +1730,6 @@ cross-compile:
 	GOOS=linux   GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o npm/cli-linux-arm64/bin/oraculo   $(BUILD)
 ```
 
-Note: `build-desktop` depends on `build-backend` (not `build-frontend`) because `wails build` triggers `frontend:build` from `wails.json`, which handles the frontend build + copy in one step. This avoids double-building.
-
 - [ ] **Step 2: Verify targets work**
 
 ```bash
@@ -2067,7 +1737,6 @@ make build-backend
 make build-frontend
 make test
 ```
-Expected: All succeed
 
 - [ ] **Step 3: Commit**
 
@@ -2084,49 +1753,14 @@ git commit -m "build: update Makefile for frontend/backend/desktop split"
 - [ ] **Step 1: Update all references**
 
 - Replace `apps/dashboard` with `apps/frontend` everywhere
-- Update the project structure section to include `apps/desktop/`
-- Update the "Dashboard Static Assets" section — replace with a note that the frontend is embedded in the desktop app, not the server
-- Remove the `withPlaceholders`/`spaShell` server routing docs (moved to desktop)
-- Add brief description of the desktop app
+- Update project structure section to include `apps/desktop/`
+- Update "Dashboard Static Assets" section — note frontend is embedded in desktop app, not server
+- Remove `withPlaceholders`/`spaShell` server routing docs (moved to `apps/backend/src/spa/`)
+- Add brief description of the desktop app and Wails v3
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add CLAUDE.md
-git commit -m "docs: update CLAUDE.md for Wails desktop architecture"
-```
-
-### Task 15: Remove restart feature from frontend
-
-**Files:**
-- Modify: `apps/frontend/src/lib/api.ts` — remove `restartServer` method
-- Modify: `apps/frontend/src/app/epics/[id]/layout.tsx` — remove restart banner and related state
-
-- [ ] **Step 1: Remove restartServer from api.ts**
-
-In `createApi` factory, remove the `restartServer` entry. Also remove it from the default `api` export if still present.
-
-- [ ] **Step 2: Remove restart UI from epic layout**
-
-In `apps/frontend/src/app/epics/[id]/layout.tsx`:
-- Remove `handleRestart` function (lines 75-80)
-- Remove `restarting` state (line 35)
-- Remove `updateAvailable` and `newVersion` state (lines 33-34)
-- Remove the `getSystemStatus` polling `useEffect` (lines 46-59)
-- Remove the entire update banner JSX block (lines 84-103)
-- Remove the `RefreshCw` import from lucide-react
-- Keep `version` state and the sidebar — the version display still works via `getSystemStatus` if needed, or remove it entirely since the desktop manages system info
-
-- [ ] **Step 3: Verify frontend builds**
-
-```bash
-cd apps/frontend && bun run build
-```
-Expected: Build succeeds
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add apps/frontend/
-git commit -m "refactor(frontend): remove restart feature (desktop manages server lifecycle)"
+git commit -m "docs: update CLAUDE.md for Wails v3 desktop architecture"
 ```

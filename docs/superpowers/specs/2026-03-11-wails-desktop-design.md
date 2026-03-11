@@ -2,13 +2,13 @@
 
 ## Summary
 
-Split Oraculo into two binaries: `oraculo` (CLI/server) and `oraculo-desktop` (Wails v2 native app). The desktop app is a launcher and viewer that connects to multiple project servers via HTTP/WS. The server drops embedded frontend assets; the desktop embeds the Next.js build and bundles the `oraculo` binary.
+Split Oraculo into two binaries: `oraculo` (CLI/server) and `oraculo-desktop` (Wails v3 native app). The desktop app is a multi-window launcher and viewer that connects to multiple project servers via HTTP/WS. The server drops embedded frontend assets; the desktop embeds the Next.js build and bundles the `oraculo` binary.
 
 ## Motivation
 
 - **Native window** -- desktop app in the dock/taskbar, not a browser tab
 - **Distribution** -- installable app (`.dmg`, `.exe`) with bundled server binary
-- **Native features** -- system tray, native notifications, global shortcuts
+- **Native features** -- built-in system tray, native notifications, multi-window support
 
 ## Architecture
 
@@ -18,7 +18,7 @@ Two binaries, three apps in the monorepo:
 apps/
 ├── backend/     -- Go: CLI + HTTP + WS + MCP (oraculo binary, no frontend embed)
 ├── frontend/    -- Next.js (rename from dashboard, static export)
-└── desktop/     -- Wails v2: embeds frontend/out/, bundles oraculo binary
+└── desktop/     -- Wails v3: embeds frontend/out/, bundles oraculo binary
 ```
 
 Communication:
@@ -98,7 +98,6 @@ Note: `oraculo restart` CLI command survives (useful for headless users without 
 - CORS headers on HTTP server:
   - `Access-Control-Allow-Origin: *` (all communication is local)
   - Apply to both HTTP responses and WebSocket upgrader (`CheckOrigin` returns `true`)
-  - Wails v2.8+ uses `wails.localhost` on all platforms for HTTP requests
 - `project_name` field in `GET /health` response (derived as described in "Project Name Derivation")
 
 ### Unchanged
@@ -111,47 +110,103 @@ Note: `oraculo restart` CLI command survives (useful for headless users without 
 - DB, config, logging
 - npm distribution (`@oraculo/cli`)
 
-## Desktop App (Wails v2)
+## Desktop App (Wails v3)
+
+### Why v3 over v2
+
+- **System tray built-in** -- `app.SystemTray.New()` replaces external `fyne-io/systray` dependency and avoids macOS main thread conflicts
+- **Multi-window native** -- each project can open its own dashboard window via `app.NewWebviewWindowWithOptions()`
+- **Service pattern** -- dependency injection replaces global context threading, more testable
+- **Better build system** -- Task-based, transparent, customizable
+- **Auto-generated TypeScript bindings** -- `wails3 generate bindings` produces typed TS functions in `./bindings/`
+
+v3 is in alpha (v3.0.0-alpha.68+) with daily releases. Acceptable risk for an internal tool used by ~5 people.
 
 ### Project Structure
 
 ```
 apps/desktop/
-├── main.go              -- wails.Run() with options
-├── app.go               -- App struct with bindings
-├── tray.go              -- systray (fyne-io/systray, maintained fork)
-├── notifications.go     -- native notifications (beeep, cross-platform)
-├── registry.go          -- reads ~/.oraculo/servers.json
+├── main.go              -- application.New() + window creation + app.Run()
+├── services/
+│   ├── launcher.go      -- LauncherService: ListProjects, AddProject, RemoveProject, StartServer, StopServer
+│   ├── server.go        -- ServerService: GetCurrentServer, SelectServer
+│   └── notifications.go -- NotificationService: GetSettings, SetSettings
+├── tray.go              -- built-in system tray (app.SystemTray.New())
 ├── ws_monitor.go        -- Go-side WS client for event monitoring
+├── spa.go               -- SPA routing for asset server (reuses withPlaceholders/spaShell)
+├── Taskfile.yml          -- Wails v3 build tasks
 ├── wails.json           -- Wails config
 ├── build/               -- icons, platform manifests
-└── frontend/            -- symlink to apps/frontend/out/ (see wails.json config)
+└── frontend/            -- copied from apps/frontend/out/ at build time
 ```
 
-The `wails.json` `frontend:dir` points to `../frontend` and `frontend:build` runs `bun run build`. In production, `//go:embed all:frontend/dist` (or equivalent) embeds the static output.
+### Application Lifecycle
 
-### SPA Routing in Wails
+```go
+app := application.New(application.Options{
+    Name: "Oraculo",
+    Services: []application.Service{
+        application.NewService(&LauncherService{}),
+        application.NewService(&ServerService{}),
+        application.NewService(&NotificationService{}),
+    },
+    Assets: application.AssetOptions{
+        Handler: NewSPAHandler(assets),
+    },
+    Mac: application.MacOptions{
+        TerminateOnLastWindowClosed: false, // tray keeps running
+    },
+})
 
-The current server uses `withPlaceholders` and `spaShell` to handle Next.js dynamic routes and RSC payloads. Since the desktop embeds the same static export, it needs equivalent routing. This is implemented via Wails' `AssetServer.Handler` option -- a custom `http.Handler` that replicates the placeholder substitution logic:
+// Create launcher window
+app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+    Title: "Oraculo", Name: "launcher",
+    Width: 900, Height: 600, URL: "/",
+})
 
-1. Wails checks the embedded FS for an exact file match (built-in behavior)
-2. If not found, the custom handler applies `withPlaceholders` to try `__placeholder__` paths
-3. If still not found, falls back to the best-matching HTML shell via `spaShell`
+app.Run()
+```
 
-The `withPlaceholders` and `spaShell` functions are extracted into a shared package (`apps/backend/src/spa/` or similar) so both the server (if ever re-enabled) and the desktop can use them. On initial migration, only the desktop uses them.
+### SPA Routing in Wails v3
 
-### Wails Bindings (Go -> JS)
+In v3, `Assets.Handler` is the **primary** handler for all asset requests. It receives every request (unlike v2 where it was a fallback). The handler must:
 
-| Binding | Description |
-|---------|-------------|
-| `ListServers()` | Read registry, validate PIDs, clean orphans, return project list with status |
-| `StartServer(path)` | Spawn bundled `oraculo start http --dir <path>`, poll registry until entry appears (5s timeout, error on failure) |
+1. Try the exact file from the embedded FS
+2. If not found, try placeholder substitution for dynamic routes
+3. If still not found, serve the SPA shell
+
+The `withPlaceholders` and `spaShell` functions are extracted into a shared package (`apps/backend/src/spa/`) for reuse by the desktop.
+
+### Wails Services (Go -> JS)
+
+Services replace v2's `Bind` pattern. Each service is a Go struct whose public methods are auto-exposed to the frontend via `wails3 generate bindings`.
+
+**LauncherService:**
+
+| Method | Description |
+|--------|-------------|
+| `ListProjects()` | Read projects.json + servers.json, validate PIDs, return merged list with status |
+| `AddProject()` | Open native directory picker, validate `.oraculo/` exists, add to projects.json |
+| `RemoveProject(path)` | Remove from projects.json |
+| `StartServer(path)` | Spawn bundled `oraculo start http --dir <path>`, poll health until ready (5s timeout) |
 | `StopServer(path)` | Execute bundled `oraculo kill --dir <path>` |
-| `AddProject(path)` | Add to `~/.oraculo/projects.json` |
-| `RemoveProject(path)` | Remove from `~/.oraculo/projects.json` |
-| `GetCurrentServer()` | Return the base URL of the currently selected project (e.g., `http://localhost:3100`) |
-| `GetNotificationSettings()` | Read notification preferences |
-| `SetNotificationSettings(...)` | Save notification preferences |
+
+**ServerService:**
+
+| Method | Description |
+|--------|-------------|
+| `SelectServer(port)` | Store selected server URL, return base URL |
+| `GetCurrentServer()` | Return base URL of currently selected project |
+
+### Multi-Window Architecture
+
+The launcher is the main window. When the user clicks "Open Dashboard" on an active project:
+
+1. `SelectServer(port)` stores the active server URL
+2. The frontend navigates to the dashboard view (same window, React routing)
+3. Future enhancement: open a **new window** per project via `app.NewWebviewWindowWithOptions()`
+
+Each window can load a different URL route. The Go backend knows which window called a method via `ctx.Value(application.WindowNameKey)`.
 
 ### Launcher Screen
 
@@ -162,37 +217,41 @@ Lists all known projects with contextual actions by state:
 | Offline | Start, Remove |
 | Online | Open Dashboard, Stop |
 
-"Add Project" button with native file picker (Wails dialog API).
+"Add Project" button with native file picker (Wails dialog API via `application.OpenDirectoryDialog`).
 
 ### Navigation and Server Context Injection
 
-On selecting an active project, the frontend loads pointing to that server. The URL injection works via Wails binding:
-
 1. User clicks "Open Dashboard" on a project
-2. Desktop stores the selected server URL internally
-3. Frontend JS calls `GetCurrentServer()` binding on mount
-4. Returns `http://localhost:<port>` which populates a React `ServerContext`
-5. All `fetch()` calls in `api.ts` and the WS connection in `useWebSocket` use this base URL
-6. In dev (browser), `GetCurrentServer()` is not available -- falls back to `window.location.origin`
+2. Frontend calls `SelectServer(port)` binding, receives `http://localhost:<port>`
+3. This populates a React `ServerContext`
+4. All `fetch()` calls in `api.ts` and the WS connection use this base URL
+5. In dev (browser), `window.wails` is not available -- falls back to `window.location.origin`
 
-### System Tray (fyne-io/systray)
+### System Tray (built-in)
 
-- Started in Wails `OnStartup`
-- Close window -> `Hide()` instead of `Quit()` (via `OnBeforeClose` hook)
-- Click tray -> `Show()`
+Wails v3 provides native system tray support:
+
+```go
+tray := app.SystemTray.New()
+tray.SetIcon(iconBytes)
+tray.SetDarkModeIcon(darkIconBytes)
+tray.SetTooltip("Oraculo Desktop")
+```
+
+- Click tray icon -> show/toggle launcher window
 - Menu: list of active projects, separator, "Open Window", "Quit"
-- Visual badge when approvals are pending
+- Dynamic icon switching for pending approvals (no native badge API -- swap icon instead)
+- Hide-on-close via `RegisterHook(events.Common.WindowClosing)` + `e.Cancel()` + `window.Hide()`
 
 ### Native Notifications (beeep)
 
-- Cross-platform via `gen2brain/beeep` (macOS, Windows, Linux)
+- Cross-platform via `gen2brain/beeep` (macOS, Windows, Linux) -- Wails v3 has no built-in notification API
 - Desktop maintains Go-side WS connections to each active server (in `ws_monitor.go`)
   - Why Go-side: notifications must work even with the window hidden (tray mode)
   - One goroutine per active server, managed by connection lifecycle
 - Events that trigger notifications:
   - `approval_requested` -- approval pending (critical, agent blocked)
   - `story_completed` / `epic_completed` -- completion notifications
-- Clicking a notification opens the window in the correct context
 
 ### Bundled Binary
 
@@ -212,8 +271,9 @@ On selecting an active project, the frontend loads pointing to that server. The 
 Today the frontend assumes same-origin (`/api/...`, `/ws`). With the desktop, each project has a server on a different port.
 
 - Add a React `ServerContext` with a `baseUrl` field
-- On mount, call `GetCurrentServer()` Wails binding if available
-- Fallback to `window.location.origin` when running in a regular browser
+- On mount, check `window.wails` to detect Wails environment
+- If in Wails: call `GetCurrentServer()` binding to get the base URL
+- If in browser: fall back to `window.location.origin`
 - `api.ts`: all fetch calls use `${baseUrl}/api/...` instead of `/api/...`
 - `useWebSocket`: connect to `${baseUrl.replace('http', 'ws')}/ws` instead of `ws://${window.location.host}/ws`
 
@@ -235,13 +295,13 @@ cd apps/frontend && bun run build          # -> apps/frontend/out/
 cd apps/backend && go build ./cmd/oraculo  # -> oraculo binary
 
 # 3. Desktop (embeds frontend + bundles oraculo)
-cd apps/desktop && wails build             # -> build/bin/oraculo-desktop
+cd apps/desktop && wails3 build            # -> build/bin/oraculo-desktop
 ```
 
 ### Development Workflow
 
 - **Frontend dev (browser):** `cd apps/frontend && bun dev` -- runs Next.js dev server with proxy to `localhost:6077`. Start `oraculo start http` separately. Same as today.
-- **Desktop dev:** `cd apps/desktop && wails dev` -- Wails runs the frontend dev server and opens the WebView. Requires an `oraculo` server running separately for API/WS.
+- **Desktop dev:** `cd apps/desktop && wails3 dev` -- Wails runs the Vite dev server on port 5173 with HMR. Requires an `oraculo` server running separately for API/WS.
 - **Backend dev:** unchanged, `go test ./...` etc.
 
 ### Distribution Channels
@@ -255,7 +315,7 @@ cd apps/desktop && wails build             # -> build/bin/oraculo-desktop
 
 - `build-frontend` -- builds Next.js
 - `build-backend` -- compiles Go (no dashboard embed)
-- `build-desktop` -- builds frontend + wails build
+- `build-desktop` -- builds frontend + wails3 build
 - Remove targets that copy assets to backend
 
 ### CI
