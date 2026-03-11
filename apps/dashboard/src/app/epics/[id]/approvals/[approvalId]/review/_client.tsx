@@ -47,6 +47,9 @@ export default function ReviewPage() {
       .finally(() => setLoading(false));
   }, [approvalId]);
 
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [generalComment, setGeneralComment] = useState("");
+
   const [mode, setMode] = useState<"preview" | "edit">("preview");
   const editContentRef = useRef("");
   const [, forceRender] = useState(0);
@@ -124,11 +127,16 @@ export default function ReviewPage() {
       if (!approval || submitting) return;
       setSubmitting(true);
       try {
-        await api.submitVerdict(approval.id, verdict, "");
+        const comment = verdict === "rejected" ? generalComment.trim() : "";
+        await api.submitVerdict(approval.id, verdict, comment);
         const updated = await api.getApproval(approvalId);
         setApproval(updated);
         if (verdict === "approved") {
-          setComments([]); // Comments deleted by backend
+          setComments([]);
+        }
+        if (verdict === "rejected") {
+          setShowRejectDialog(false);
+          setGeneralComment("");
         }
       } catch {
         // Silently handle error
@@ -136,7 +144,7 @@ export default function ReviewPage() {
         setSubmitting(false);
       }
     },
-    [approval, approvalId, submitting]
+    [approval, approvalId, submitting, generalComment]
   );
 
   if (loading) {
@@ -237,7 +245,7 @@ export default function ReviewPage() {
             Approve
           </button>
           <button
-            onClick={() => handleVerdict("rejected")}
+            onClick={() => setShowRejectDialog(true)}
             disabled={submitting}
             className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-3 text-xs font-semibold text-[#ef4444] transition-colors hover:bg-[#ef4444]/20 disabled:opacity-50 font-[family-name:var(--font-sans)]"
           >
@@ -246,6 +254,54 @@ export default function ReviewPage() {
           </button>
         </div>
       </div>
+
+      {/* Rejection dialog */}
+      {showRejectDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-md rounded-xl border border-[#22324a] bg-[#0f172a] p-6 shadow-2xl">
+            <h3 className="mb-4 text-lg font-semibold text-[#f5f9ff] font-[family-name:var(--font-display)]">
+              Reject Approval
+            </h3>
+
+            {comments.length > 0 && (
+              <p className="mb-3 text-sm text-[#8ea2bd] font-[family-name:var(--font-sans)]">
+                {comments.length} inline comment{comments.length > 1 ? "s" : ""} will be included with this rejection.
+              </p>
+            )}
+
+            <label className="mb-2 block text-sm text-[#8ea2bd] font-[family-name:var(--font-sans)]">
+              General comment{comments.length === 0 ? " (required)" : " (optional)"}
+            </label>
+            <textarea
+              value={generalComment}
+              onChange={(e) => setGeneralComment(e.target.value)}
+              placeholder={comments.length === 0 ? "Explain why this is being rejected..." : "Add a general comment..."}
+              rows={4}
+              className="w-full resize-none rounded-lg border border-[#22324a] bg-[#0b1120] px-3 py-2 text-sm text-[#f5f9ff] placeholder-[#525e6e] outline-none focus:border-blue-500 font-[family-name:var(--font-sans)]"
+              autoFocus
+            />
+
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowRejectDialog(false);
+                  setGeneralComment("");
+                }}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-[#8ea2bd] transition-colors hover:bg-[#22324a] font-[family-name:var(--font-sans)]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleVerdict("rejected")}
+                disabled={submitting || (comments.length === 0 && !generalComment.trim())}
+                className="rounded-lg bg-[#ef4444] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#dc2626] disabled:opacity-50 font-[family-name:var(--font-sans)]"
+              >
+                {submitting ? "Submitting..." : "Confirm Rejection"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content area */}
       <div className="flex-1 overflow-y-auto">
