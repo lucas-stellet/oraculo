@@ -14,6 +14,7 @@ var migrations = []func(*sql.Tx) error{
 	migrateV6,
 	migrateV7,
 	migrateV8,
+	migrateV9,
 }
 
 // migrateV1 creates all core tables, knowledge with FTS5, approvals, and validations.
@@ -301,6 +302,25 @@ func migrateV8(tx *sql.Tx) error {
 	_, err := tx.Exec(`ALTER TABLE agents ADD COLUMN task_id INTEGER REFERENCES tasks(id)`)
 	if err != nil {
 		return fmt.Errorf("migration v8: %w", err)
+	}
+	return nil
+}
+
+func migrateV9(tx *sql.Tx) error {
+	stmts := []string{
+		`CREATE TABLE approval_comments (
+			id            INTEGER PRIMARY KEY AUTOINCREMENT,
+			approval_id   TEXT NOT NULL REFERENCES approvals(id),
+			selected_text TEXT NOT NULL,
+			comment       TEXT NOT NULL,
+			created_at    TEXT DEFAULT (datetime('now'))
+		)`,
+		`CREATE INDEX idx_approval_comments_approval ON approval_comments(approval_id)`,
+	}
+	for _, stmt := range stmts {
+		if _, err := tx.Exec(stmt); err != nil {
+			return fmt.Errorf("migration v9: %w\nSQL: %s", err, stmt)
+		}
 	}
 	return nil
 }

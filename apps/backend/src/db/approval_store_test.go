@@ -264,3 +264,137 @@ func TestApprovalStore_Verdict_NotFound(t *testing.T) {
 		t.Errorf("expected ErrNotFound, got: %v", err)
 	}
 }
+
+func TestApprovalStore_CreateComment(t *testing.T) {
+	database := testDB(t)
+	store := NewApprovalStore(database)
+
+	epicStore := NewEpicStore(database)
+	epic, _, _ := epicStore.Create("test-epic", "desc")
+	approval, _ := store.Request(domain.ApprovalQAEscalation, &epic.ID, nil, "content")
+
+	comment, err := store.CreateComment(approval.ID, "some selected text", "this needs clarification")
+	if err != nil {
+		t.Fatalf("CreateComment: %v", err)
+	}
+	if comment.ID == 0 {
+		t.Error("expected non-zero ID")
+	}
+	if comment.SelectedText != "some selected text" {
+		t.Errorf("SelectedText = %q, want %q", comment.SelectedText, "some selected text")
+	}
+	if comment.Comment != "this needs clarification" {
+		t.Errorf("Comment = %q, want %q", comment.Comment, "this needs clarification")
+	}
+	if comment.CreatedAt.IsZero() {
+		t.Error("expected non-zero CreatedAt")
+	}
+}
+
+func TestApprovalStore_ListComments(t *testing.T) {
+	database := testDB(t)
+	store := NewApprovalStore(database)
+
+	epicStore := NewEpicStore(database)
+	epic, _, _ := epicStore.Create("test-epic", "desc")
+	a1, _ := store.Request(domain.ApprovalQAEscalation, &epic.ID, nil, "content 1")
+	a2, _ := store.Request(domain.ApprovalExecutionPlan, &epic.ID, nil, "content 2")
+
+	store.CreateComment(a1.ID, "text A", "comment A")
+	store.CreateComment(a1.ID, "text B", "comment B")
+	store.CreateComment(a2.ID, "text C", "comment C") // different approval — must not appear
+
+	comments, err := store.ListComments(a1.ID)
+	if err != nil {
+		t.Fatalf("ListComments: %v", err)
+	}
+	if len(comments) != 2 {
+		t.Fatalf("len = %d, want 2", len(comments))
+	}
+	if comments[0].SelectedText != "text A" {
+		t.Errorf("comments[0].SelectedText = %q, want %q", comments[0].SelectedText, "text A")
+	}
+	if comments[1].SelectedText != "text B" {
+		t.Errorf("comments[1].SelectedText = %q, want %q", comments[1].SelectedText, "text B")
+	}
+}
+
+func TestApprovalStore_ListComments_Empty(t *testing.T) {
+	database := testDB(t)
+	store := NewApprovalStore(database)
+
+	epicStore := NewEpicStore(database)
+	epic, _, _ := epicStore.Create("test-epic", "desc")
+	approval, _ := store.Request(domain.ApprovalQAEscalation, &epic.ID, nil, "content")
+
+	comments, err := store.ListComments(approval.ID)
+	if err != nil {
+		t.Fatalf("ListComments: %v", err)
+	}
+	if len(comments) != 0 {
+		t.Errorf("len = %d, want 0", len(comments))
+	}
+}
+
+func TestApprovalStore_DeleteComment(t *testing.T) {
+	database := testDB(t)
+	store := NewApprovalStore(database)
+
+	epicStore := NewEpicStore(database)
+	epic, _, _ := epicStore.Create("test-epic", "desc")
+	approval, _ := store.Request(domain.ApprovalQAEscalation, &epic.ID, nil, "content")
+
+	c1, _ := store.CreateComment(approval.ID, "text A", "comment A")
+	store.CreateComment(approval.ID, "text B", "comment B")
+
+	if err := store.DeleteComment(c1.ID); err != nil {
+		t.Fatalf("DeleteComment: %v", err)
+	}
+
+	comments, err := store.ListComments(approval.ID)
+	if err != nil {
+		t.Fatalf("ListComments after delete: %v", err)
+	}
+	if len(comments) != 1 {
+		t.Fatalf("len = %d, want 1", len(comments))
+	}
+	if comments[0].SelectedText != "text B" {
+		t.Errorf("remaining comment SelectedText = %q, want %q", comments[0].SelectedText, "text B")
+	}
+}
+
+func TestApprovalStore_DeleteCommentsByApproval(t *testing.T) {
+	database := testDB(t)
+	store := NewApprovalStore(database)
+
+	epicStore := NewEpicStore(database)
+	epic, _, _ := epicStore.Create("test-epic", "desc")
+	a1, _ := store.Request(domain.ApprovalQAEscalation, &epic.ID, nil, "content 1")
+	a2, _ := store.Request(domain.ApprovalExecutionPlan, &epic.ID, nil, "content 2")
+
+	store.CreateComment(a1.ID, "text A", "comment A")
+	store.CreateComment(a1.ID, "text B", "comment B")
+	store.CreateComment(a2.ID, "text C", "comment C")
+
+	if err := store.DeleteCommentsByApproval(a1.ID); err != nil {
+		t.Fatalf("DeleteCommentsByApproval: %v", err)
+	}
+
+	// a1 comments must be gone
+	comments, err := store.ListComments(a1.ID)
+	if err != nil {
+		t.Fatalf("ListComments a1 after delete: %v", err)
+	}
+	if len(comments) != 0 {
+		t.Errorf("expected 0 comments for a1, got %d", len(comments))
+	}
+
+	// a2 comments must be intact
+	comments, err = store.ListComments(a2.ID)
+	if err != nil {
+		t.Fatalf("ListComments a2 after delete: %v", err)
+	}
+	if len(comments) != 1 {
+		t.Errorf("expected 1 comment for a2, got %d", len(comments))
+	}
+}

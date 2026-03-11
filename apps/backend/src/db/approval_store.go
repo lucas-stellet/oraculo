@@ -215,3 +215,83 @@ func (s *ApprovalStore) Verdict(id string, verdict domain.Verdict, comment strin
 	}
 	return s.GetByID(id)
 }
+
+// CreateComment inserts a new inline comment on an approval and returns the created record.
+func (s *ApprovalStore) CreateComment(approvalID string, selectedText string, comment string) (*domain.ApprovalComment, error) {
+	res, err := s.db.conn.Exec(
+		`INSERT INTO approval_comments (approval_id, selected_text, comment) VALUES (?, ?, ?)`,
+		approvalID, selectedText, comment,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("create approval comment: %w", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("last insert id: %w", err)
+	}
+
+	var c domain.ApprovalComment
+	var createdAt string
+	err = s.db.conn.QueryRow(
+		`SELECT id, selected_text, comment, created_at FROM approval_comments WHERE id = ?`, id,
+	).Scan(&c.ID, &c.SelectedText, &c.Comment, &createdAt)
+	if err != nil {
+		return nil, fmt.Errorf("get created comment: %w", err)
+	}
+	if c.CreatedAt, err = time.Parse(sqliteTimeFmt, createdAt); err != nil {
+		return nil, fmt.Errorf("parse comment created_at: %w", err)
+	}
+	return &c, nil
+}
+
+// ListComments returns all comments for an approval, ordered by created_at ascending.
+func (s *ApprovalStore) ListComments(approvalID string) ([]domain.ApprovalComment, error) {
+	rows, err := s.db.conn.Query(
+		`SELECT id, selected_text, comment, created_at FROM approval_comments
+		 WHERE approval_id = ? ORDER BY created_at`,
+		approvalID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list approval comments: %w", err)
+	}
+	defer rows.Close()
+
+	var comments []domain.ApprovalComment
+	for rows.Next() {
+		var c domain.ApprovalComment
+		var createdAt string
+		if err := rows.Scan(&c.ID, &c.SelectedText, &c.Comment, &createdAt); err != nil {
+			return nil, fmt.Errorf("scan approval comment: %w", err)
+		}
+		if c.CreatedAt, err = time.Parse(sqliteTimeFmt, createdAt); err != nil {
+			return nil, fmt.Errorf("parse comment created_at: %w", err)
+		}
+		comments = append(comments, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate approval comments: %w", err)
+	}
+	if comments == nil {
+		comments = []domain.ApprovalComment{}
+	}
+	return comments, nil
+}
+
+// DeleteComment deletes a single comment by its ID.
+func (s *ApprovalStore) DeleteComment(id int) error {
+	_, err := s.db.conn.Exec(`DELETE FROM approval_comments WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete approval comment %d: %w", id, err)
+	}
+	return nil
+}
+
+// DeleteCommentsByApproval deletes all comments for a given approval.
+// Intended for use when an approval is approved and comments are no longer relevant.
+func (s *ApprovalStore) DeleteCommentsByApproval(approvalID string) error {
+	_, err := s.db.conn.Exec(`DELETE FROM approval_comments WHERE approval_id = ?`, approvalID)
+	if err != nil {
+		return fmt.Errorf("delete comments for approval %q: %w", approvalID, err)
+	}
+	return nil
+}

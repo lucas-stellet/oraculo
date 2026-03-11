@@ -36,6 +36,14 @@ var validVerdicts = map[Verdict]bool{
 // Valid reports whether v is a recognized verdict.
 func (v Verdict) Valid() bool { return validVerdicts[v] }
 
+// ApprovalComment represents an inline annotation on an approval's content.
+type ApprovalComment struct {
+	ID           int       `json:"id"`
+	SelectedText string    `json:"selected_text"`
+	Comment      string    `json:"comment"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 // Approval represents a human-in-the-loop approval gate request.
 type Approval struct {
 	ID              string         `json:"id"`
