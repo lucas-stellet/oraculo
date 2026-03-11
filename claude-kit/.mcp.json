@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "oraculo": {
+      "command": "npx",
+      "args": ["-y", "@oraculo/cli@latest", "start"]
+    }
+  }
+}

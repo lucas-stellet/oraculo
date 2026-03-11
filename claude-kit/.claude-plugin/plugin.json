@@ -1,0 +1,10 @@
+{
+  "name": "oraculo",
+  "version": "0.1.0",
+  "description": "Socratic guide and team orchestrator for quality product development",
+  "author": {
+    "name": "Lucas"
+  },
+  "repository": "https://github.com/lucas/oraculo",
+  "skills": "./skills/"
+}
