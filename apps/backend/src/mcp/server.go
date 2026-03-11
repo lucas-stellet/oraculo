@@ -36,10 +36,15 @@ type requestApprovalInput struct {
 
 // requestApprovalOutput is the typed output returned once a verdict is recorded.
 type requestApprovalOutput struct {
-	ID      string `json:"id"`
-	Status  string `json:"status"`
-	Verdict string `json:"verdict,omitempty"`
-	Comment string `json:"comment,omitempty"`
+	ID       string                   `json:"id"`
+	Type     string                   `json:"type"`
+	EpicID   *int                     `json:"epic_id,omitempty"`
+	StoryID  *int                     `json:"story_id,omitempty"`
+	Content  string                   `json:"content"`
+	Status   string                   `json:"status"`
+	Verdict  string                   `json:"verdict,omitempty"`
+	Comment  string                   `json:"comment,omitempty"`
+	Comments []domain.ApprovalComment `json:"comments"`
 }
 
 // approvalStatusInput is the typed input for the approval_status tool.
@@ -50,11 +55,14 @@ type approvalStatusInput struct {
 
 // approvalStatusOutput mirrors the current state of an approval.
 type approvalStatusOutput struct {
-	ID      string `json:"id"`
-	Type    string `json:"type"`
-	Status  string `json:"status"`
-	Content string `json:"content"`
-	Comment string `json:"comment,omitempty"`
+	ID       string                   `json:"id"`
+	Type     string                   `json:"type"`
+	EpicID   *int                     `json:"epic_id,omitempty"`
+	StoryID  *int                     `json:"story_id,omitempty"`
+	Content  string                   `json:"content"`
+	Status   string                   `json:"status"`
+	Comment  string                   `json:"comment,omitempty"`
+	Comments []domain.ApprovalComment `json:"comments"`
 }
 
 // New constructs and wires an MCP server with the request_approval and
@@ -125,6 +133,8 @@ func (s *Server) handleRequestApproval(
 
 	req := approval.ApprovalRequest{
 		Type:    at,
+		EpicID:  in.EpicID,
+		StoryID: in.StoryID,
 		Content: in.Content,
 	}
 
@@ -134,9 +144,14 @@ func (s *Server) handleRequestApproval(
 	}
 
 	out := requestApprovalOutput{
-		ID:      result.ID,
-		Verdict: string(result.Verdict),
-		Comment: result.Comment,
+		ID:       result.ID,
+		Type:     string(result.Type),
+		EpicID:   result.EpicID,
+		StoryID:  result.StoryID,
+		Content:  result.Content,
+		Verdict:  string(result.Verdict),
+		Comment:  result.Comment,
+		Comments: result.Comments,
 	}
 	return nil, out, nil
 }
@@ -158,13 +173,20 @@ func (s *Server) handleApprovalStatus(
 		return nil, approvalStatusOutput{}, err
 	}
 
+	comments, err := s.store.ListComments(in.ID)
+	if err != nil {
+		return nil, approvalStatusOutput{}, fmt.Errorf("list comments: %w", err)
+	}
+
 	out := approvalStatusOutput{
-		ID:      a.ID,
-		Type:    string(a.Type),
-		Status:  string(a.Status),
-		Content: a.Content,
-		Comment: a.VerdictComment,
+		ID:       a.ID,
+		Type:     string(a.Type),
+		EpicID:   a.EpicID,
+		StoryID:  a.StoryID,
+		Content:  a.Content,
+		Status:   string(a.Status),
+		Comment:  a.VerdictComment,
+		Comments: comments,
 	}
 	return nil, out, nil
 }
-

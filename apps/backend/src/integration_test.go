@@ -51,10 +51,11 @@ func TestIntegration_ApprovalFlow(t *testing.T) {
 	}
 	resultCh := make(chan requestResult, 1)
 
+	epicID := epic.ID
 	go func() {
 		r, err := bridge.Request(ctx, approval.ApprovalRequest{
 			Type:    domain.ApprovalQAEscalation,
-			Epic:    epic.Name,
+			EpicID:  &epicID,
 			Content: "# Requirements\n\nThis is the requirements document.",
 		})
 		resultCh <- requestResult{r, err}

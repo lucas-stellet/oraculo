@@ -41,7 +41,6 @@ func TestBridge_RequestAndDecide(t *testing.T) {
 		defer close(done)
 		result, reqErr = bridge.Request(ctx, approval.ApprovalRequest{
 			Type:    domain.ApprovalQAEscalation,
-			Epic:    "my-epic",
 			Content: "# Requirements\nSome content",
 		})
 	}()
@@ -84,7 +83,6 @@ func TestBridge_ContextCancellation(t *testing.T) {
 		defer close(done)
 		_, err := bridge.Request(ctx, approval.ApprovalRequest{
 			Type:    domain.ApprovalQAEscalation,
-			Epic:    "my-epic",
 			Content: "content",
 		})
 		if err != context.Canceled {

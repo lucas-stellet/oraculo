@@ -19,16 +19,21 @@ type Broadcaster interface {
 // ApprovalRequest carries the parameters for a new approval gate.
 type ApprovalRequest struct {
 	Type    domain.ApprovalType
-	Epic    string // epic name; may be empty
-	Story   string // story name; may be empty
+	EpicID  *int   // numeric epic ID; may be nil
+	StoryID *int   // numeric story ID; may be nil
 	Content string
 }
 
 // VerdictResult is returned by Request once a decision has been recorded.
 type VerdictResult struct {
-	ID      string
-	Verdict domain.Verdict
-	Comment string
+	ID       string
+	Type     domain.ApprovalType
+	EpicID   *int
+	StoryID  *int
+	Content  string
+	Verdict  domain.Verdict
+	Comment  string
+	Comments []domain.ApprovalComment
 }
 
 // store is the subset of db.ApprovalStore used by Bridge.
@@ -36,6 +41,8 @@ type store interface {
 	Request(approvalType domain.ApprovalType, epicID, storyID *int, content string) (*domain.Approval, error)
 	Verdict(id string, verdict domain.Verdict, comment string) (*domain.Approval, error)
 	GetByID(id string) (*domain.Approval, error)
+	ListComments(approvalID string) ([]domain.ApprovalComment, error)
+	DeleteCommentsByApproval(approvalID string) error
 }
 
 // Bridge connects approval requestors (blocking goroutines) with approval
@@ -61,7 +68,7 @@ func NewBridge(s store, b Broadcaster) *Bridge {
 // "approval_requested" event, then blocks until a verdict is delivered via
 // Decide or the context is cancelled.
 func (br *Bridge) Request(ctx context.Context, req ApprovalRequest) (*VerdictResult, error) {
-	appr, err := br.store.Request(req.Type, nil, nil, req.Content)
+	appr, err := br.store.Request(req.Type, req.EpicID, req.StoryID, req.Content)
 	if err != nil {
 		return nil, fmt.Errorf("approval request: %w", err)
 	}
@@ -96,10 +103,30 @@ func (br *Bridge) Decide(id string, verdict domain.Verdict, comment string) erro
 		return fmt.Errorf("verdict: %w", err)
 	}
 
+	var comments []domain.ApprovalComment
+
+	if verdict == domain.VerdictApproved {
+		// Delete all comments for approved approvals — they are no longer relevant.
+		if err := br.store.DeleteCommentsByApproval(id); err != nil {
+			return fmt.Errorf("delete comments: %w", err)
+		}
+	} else {
+		// Fetch comments for rejected/needs_revision so the requestor can act on them.
+		comments, err = br.store.ListComments(id)
+		if err != nil {
+			return fmt.Errorf("list comments: %w", err)
+		}
+	}
+
 	result := VerdictResult{
-		ID:      appr.ID,
-		Verdict: verdict,
-		Comment: comment,
+		ID:       appr.ID,
+		Type:     appr.Type,
+		EpicID:   appr.EpicID,
+		StoryID:  appr.StoryID,
+		Content:  appr.Content,
+		Verdict:  verdict,
+		Comment:  comment,
+		Comments: comments,
 	}
 
 	br.mu.Lock()
