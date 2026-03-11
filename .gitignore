@@ -12,6 +12,9 @@ apps/backend/src/server/dashboard_assets/*
 !apps/backend/src/server/dashboard_assets/.gitkeep
 apps/dashboard/node_modules
 apps/dashboard/out
+apps/dashboard/.next
+apps/dashboard/tsconfig.tsbuildinfo
+apps/dashboard/next-env.d.ts
 
 # npm platform binaries (built by CI)
 npm/cli-*/bin/
