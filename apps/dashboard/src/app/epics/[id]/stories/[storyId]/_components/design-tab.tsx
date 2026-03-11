@@ -7,31 +7,7 @@ import { api } from "@/lib/api";
 import { approvalDisplayTitle } from "@/lib/utils";
 import type { Approval } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-function MarkdownPanel({ content }: { content: string }) {
-  const sections = content.split(/^## /m).filter(Boolean);
-
-  return (
-    <div className="rounded-xl border border-[#22324a] bg-[#0f172a] p-6 space-y-5">
-      {sections.map((section, i) => {
-        const lines = section.split("\n");
-        const title = lines[0].trim();
-        const body = lines.slice(1).join("\n").trim();
-
-        return (
-          <div key={i}>
-            <h2 className="mb-2 text-base font-semibold text-[#f5f9ff] font-[family-name:var(--font-display)]">
-              {title}
-            </h2>
-            <div className="text-sm leading-relaxed text-[#8ea2bd] font-[family-name:var(--font-sans)] whitespace-pre-line">
-              {body}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 
 export function DesignTab({ epicName }: { epicName: string }) {
   const [approvals, setApprovals] = useState<Approval[]>([]);
@@ -120,7 +96,7 @@ export function DesignTab({ epicName }: { epicName: string }) {
       </div>
 
       {/* Content */}
-      {current.content && <MarkdownPanel content={current.content} />}
+      {current.content && <MarkdownRenderer content={current.content} />}
     </div>
   );
 }

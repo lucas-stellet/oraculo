@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FileText, ChevronDown, ChevronRight } from "lucide-react";
 import type { StoryVersion, Review, ApprovalStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 
 const approvalBadge: Record<ApprovalStatus, { label: string; bg: string; text: string }> = {
   none: { label: "No Review", bg: "bg-zinc-700", text: "text-zinc-100" },
@@ -18,31 +19,6 @@ function deriveVersionApprovalStatus(versionId: number, reviews: Review[]): Appr
   if (versionReviews.length === 0) return "none";
   const latest = versionReviews[versionReviews.length - 1];
   return latest.verdict === "approved" ? "approved" : "rejected";
-}
-
-function MarkdownPanel({ content }: { content: string }) {
-  const sections = content.split(/^## /m).filter(Boolean);
-
-  return (
-    <div className="rounded-xl border border-[#22324a] bg-[#0f172a] p-6 space-y-5">
-      {sections.map((section, i) => {
-        const lines = section.split("\n");
-        const title = lines[0].trim();
-        const body = lines.slice(1).join("\n").trim();
-
-        return (
-          <div key={i}>
-            <h2 className="mb-2 text-base font-semibold text-[#f5f9ff] font-[family-name:var(--font-display)]">
-              {title}
-            </h2>
-            <div className="text-sm leading-relaxed text-[#8ea2bd] font-[family-name:var(--font-sans)] whitespace-pre-line">
-              {body}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 function ReviewCard({ review }: { review: Review }) {
@@ -148,7 +124,7 @@ export function RequirementsTab({ versions, reviews }: RequirementsTabProps) {
       </div>
 
       {/* Current version content */}
-      <MarkdownPanel content={current.content} />
+      <MarkdownRenderer content={current.content} />
 
       {/* Previous versions */}
       {showHistory && sorted.slice(1).map((v) => {
@@ -177,7 +153,7 @@ export function RequirementsTab({ versions, reviews }: RequirementsTabProps) {
                 {vBadge.label}
               </span>
             </div>
-            <MarkdownPanel content={v.content} />
+            <MarkdownRenderer content={v.content} />
           </div>
         );
       })}

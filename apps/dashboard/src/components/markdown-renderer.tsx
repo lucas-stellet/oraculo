@@ -162,8 +162,8 @@ function CommentHighlight({
 
 interface MarkdownRendererProps {
   content: string;
-  comments: InlineComment[];
-  onAddComment: (comment: Omit<InlineComment, "id" | "created_at">) => void;
+  comments?: InlineComment[];
+  onAddComment?: (comment: Omit<InlineComment, "id" | "created_at">) => void;
 }
 
 export function MarkdownRenderer({
@@ -175,6 +175,8 @@ export function MarkdownRenderer({
   const [popover, setPopover] = useState<PopoverState | null>(null);
 
   const handleMouseUp = useCallback(() => {
+    if (!onAddComment) return;
+
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || !selection.toString().trim()) {
       return;
@@ -189,11 +191,11 @@ export function MarkdownRenderer({
       y: rect.top - 10 + window.scrollY,
       text,
     });
-  }, []);
+  }, [onAddComment]);
 
   const handleAddComment = useCallback(
     (selectedText: string, comment: string) => {
-      onAddComment({ selected_text: selectedText, comment });
+      onAddComment?.({ selected_text: selectedText, comment });
       setPopover(null);
       window.getSelection()?.removeAllRanges();
     },
@@ -346,7 +348,7 @@ export function MarkdownRenderer({
       </article>
 
       {/* Inline comments list */}
-      {comments.length > 0 && (
+      {comments && comments.length > 0 && (
         <div className="mt-8 border-t border-[#22324a] pt-6">
           <h4 className="mb-3 text-sm font-semibold text-[#f5f9ff] font-[family-name:var(--font-display)]">
             Comments ({comments.length})
