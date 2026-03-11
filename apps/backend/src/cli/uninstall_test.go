@@ -10,6 +10,40 @@ import (
 	"github.com/lucas/oraculo/apps/backend/src/cli"
 )
 
+func TestUninstall_RemovesAllOraculoSkills(t *testing.T) {
+	setupInstallDir(t)
+
+	// Run install to create the oraculo-* skill directories.
+	_, err := installCmd(t)
+	if err != nil {
+		t.Fatalf("install failed: %v", err)
+	}
+
+	// Verify oraculo-* dirs exist after install.
+	matches, err := filepath.Glob(filepath.Join(".claude", "skills", "oraculo-*"))
+	if err != nil {
+		t.Fatalf("glob oraculo-*: %v", err)
+	}
+	if len(matches) == 0 {
+		t.Fatal("expected oraculo-* skill dirs to exist after install")
+	}
+
+	// Run uninstall.
+	out, err := uninstallCmd(t)
+	if err != nil {
+		t.Fatalf("uninstall failed: %v\noutput: %s", err, out)
+	}
+
+	// Verify all oraculo-* dirs are gone.
+	matches, err = filepath.Glob(filepath.Join(".claude", "skills", "oraculo-*"))
+	if err != nil {
+		t.Fatalf("glob oraculo-* after uninstall: %v", err)
+	}
+	if len(matches) != 0 {
+		t.Errorf("expected oraculo-* dirs to be removed, still found: %v", matches)
+	}
+}
+
 // uninstallCmd builds a fresh root command with given args and executes it.
 func uninstallCmd(t *testing.T, args ...string) (string, error) {
 	t.Helper()

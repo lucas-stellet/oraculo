@@ -103,11 +103,19 @@ func cleanSettings(w interface{ Write([]byte) (int, error) }) error {
 	return nil
 }
 
-// removeSkills removes .claude/skills/oraculo/ if it exists.
+// removeSkills removes all .claude/skills/oraculo-*/ directories installed by
+// Oraculo, and also the legacy .claude/skills/oraculo/ directory if it exists.
 func removeSkills(w interface{ Write([]byte) (int, error) }) error {
-	skillsDir := filepath.Join(".claude", "skills", "oraculo")
-	if err := os.RemoveAll(skillsDir); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("remove skills: %w", err)
+	matches, _ := filepath.Glob(filepath.Join(".claude", "skills", "oraculo-*"))
+	for _, m := range matches {
+		if err := os.RemoveAll(m); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove skill %s: %w", m, err)
+		}
+	}
+	// Also remove legacy .claude/skills/oraculo/ if it exists.
+	legacy := filepath.Join(".claude", "skills", "oraculo")
+	if err := os.RemoveAll(legacy); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("remove legacy skills: %w", err)
 	}
 	return nil
 }
