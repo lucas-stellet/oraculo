@@ -5,7 +5,7 @@ VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 FRONTEND_DIR := ./apps/frontend
 
-.PHONY: build build-frontend build-backend rebuild install test vet clean web-dev cross-compile
+.PHONY: build build-frontend build-backend build-desktop rebuild install test vet clean web-dev cross-compile
 
 build-frontend:
 	cd $(FRONTEND_DIR) && bun run build
@@ -14,6 +14,10 @@ build-backend:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(BUILD)
 
 build: build-backend
+
+build-desktop: build-backend
+	cp $(BINARY) apps/desktop/bin/oraculo 2>/dev/null || true
+	cd apps/desktop && task build
 
 rebuild: build-frontend build-backend
 
@@ -30,6 +34,7 @@ clean:
 	rm -f $(BINARY)
 	rm -rf $(FRONTEND_DIR)/out
 	rm -rf npm/cli-*/bin/
+	rm -rf apps/desktop/frontend/dist
 
 web-dev:
 	cd $(FRONTEND_DIR) && bun run dev
