@@ -48,8 +48,7 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
       api.getSystemStatus()
         .then((s) => {
           setUpdateAvailable(s.update_available);
-          if (s.project_commit) setVersion(s.project_commit);
-          else if (s.version) setVersion(s.version);
+          if (s.version) setVersion(s.version);
           if (s.new_version) setNewVersion(s.new_version);
         })
         .catch(() => {});
