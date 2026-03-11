@@ -48,27 +48,43 @@ Then create a version of the saved artifact for review:
 
 `oraculo tools epic version <epic-name>`
 
-Pass the markdown through stdin. The command returns `{"version_id": <int>, "approval_id": "<uuid>"}`. Capture the `approval_id` — it is needed to monitor the human verdict.
+Pass the markdown through stdin. The command returns `{"version_id": <int>, "approval_id": "<uuid>"}`.
 
-Monitor the approval gate with:
+Then submit for approval using the MCP tool:
 
-`oraculo tools approval status <approval-id>`
+Use `request_approval` with:
+- `type`: `"design"`
+- `content`: the requirements markdown
+- `epic_id`: the epic's numeric ID (from `oraculo tools epic list`)
 
-React to the `status` field:
+This blocks until the human records a verdict. The result includes:
+- `status`: `"approved"`, `"rejected"`, or `"needs_revision"`
+- `comment`: general rejection reason
+- `comments[]`: inline comments on specific text selections
+
+React to the result:
 - `approved`: tell the user the epic is approved and recommend `/oraculo:story <epic-name>` or `/oraculo:plan`
-- `rejected`: surface the `verdict_comment` and return to the phase that reopens the problem space, usually divergence or convergence
-- `needs_revision`: surface the `verdict_comment` and return to the appropriate phase
+- `rejected`: analyze inline `comments[]` if present; if empty, use the general `comment`; if both empty, ask via `AskUserQuestion`. Return to divergence or convergence phase.
+- `needs_revision`: same analysis of comments, return to appropriate phase.
+
+### Rejection Handling with Inline Comments
+
+When `request_approval` returns with `status: "rejected"`:
+
+1. If `comments[]` is not empty → analyze each inline comment, identify what needs to change, and route to the appropriate phase.
+2. If `comments[]` is empty but `comment` (general) is not empty → use the general comment as the rejection reason.
+3. If both are empty → ask the user for the rejection reason via `AskUserQuestion`.
 
 <halt>
   - Version creation fails — stop and surface the CLI error
-  - Status is still `pending` — remain in awaiting-verdict state and do not pretend the work is final
+  - `request_approval` returns an error — surface it and stop; do not proceed
 </halt>
 
 <phase-gate phase="artifact">
   Exit conditions:
     - Requirements document saved through `oraculo tools epic save`
     - Version created through `oraculo tools epic version`
-    - Awaiting-verdict state is explicit until a non-pending status is returned
+    - `request_approval` submitted and blocked until verdict
     - Verdict handling path is clear for approved, rejected, and needs_revision
 
   Persist via CLI:

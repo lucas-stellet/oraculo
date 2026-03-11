@@ -38,7 +38,20 @@ Use the approved requirements as the source of truth while creating tasks.
 
 If the project requires human review of the execution plan, submit:
 
-`oraculo tools approval request --type execution-plan --epic <epic-name>`
+Use `request_approval` with:
+- `type`: `"execution-plan"`
+- `content`: a summary of the execution plan (task graph overview)
+- `epic_id`: the epic's numeric ID
+
+This blocks until the human records a verdict. Analyze the result and handle rejection/revision with structured comments.
+
+### Rejection Handling with Inline Comments
+
+When `request_approval` returns with `status: "rejected"`:
+
+1. If `comments[]` is not empty → analyze each inline comment, identify what needs to change, and route to the appropriate phase.
+2. If `comments[]` is empty but `comment` (general) is not empty → use the general comment as the rejection reason.
+3. If both are empty → ask the user for the rejection reason via `AskUserQuestion`.
 
 If no human review is required, recommend `/oraculo:execute` explicitly after persistence.
 

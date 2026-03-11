@@ -1,13 +1,14 @@
 ---
-name: oraculo:cli
+name: oraculo:tools
 description: >
-  Reference for the Oraculo CLI — the Trust Layer that all agents must use to
+  Reference for the Oraculo Tools — the Trust Layer that all agents must use to
   interact with epics, stories, tasks, approvals, knowledge, and sessions.
-  This skill is always loaded. Consult it whenever you need to call any
-  `oraculo` command.
+  Covers both the CLI (`oraculo tools`) and MCP blocking tools (`request_approval`,
+  `approval_status`). This skill is always loaded. Consult it whenever you need
+  to call any `oraculo` command or MCP tool.
 ---
 
-# Oraculo CLI Reference
+# Oraculo Tools Reference
 
 The Oraculo CLI is the **only** interface agents use to read and write project state.
 Never read `.oraculo/` files directly or query the SQLite database — always go through the CLI.
@@ -192,7 +193,45 @@ oraculo tools approval verdict <id> \
   --comment "Looks good"
 ```
 
-Agents must **wait** for approval before proceeding past an approval gate. Poll with `approval status` or pause execution and surface the pending approval to the user.
+---
+
+## MCP Tools
+
+MCP tools are blocking/interactive operations available through the Oraculo MCP server. They are used by agents that need to wait for human decisions.
+
+### request_approval
+
+Blocks until a human verdict is recorded. Use this instead of polling `approval status` in a loop.
+
+**Input:**
+- `type` — approval type (`qa-escalation`, `execution-plan`, `design`)
+- `content` — the document or artifact awaiting review
+- `epic_id` — optional numeric epic ID
+- `story_id` — optional numeric story ID
+
+**Output (when verdict is recorded):**
+```json
+{
+  "id": "uuid",
+  "type": "design",
+  "epic_id": 1,
+  "story_id": 3,
+  "status": "rejected",
+  "content": "## Original document...",
+  "comment": "General rejection reason",
+  "comments": [
+    { "selected_text": "The system should...", "comment": "Contradicts requirement X" }
+  ]
+}
+```
+
+- `comment`: general comment from the rejection (may be empty if inline comments exist)
+- `comments[]`: inline comments tied to specific text selections
+- If `approved`, `comments` is an empty array
+
+### approval_status
+
+Non-blocking check of an approval's current state. Returns the same enriched format as `request_approval`.
 
 ---
 

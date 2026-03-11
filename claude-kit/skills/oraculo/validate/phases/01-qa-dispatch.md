@@ -47,9 +47,22 @@ When validating an epic:
 
 ### Escalation
 
-If repeated failures on the same work require human intervention, prepare:
+If repeated failures on the same work require human intervention, submit:
 
-`oraculo tools approval request --type qa-escalation --epic <epic-name>`
+Use `request_approval` with:
+- `type`: `"qa-escalation"`
+- `content`: summary of QA findings and failure history
+- `epic_id`: the epic's numeric ID
+
+This blocks until the human records a verdict. Analyze the result and handle accordingly.
+
+### Rejection Handling with Inline Comments
+
+When `request_approval` returns with `status: "rejected"`:
+
+1. If `comments[]` is not empty → analyze each inline comment, identify what needs to change, and route to the appropriate phase.
+2. If `comments[]` is empty but `comment` (general) is not empty → use the general comment as the rejection reason.
+3. If both are empty → ask the user for the rejection reason via `AskUserQuestion`.
 
 <halt>
   - QA context includes implementation reasoning history — clean it before dispatching

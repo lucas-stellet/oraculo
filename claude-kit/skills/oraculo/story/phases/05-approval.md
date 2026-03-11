@@ -26,29 +26,43 @@
 
 ## Execution
 
-The approval gate was created in the artifact phase. Monitor it with the `approval_id` saved in the artifact phase:
+Submit the story for approval using the MCP tool:
 
-`oraculo tools approval status <approval-id>`
+Use `request_approval` with:
+- `type`: `"design"`
+- `content`: the story requirements markdown (from `oraculo tools story get <name> --epic <epic-name>`)
+- `epic_id`: the epic's numeric ID
+- `story_id`: the story's numeric ID
 
-React to the `status` field:
+This blocks until the human records a verdict.
+
+React to the result:
 - `approved`: the story is ready for planning — recommend `/oraculo:plan <epic-name>` or `/oraculo:story <epic-name>` for the next requirement
-- `rejected`: surface the `verdict_comment` and return to reframing
-- `needs_revision`: surface the `verdict_comment` and return to the appropriate phase for revision
+- `rejected`: analyze inline `comments[]` if present; if empty, use the general `comment`; if both empty, ask via `AskUserQuestion`. Return to reframing.
+- `needs_revision`: same analysis of comments, return to appropriate phase.
+
+### Rejection Handling with Inline Comments
+
+When `request_approval` returns with `status: "rejected"`:
+
+1. If `comments[]` is not empty → analyze each inline comment, identify what needs to change, and route to the appropriate phase.
+2. If `comments[]` is empty but `comment` (general) is not empty → use the general comment as the rejection reason.
+3. If both are empty → ask the user for the rejection reason via `AskUserQuestion`.
 
 <halt>
-  - Status command fails — surface the CLI error and stop
+  - `request_approval` returns an error — surface it and stop
   - Status is still `pending` — remain in awaiting-verdict state
 </halt>
 
 <phase-gate phase="approval">
   Exit conditions:
-    - Approval status is actively monitored through the CLI
+    - `request_approval` submitted and blocked until verdict
     - Awaiting-verdict state is explicit until a non-pending status is returned
     - Approved, rejected, and needs_revision paths are clear
 
   Persist via CLI:
-    - Approval is tracked through `oraculo tools approval status`; the session was completed on artifact persistence.
+    - Approval is tracked through the MCP `request_approval` tool; the session was completed on artifact persistence.
 
-  If CLI rejects: surface the rejection and resolve it.
+  If MCP tool errors: surface the error and resolve it.
   On success: Stop and wait for the human verdict. Do not auto-invoke another command.
 </phase-gate>
