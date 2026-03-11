@@ -21,6 +21,11 @@ func setupTray(app *application.App, launcherWindow *application.WebviewWindow) 
 	tray := app.SystemTray.New()
 	tray.SetTooltip("Oraculo")
 	tray.SetMenu(menu)
+	if runtime.GOOS == "darwin" {
+		tray.SetTemplateIcon(trayTemplateData)
+	} else {
+		tray.SetIcon(trayIconData)
+	}
 	tray.AttachWindow(launcherWindow)
 
 	// Hide the window instead of closing it when the user clicks the close button.
