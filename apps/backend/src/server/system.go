@@ -38,7 +38,7 @@ func (h *SystemHandler) handleStatus(w http.ResponseWriter, r *http.Request) {
 		"update_available": updateAvailable,
 		"started_at":       h.startedAt,
 		"version":          h.version,
-		"project_commit":   projectCommit(),
+		"project_commit":   projectVersion(),
 		"new_version":      newVersion,
 	})
 }
@@ -55,10 +55,11 @@ func (h *SystemHandler) handleRestart(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-// projectCommit returns the short git commit hash of the current working directory,
-// or an empty string if git is unavailable or not a repository.
-func projectCommit() string {
-	out, err := exec.Command("git", "rev-parse", "--short", "HEAD").Output()
+// projectVersion returns the git tag version of the current working directory
+// (e.g. "v0.1.0" or "v0.1.0-3-gabcdef-dirty"), or an empty string if git is
+// unavailable or the repository has no tags.
+func projectVersion() string {
+	out, err := exec.Command("git", "describe", "--tags", "--always", "--dirty").Output()
 	if err != nil {
 		return ""
 	}
