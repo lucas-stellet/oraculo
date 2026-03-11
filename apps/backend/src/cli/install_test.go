@@ -259,8 +259,8 @@ func TestInstall_MCPServerArgs(t *testing.T) {
 	if !ok {
 		t.Fatal("mcpServers.oraculo not found")
 	}
-	if len(oraculo.Args) != 2 || oraculo.Args[0] != "start" || oraculo.Args[1] != "mcp" {
-		t.Errorf("expected args [start mcp], got %v", oraculo.Args)
+	if len(oraculo.Args) != 1 || oraculo.Args[0] != "start" {
+		t.Errorf("expected args [start], got %v", oraculo.Args)
 	}
 }
 
