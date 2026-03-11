@@ -37,7 +37,7 @@ Use `request_approval` with:
 This blocks until the human records a verdict.
 
 React to the result:
-- `approved`: the story is ready for planning — recommend `/oraculo:plan <epic-name>` or `/oraculo:story <epic-name>` for the next requirement
+- `approved`: the story is ready for planning — recommend `/plan <epic-name>` or `/story <epic-name>` for the next requirement
 - `rejected`: analyze inline `comments[]` if present; if empty, use the general `comment`; if both empty, ask via `AskUserQuestion`. Return to reframing.
 - `needs_revision`: same analysis of comments, return to appropriate phase.
 

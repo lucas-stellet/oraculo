@@ -1,5 +1,5 @@
 ---
-name: oraculo:validate
+name: validate
 description: >
   Use when completed implementation needs independent QA validation, a verdict,
   and a disciplined decision about whether to approve or send work back.
@@ -40,7 +40,7 @@ disable-model-invocation: true
 
 ## Rules
 
-- For complete CLI command syntax and all available commands, see `/oraculo:cli`.
+- For complete CLI command syntax and all available commands, see `/tools`.
 - Read exactly one phase file at a time.
 - QA never fixes code.
 - Rejected work must be routed explicitly to execute, plan, story, or epic.
@@ -48,4 +48,4 @@ disable-model-invocation: true
 - Use CLI approvals for escalations and human verdicts.
 - When asking the user any question, ALWAYS use the `AskUserQuestion` tool. Never write questions as plain text. Offer 2–4 directional options per question; the user can always select "Other" for free-form input. Use `multiSelect: true` when multiple answers can apply simultaneously (e.g., listing risks, forces, or concerns). When presenting concrete artifacts for comparison (task lists, problem framings, story definitions), populate the `markdown` field on each option to trigger the side-by-side preview UI — only available on single-select questions.
 - **Escalation threshold**: a story rejected more than `max_rejections` times (default: 2, configurable in `.oraculo/config.json` under `validate.max_rejections`) triggers a `qa-escalation` approval via `oraculo tools approval request --type qa-escalation --epic <epic-name>`.
-- **Rejection exits validate**: rejection routes work to the correct skill (`/oraculo:execute`, `/oraculo:plan`, `/oraculo:story`, or `/oraculo:epic`) based on root cause. The fix happens externally. Validate is re-invoked as a new session. There is NO internal fix→re-QA loop.
+- **Rejection exits validate**: rejection routes work to the correct skill (`/execute`, `/plan`, `/story`, or `/epic`) based on root cause. The fix happens externally. Validate is re-invoked as a new session. There is NO internal fix→re-QA loop.

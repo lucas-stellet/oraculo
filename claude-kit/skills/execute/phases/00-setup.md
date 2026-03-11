@@ -37,7 +37,7 @@ Initialize the execution session:
 Use task visibility from the CLI to determine what is ready before assembling agents.
 
 <halt>
-  - No valid execution plan exists — return to `/oraculo:plan`
+  - No valid execution plan exists — return to `/plan`
   - Execution is blocked on approval or unresolved planning issues — surface the blocker and stop
 </halt>
 

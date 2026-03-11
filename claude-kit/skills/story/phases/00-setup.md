@@ -36,7 +36,7 @@ If the story derives from an epic:
 - use `oraculo tools epic get <epic-name>` to load the approved epic requirements
 - identify the specific user story or requirement from the epic to work on
 
-If the work expands beyond a single focused slice, recommend `/oraculo:epic`.
+If the work expands beyond a single focused slice, recommend `/epic`.
 
 Initialize the session once the story context is clear:
 
@@ -45,7 +45,7 @@ Initialize the session once the story context is clear:
 For standalone work, use a stable lightweight epic name so the CLI hierarchy remains consistent.
 
 <halt>
-  - The work clearly spans multiple problem areas — recommend `/oraculo:epic` and stop forcing it into a story
+  - The work clearly spans multiple problem areas — recommend `/epic` and stop forcing it into a story
   - Parent epic context is required but unavailable or unapproved — stop and surface the dependency
 </halt>
 

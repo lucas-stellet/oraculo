@@ -63,7 +63,7 @@ This blocks until the human records a verdict. The result includes:
 - `comments[]`: inline comments on specific text selections
 
 React to the result:
-- `approved`: tell the user the epic is approved and recommend `/oraculo:story <epic-name>` or `/oraculo:plan`
+- `approved`: tell the user the epic is approved and recommend `/story <epic-name>` or `/plan`
 - `rejected`: analyze inline `comments[]` if present; if empty, use the general `comment`; if both empty, ask via `AskUserQuestion`. Return to divergence or convergence phase.
 - `needs_revision`: same analysis of comments, return to appropriate phase.
 

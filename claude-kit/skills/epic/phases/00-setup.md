@@ -29,7 +29,7 @@
 - Capture the raw idea exactly as stated by the user.
 - Detect whether the user is operating in light or deep reasoning mode.
 - Confirm that the work spans multiple areas, carries uncertainty, or deserves full discovery.
-- If the work is too small, suggest `/oraculo:story` and explain why.
+- If the work is too small, suggest `/story` and explain why.
 
 ## Execution
 
@@ -68,7 +68,7 @@ Once the user picks a name, initialize the session with:
   - The work is clearly story-sized — before redirecting, explicitly separate:
     1. **Observation** — the underlying problem or symptom the user described (e.g., "Users aren't clicking the submit button")
     2. **Assumed fix** — the solution the user is proposing (e.g., "Change button color to green")
-    Then recommend `/oraculo:story` and instruct it to explore the *observation*, not to implement the assumed fix directly. Present this separation to the user before redirecting.
+    Then recommend `/story` and instruct it to explore the *observation*, not to implement the assumed fix directly. Present this separation to the user before redirecting.
 </halt>
 
 <phase-gate phase="setup">

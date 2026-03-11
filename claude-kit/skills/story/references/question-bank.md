@@ -7,7 +7,7 @@
 - "What work item are we actually trying to define?"
 - "Is this standalone work or part of an approved epic?"
 - "What makes this small enough to be one story?"
-- "If this turns out broader, what would force us to escalate to `/oraculo:epic`?"
+- "If this turns out broader, what would force us to escalate to `/epic`?"
 
 ## Reframing
 

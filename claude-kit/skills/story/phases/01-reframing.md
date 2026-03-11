@@ -45,7 +45,7 @@ Ask one question at a time until the story has:
 
 <halt>
   - The problem statement still describes a solution rather than a problem — keep reframing
-  - The scope keeps expanding across multiple areas — recommend escalation to `/oraculo:epic`
+  - The scope keeps expanding across multiple areas — recommend escalation to `/epic`
 </halt>
 
 <phase-gate phase="reframing">

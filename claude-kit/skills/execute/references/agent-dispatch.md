@@ -12,7 +12,7 @@ Only dispatch work when:
 - code agent: implements tasks and follows TDD
 - research agent: gathers codebase evidence that unblocks execution
 
-QA is not part of execute. QA belongs to `/oraculo:validate`.
+QA is not part of execute. QA belongs to `/validate`.
 
 ## Parallelism Rules
 

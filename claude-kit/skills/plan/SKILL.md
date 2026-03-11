@@ -1,5 +1,5 @@
 ---
-name: oraculo:plan
+name: plan
 description: >
   Use when approved epic or story requirements need to be decomposed into a
   deterministic execution plan and task DAG before implementation starts.
@@ -44,12 +44,12 @@ disable-model-invocation: true
 
 ## Rules
 
-- For complete CLI command syntax and all available commands, see `/oraculo:cli`.
+- For complete CLI command syntax and all available commands, see `/tools`.
 - Communicate in `preferred_language` from config.
 - Read exactly one phase file at a time.
 - Keep the output DAG-oriented and deterministic.
 - Do not dispatch execution agents from this command.
-- Never auto-invoke downstream commands (`/oraculo:execute`, etc.).
+- Never auto-invoke downstream commands (`/execute`, etc.).
 - Persist validated phase outputs with `oraculo tools phase complete`.
 - Use only existing `epic`, `story`, `task`, `session`, `phase`, `design`, and `approval` CLI contracts.
 - When asking the user any question, ALWAYS use the `AskUserQuestion` tool. Never write questions as plain text. Offer 2–4 directional options per question; the user can always select "Other" for free-form input. Use `multiSelect: true` when multiple answers can apply simultaneously. When presenting concrete artifacts for comparison (task lists, DAG shapes), populate the `markdown` field on each option to trigger the side-by-side preview UI — only available on single-select questions.

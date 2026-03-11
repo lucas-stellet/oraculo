@@ -48,7 +48,7 @@ Initialize the validation session:
 `oraculo tools session init --type validate --epic <epic-name>`
 
 <halt>
-  - Validation input is incomplete — return to `/oraculo:execute`
+  - Validation input is incomplete — return to `/execute`
   - The scope of QA is unclear — clarify it before dispatching QA
 </halt>
 

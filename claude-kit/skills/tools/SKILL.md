@@ -1,5 +1,5 @@
 ---
-name: oraculo:tools
+name: tools
 description: >
   Reference for the Oraculo Tools — the Trust Layer that all agents must use to
   interact with epics, stories, tasks, approvals, knowledge, and sessions.

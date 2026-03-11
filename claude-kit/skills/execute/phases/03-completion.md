@@ -14,7 +14,7 @@
 
 <critical>
   Completion is not QA. It only decides whether execution is ready to be reviewed.
-  Do not auto-invoke `/oraculo:validate`.
+  Do not auto-invoke `/validate`.
 </critical>
 
 <anti-patterns>
@@ -37,7 +37,7 @@ Persist lessons learned from the execution:
 
 Then recommend the next command explicitly:
 
-`/oraculo:validate`
+`/validate`
 
 Do not invoke it automatically.
 
@@ -50,11 +50,11 @@ Do not invoke it automatically.
   Exit conditions:
     - Execution wave is complete enough for QA
     - Remaining issues are explicit rather than hidden
-    - Next step is explicit: `/oraculo:validate`
+    - Next step is explicit: `/validate`
 
   Persist via CLI:
     - `oraculo tools phase complete completion --session=$SESSION_ID`
 
   If CLI rejects: surface the rejection and resolve it.
-  On success: Stop after recommending `/oraculo:validate`.
+  On success: Stop after recommending `/validate`.
 </phase-gate>

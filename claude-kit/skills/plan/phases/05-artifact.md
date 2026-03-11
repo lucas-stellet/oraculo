@@ -53,7 +53,7 @@ When `request_approval` returns with `status: "rejected"`:
 2. If `comments[]` is empty but `comment` (general) is not empty → use the general comment as the rejection reason.
 3. If both are empty → ask the user for the rejection reason via `AskUserQuestion`.
 
-If no human review is required, recommend `/oraculo:execute` explicitly after persistence.
+If no human review is required, recommend `/execute` explicitly after persistence.
 
 <halt>
   - Tasks cannot be persisted without inventing story or epic context — stop and resolve the missing hierarchy
@@ -64,7 +64,7 @@ If no human review is required, recommend `/oraculo:execute` explicitly after pe
   Exit conditions:
     - Task graph persisted through existing task CLI commands
     - Any optional execution-plan approval has been submitted when required
-    - The next step is explicit: wait for approval or proceed to `/oraculo:execute`
+    - The next step is explicit: wait for approval or proceed to `/execute`
 
   Persist via CLI:
     - `oraculo tools phase complete artifact --session=$SESSION_ID`

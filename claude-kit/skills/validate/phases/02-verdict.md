@@ -42,10 +42,10 @@ If QA approves, make the approval explicit via the commands above.
 ### Rejection Routing
 
 Map rejected verdicts to the correct skill based on root cause:
-- implementation bug or missing implementation detail -> `/oraculo:execute`
-- missing decomposition or wrong task structure -> `/oraculo:plan`
-- wrong story definition or misunderstood requirement -> `/oraculo:story`
-- wrong epic problem definition -> `/oraculo:epic`
+- implementation bug or missing implementation detail -> `/execute`
+- missing decomposition or wrong task structure -> `/plan`
+- wrong story definition or misunderstood requirement -> `/story`
+- wrong epic problem definition -> `/epic`
 
 Rejection **exits** validate. The fix happens in the routed skill externally. Validate is re-invoked as a new session after the fix. There is NO internal fix→re-QA loop.
 

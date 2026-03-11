@@ -1,5 +1,5 @@
 ---
-name: oraculo:execute
+name: execute
 description: >
   Use when an approved execution plan is ready and Oraculo needs to orchestrate
   code and research agents through implementation without doing the work itself.
@@ -41,10 +41,10 @@ disable-model-invocation: true
 
 ## Rules
 
-- For complete CLI command syntax and all available commands, see `/oraculo:cli`.
+- For complete CLI command syntax and all available commands, see `/tools`.
 - Read exactly one phase file at a time.
 - Treat agent dispatch as orchestration guidance, not direct implementation.
-- Do not auto-invoke `/oraculo:validate`; recommend it explicitly.
+- Do not auto-invoke `/validate`; recommend it explicitly.
 - Persist validated phase outputs with `oraculo tools phase complete`.
 - Use only existing CLI contracts for state, approvals, and task visibility.
 - When asking the user any question, ALWAYS use the `AskUserQuestion` tool. Never write questions as plain text. Offer 2–4 directional options per question; the user can always select "Other" for free-form input. Use `multiSelect: true` when multiple answers can apply simultaneously (e.g., listing risks, forces, or concerns). When presenting concrete artifacts for comparison (task lists, problem framings, story definitions), populate the `markdown` field on each option to trigger the side-by-side preview UI — only available on single-select questions.

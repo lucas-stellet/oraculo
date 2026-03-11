@@ -1,5 +1,5 @@
 ---
-name: oraculo:story
+name: story
 description: >
   Use when defining a focused work item or epic requirement into an executable
   story without needing the full depth of epic discovery.
@@ -44,7 +44,7 @@ disable-model-invocation: true
 
 ## Rules
 
-- For complete CLI command syntax and all available commands, see `/oraculo:cli`.
+- For complete CLI command syntax and all available commands, see `/tools`.
 - Always communicate in the user's `preferred_language` from `.oraculo/config.json`. If not set, ask in the first interaction.
 - Read exactly one phase file at a time.
 - The story is an executable specification: context, business rules, expected behavior, and acceptance criteria. Methodology jargon (JTBD, Four Forces, Double Diamond, INVEST, Assumption Mapping) must never appear in the final story document — these frameworks guide the conversation only.
