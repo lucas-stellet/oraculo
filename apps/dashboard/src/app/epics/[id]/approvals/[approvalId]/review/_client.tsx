@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { ArrowLeft, Eye, Pencil, Check, X } from "lucide-react";
 import { cn, approvalDisplayTitle } from "@/lib/utils";
 import { useSidebar } from "@/lib/sidebar-context";
@@ -26,6 +27,7 @@ export default function ReviewPage() {
   const epicName = segs[1];
   const approvalId = segs[3];
 
+  const router = useRouter();
   const { collapsed, setCollapsed } = useSidebar();
   const prevCollapsed = useRef(collapsed);
 
@@ -129,22 +131,15 @@ export default function ReviewPage() {
       try {
         const comment = verdict === "rejected" ? generalComment.trim() : "";
         await api.submitVerdict(approval.id, verdict, comment);
-        const updated = await api.getApproval(approvalId);
-        setApproval(updated);
-        if (verdict === "approved") {
-          setComments([]);
-        }
-        if (verdict === "rejected") {
-          setShowRejectDialog(false);
-          setGeneralComment("");
-        }
+        toast.success(verdict === "approved" ? "Aprovação aprovada" : "Aprovação rejeitada");
+        router.push(`/epics/${epicName}/approvals`);
       } catch {
         // Silently handle error
       } finally {
         setSubmitting(false);
       }
     },
-    [approval, approvalId, submitting, generalComment]
+    [approval, submitting, generalComment, router, epicName]
   );
 
   if (loading) {
@@ -170,6 +165,7 @@ export default function ReviewPage() {
   const badge = typeBadge[approval.type];
   const displayContent = editContentRef.current || approval.content;
   const displayTitle = approvalDisplayTitle(approval.type);
+  const isReadOnly = approval.status !== "pending";
 
   return (
     <div className="flex h-full flex-col">
@@ -199,59 +195,90 @@ export default function ReviewPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Mode toggle */}
-          <div className="flex rounded-lg border border-[#22324a] bg-[#0b1120] p-0.5">
-            <button
-              onClick={() => setMode("preview")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors font-[family-name:var(--font-sans)]",
-                mode === "preview"
-                  ? "bg-[#22324a] text-[#f5f9ff]"
-                  : "text-[#8ea2bd] hover:text-[#f5f9ff]"
-              )}
-            >
-              <Eye className="h-3.5 w-3.5" />
-              Preview
-            </button>
-            <button
-              onClick={() => setMode("edit")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors font-[family-name:var(--font-sans)]",
-                mode === "edit"
-                  ? "bg-[#22324a] text-[#f5f9ff]"
-                  : "text-[#8ea2bd] hover:text-[#f5f9ff]"
-              )}
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
-            </button>
-          </div>
+          {isReadOnly ? (
+            <>
+              <div
+                className={cn(
+                  "inline-flex h-8 items-center gap-2 rounded-lg border px-3 text-xs font-semibold font-[family-name:var(--font-mono)]",
+                  approval.status === "approved"
+                    ? "border-[#22c55e]/30 bg-[#22c55e]/10 text-[#22c55e]"
+                    : "border-[#ef4444]/30 bg-[#ef4444]/10 text-[#ef4444]"
+                )}
+              >
+                {approval.status === "approved" ? "Aprovado" : "Rejeitado"}
+                {approval.decided_at && (
+                  <span className="opacity-70">
+                    {" "}em{" "}
+                    {new Date(approval.decided_at).toLocaleDateString("pt-BR", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                )}
+              </div>
+              <span className="text-[11px] text-[#525e6e] font-[family-name:var(--font-mono)]">
+                Somente leitura
+              </span>
+            </>
+          ) : (
+            <>
+              {/* Mode toggle */}
+              <div className="flex rounded-lg border border-[#22324a] bg-[#0b1120] p-0.5">
+                <button
+                  onClick={() => setMode("preview")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors font-[family-name:var(--font-sans)]",
+                    mode === "preview"
+                      ? "bg-[#22324a] text-[#f5f9ff]"
+                      : "text-[#8ea2bd] hover:text-[#f5f9ff]"
+                  )}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Preview
+                </button>
+                <button
+                  onClick={() => setMode("edit")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors font-[family-name:var(--font-sans)]",
+                    mode === "edit"
+                      ? "bg-[#22324a] text-[#f5f9ff]"
+                      : "text-[#8ea2bd] hover:text-[#f5f9ff]"
+                  )}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </button>
+              </div>
 
-          <div className="h-5 w-px bg-[#22324a]" />
+              <div className="h-5 w-px bg-[#22324a]" />
 
-          {decidedElsewhere && (
-            <div className="flex items-center gap-3 rounded-lg border border-amber-700 bg-amber-950/40 px-4 py-3 text-sm text-amber-300 font-[family-name:var(--font-sans)]">
-              This approval was decided in another session. Refresh to see the latest status.
-            </div>
+              {decidedElsewhere && (
+                <div className="flex items-center gap-3 rounded-lg border border-amber-700 bg-amber-950/40 px-4 py-3 text-sm text-amber-300 font-[family-name:var(--font-sans)]">
+                  This approval was decided in another session. Refresh to see the latest status.
+                </div>
+              )}
+
+              {/* Actions */}
+              <button
+                onClick={() => handleVerdict("approved")}
+                disabled={submitting}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#22c55e]/30 bg-[#22c55e]/10 px-3 text-xs font-semibold text-[#22c55e] transition-colors hover:bg-[#22c55e]/20 disabled:opacity-50 font-[family-name:var(--font-sans)]"
+              >
+                <Check className="h-3.5 w-3.5" />
+                Approve
+              </button>
+              <button
+                onClick={() => setShowRejectDialog(true)}
+                disabled={submitting}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-3 text-xs font-semibold text-[#ef4444] transition-colors hover:bg-[#ef4444]/20 disabled:opacity-50 font-[family-name:var(--font-sans)]"
+              >
+                <X className="h-3.5 w-3.5" />
+                Reject
+              </button>
+            </>
           )}
-
-          {/* Actions */}
-          <button
-            onClick={() => handleVerdict("approved")}
-            disabled={submitting}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#22c55e]/30 bg-[#22c55e]/10 px-3 text-xs font-semibold text-[#22c55e] transition-colors hover:bg-[#22c55e]/20 disabled:opacity-50 font-[family-name:var(--font-sans)]"
-          >
-            <Check className="h-3.5 w-3.5" />
-            Approve
-          </button>
-          <button
-            onClick={() => setShowRejectDialog(true)}
-            disabled={submitting}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-3 text-xs font-semibold text-[#ef4444] transition-colors hover:bg-[#ef4444]/20 disabled:opacity-50 font-[family-name:var(--font-sans)]"
-          >
-            <X className="h-3.5 w-3.5" />
-            Reject
-          </button>
         </div>
       </div>
 
@@ -310,8 +337,8 @@ export default function ReviewPage() {
             <MarkdownRenderer
               content={displayContent}
               comments={comments}
-              onAddComment={handleAddComment}
-              onDeleteComment={handleDeleteComment}
+              onAddComment={isReadOnly ? undefined : handleAddComment}
+              onDeleteComment={isReadOnly ? undefined : handleDeleteComment}
             />
           </div>
         ) : (

@@ -13,6 +13,7 @@ import {
   XCircle,
   ArrowRight,
   ShieldAlert,
+  Eye,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { approvalDisplayTitle } from "@/lib/utils";
@@ -277,6 +278,15 @@ export default function ApprovalsPage() {
                       minute: "2-digit",
                     })}
                   </span>
+
+                  {/* View document */}
+                  <Link
+                    href={`/epics/${epicName}/approvals/${approval.id}/review`}
+                    className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#22324a] bg-[#0b1120] px-3 text-[11px] font-medium text-[#8ea2bd] transition-colors hover:border-[#3b5068] hover:text-[#f5f9ff] font-[family-name:var(--font-mono)]"
+                  >
+                    <Eye className="h-3 w-3" />
+                    Ver
+                  </Link>
                 </div>
               );
             })}
