@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "description": "Socratic guide and team orchestrator for quality product development",
   "author": {
-    "name": "Lucas"
+    "name": "Lucas Stellet",
+    "email": "lucas.stellet@icloud.com"
   },
   "repository": "https://github.com/lucas-stellet/oraculo",
   "skills": "./skills/"
