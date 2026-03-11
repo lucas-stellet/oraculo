@@ -22,10 +22,13 @@ type ProjectWithStatus struct {
 
 type LauncherService struct {
 	binaryPath string
+	monitor    *wsMonitor
 }
 
 func NewLauncherService() *LauncherService {
-	return &LauncherService{}
+	return &LauncherService{
+		monitor: newWSMonitor(),
+	}
 }
 
 // ServiceStartup is called by Wails v3 during app initialization.
@@ -36,6 +39,7 @@ func (s *LauncherService) ServiceStartup(ctx context.Context, options applicatio
 
 // ServiceShutdown is called by Wails v3 during app teardown.
 func (s *LauncherService) ServiceShutdown() error {
+	s.monitor.DisconnectAll()
 	return nil
 }
 
@@ -136,6 +140,8 @@ func (s *LauncherService) StartServer(ctx context.Context, projectPath string) e
 				resp, err := http.Get(fmt.Sprintf("http://localhost:%d/health", e.Port))
 				if err == nil {
 					resp.Body.Close()
+					// Connect WS monitor for event notifications.
+					s.monitor.Connect(projectPath, e.Port)
 					return nil
 				}
 			}
@@ -145,6 +151,7 @@ func (s *LauncherService) StartServer(ctx context.Context, projectPath string) e
 }
 
 func (s *LauncherService) StopServer(ctx context.Context, projectPath string) error {
+	s.monitor.Disconnect(projectPath)
 	cmd := exec.Command(s.binaryPath, "kill")
 	cmd.Dir = projectPath
 	return cmd.Run()
