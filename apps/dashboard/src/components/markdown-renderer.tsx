@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -127,35 +127,60 @@ function CommentPopover({
   );
 }
 
-// ── Inline Comment Highlight ─────────────────────────────────────────────────
+// ── Comment View Popover ─────────────────────────────────────────────────────
 
-function CommentHighlight({
-  comment,
-  children,
-}: {
+interface ViewPopoverState {
+  x: number;
+  y: number;
   comment: InlineComment;
-  children: ReactNode;
-}) {
-  const [showTooltip, setShowTooltip] = useState(false);
+}
 
+function CommentViewPopover({
+  state,
+  onDelete,
+  onClose,
+}: {
+  state: ViewPopoverState;
+  onDelete?: (id: number) => void;
+  onClose: () => void;
+}) {
   return (
-    <span
-      className="relative cursor-pointer rounded bg-yellow-500/20 px-0.5"
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+    <div
+      className="fixed z-50 flex w-80 flex-col gap-2 rounded-xl border border-[#22324a] bg-[#0f172a] p-3 shadow-2xl"
+      style={{ left: state.x, top: state.y }}
     >
-      {children}
-      {showTooltip && (
-        <span className="absolute bottom-full left-0 z-40 mb-1 w-64 rounded-lg border border-[#22324a] bg-[#0f172a] p-2.5 text-xs shadow-xl">
-          <span className="block text-[#f5f9ff] font-[family-name:var(--font-sans)]">
-            {comment.comment}
-          </span>
-          <span className="mt-1 block text-[10px] text-[#525e6e] font-[family-name:var(--font-mono)]">
-            {comment.created_at}
-          </span>
+      <div className="flex items-start justify-between gap-2">
+        <p className="truncate text-xs text-[#8ea2bd] font-[family-name:var(--font-mono)]">
+          &ldquo;{state.comment.selected_text.slice(0, 60)}
+          {state.comment.selected_text.length > 60 ? "…" : ""}&rdquo;
+        </p>
+        <button
+          onClick={onClose}
+          className="shrink-0 rounded p-1 text-[#525e6e] transition-colors hover:bg-[#22324a] hover:text-[#8ea2bd]"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div className="max-h-48 min-h-[3rem] overflow-y-auto resize-y rounded-lg border border-[#22324a] bg-[#0b1120] px-3 py-2 text-sm text-[#f5f9ff] font-[family-name:var(--font-sans)]">
+        {state.comment.comment}
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-[#525e6e] font-[family-name:var(--font-mono)]">
+          {state.comment.created_at}
         </span>
-      )}
-    </span>
+        {onDelete && (
+          <button
+            onClick={() => {
+              onDelete(state.comment.id);
+              onClose();
+            }}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-[#22324a] font-[family-name:var(--font-sans)]"
+          >
+            Delete
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -254,6 +279,7 @@ export function MarkdownRenderer({
 }: MarkdownRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [popover, setPopover] = useState<PopoverState | null>(null);
+  const [viewPopover, setViewPopover] = useState<ViewPopoverState | null>(null);
 
   const handleMouseUp = useCallback(() => {
     if (!onAddComment) return;
@@ -288,13 +314,11 @@ export function MarkdownRenderer({
     const comment = comments.find(c => String(c.id) === commentId);
     if (!comment) return;
 
-    // Scroll to the comment in the list below
-    const commentEl = document.getElementById(`comment-${comment.id}`);
-    if (commentEl) {
-      commentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      commentEl.classList.add('ring-2', 'ring-yellow-500/50');
-      setTimeout(() => commentEl.classList.remove('ring-2', 'ring-yellow-500/50'), 2000);
-    }
+    setViewPopover({
+      x: Math.min(e.clientX, window.innerWidth - 340),
+      y: e.clientY - 10,
+      comment,
+    });
   }, [comments]);
 
   useEffect(() => {
@@ -467,42 +491,7 @@ export function MarkdownRenderer({
         </ReactMarkdown>
       </article>
 
-      {/* Inline comments list */}
-      {comments && comments.length > 0 && (
-        <div className="mt-8 border-t border-[#22324a] pt-6">
-          <h4 className="mb-3 text-sm font-semibold text-[#f5f9ff] font-[family-name:var(--font-display)]">
-            Comments ({comments.length})
-          </h4>
-          <div className="space-y-3">
-            {comments.map((c) => (
-              <div key={c.id} id={`comment-${c.id}`} className="rounded-xl border border-[#22324a] bg-[#0b1120] p-3 transition-all">
-                <div className="flex items-start justify-between">
-                  <p className="mb-1 truncate text-xs text-[#525e6e] font-[family-name:var(--font-mono)]">
-                    On: &ldquo;{c.selected_text.slice(0, 80)}
-                    {c.selected_text.length > 80 ? "…" : ""}&rdquo;
-                  </p>
-                  {onDeleteComment && (
-                    <button
-                      onClick={() => onDeleteComment(c.id)}
-                      className="ml-2 shrink-0 rounded p-1 text-[#525e6e] transition-colors hover:bg-[#22324a] hover:text-red-400"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-                <p className="text-sm text-[#8ea2bd] font-[family-name:var(--font-sans)]">
-                  {c.comment}
-                </p>
-                <p className="mt-1 text-[10px] text-[#525e6e] font-[family-name:var(--font-mono)]">
-                  {c.created_at}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Comment popover */}
+      {/* Comment creation popover */}
       {popover && (
         <CommentPopover
           state={popover}
@@ -511,6 +500,15 @@ export function MarkdownRenderer({
             setPopover(null);
             window.getSelection()?.removeAllRanges();
           }}
+        />
+      )}
+
+      {/* Comment view popover */}
+      {viewPopover && (
+        <CommentViewPopover
+          state={viewPopover}
+          onDelete={onDeleteComment}
+          onClose={() => setViewPopover(null)}
         />
       )}
     </div>
