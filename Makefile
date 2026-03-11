@@ -5,7 +5,7 @@ VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 DASHBOARD_DIR := ./apps/dashboard
 
-.PHONY: build rebuild install test vet clean web-dev
+.PHONY: build rebuild install test vet clean web-dev cross-compile
 
 build:
 	rm -rf $(DASHBOARD_DIR)/out apps/backend/src/server/dashboard_assets
@@ -34,6 +34,15 @@ vet:
 clean:
 	rm -f $(BINARY)
 	rm -rf apps/backend/src/server/dashboard_assets
+	rm -rf npm/cli-*/bin/
 
 web-dev:
 	cd $(DASHBOARD_DIR) && bun run dev
+
+# Cross-compile for npm distribution (local testing)
+cross-compile:
+	@mkdir -p npm/cli-darwin-arm64/bin npm/cli-darwin-x64/bin npm/cli-linux-x64/bin npm/cli-linux-arm64/bin
+	GOOS=darwin  GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o npm/cli-darwin-arm64/bin/oraculo  $(BUILD)
+	GOOS=darwin  GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o npm/cli-darwin-x64/bin/oraculo    $(BUILD)
+	GOOS=linux   GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o npm/cli-linux-x64/bin/oraculo     $(BUILD)
+	GOOS=linux   GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o npm/cli-linux-arm64/bin/oraculo   $(BUILD)

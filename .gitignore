@@ -12,3 +12,6 @@ apps/backend/src/server/dashboard_assets/*
 !apps/backend/src/server/dashboard_assets/.gitkeep
 apps/dashboard/node_modules
 apps/dashboard/out
+
+# npm platform binaries (built by CI)
+npm/cli-*/bin/
