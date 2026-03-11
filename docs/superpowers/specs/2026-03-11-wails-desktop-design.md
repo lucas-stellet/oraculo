@@ -169,13 +169,14 @@ app.Run()
 
 ### SPA Routing in Wails v3
 
-In v3, `Assets.Handler` is the **primary** handler for all asset requests. It receives every request (unlike v2 where it was a fallback). The handler must:
+In v3, `Assets.Handler` serves assets and `Assets.Middleware` wraps the handler chain. The Wails runtime serves internal routes at `/wails/*` (runtime JS, IPC transport). A custom middleware must forward `/wails/*` to the next handler, then apply SPA routing for all other requests:
 
-1. Try the exact file from the embedded FS
-2. If not found, try placeholder substitution for dynamic routes
-3. If still not found, serve the SPA shell
+1. Forward `/wails/*` to `next` (Wails runtime — required for bindings and events)
+2. Try the exact file from the embedded FS
+3. If not found, try placeholder substitution for dynamic routes
+4. If still not found, serve the SPA shell
 
-The `withPlaceholders` and `spaShell` functions are extracted into a shared package (`apps/backend/src/spa/`) for reuse by the desktop.
+`BundledAssetFileServer(assets)` is used as the base `Handler` (it also serves `/wails/runtime.js`). The `withPlaceholders` and `spaShell` functions are extracted into a shared package (`apps/backend/src/spa/`) for reuse by the desktop.
 
 ### Wails Services (Go -> JS)
 
