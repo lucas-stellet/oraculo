@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { api } from "@/lib/api";
+import { useApi } from "@/lib/server-context";
 import { deriveStoryStatus } from "@/lib/utils";
 import type { Story } from "@/lib/types";
 import { useWebSocket } from "@/lib/ws";
@@ -63,6 +63,7 @@ const runningStatusColor: Record<string, string> = {
 };
 
 export default function EpicOverviewPage() {
+  const api = useApi();
   const pathname = usePathname();
   const epicName = pathname.split("/").filter(Boolean)[1];
   const [stories, setStories] = useState<Story[]>([]);

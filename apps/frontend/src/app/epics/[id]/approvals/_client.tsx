@@ -15,7 +15,7 @@ import {
   ShieldAlert,
   Eye,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { useApi } from "@/lib/server-context";
 import { approvalDisplayTitle } from "@/lib/utils";
 import type { Approval, ApprovalType } from "@/lib/types";
 
@@ -61,6 +61,7 @@ const typeConfig: Record<
 };
 
 export default function ApprovalsPage() {
+  const api = useApi();
   const pathname = usePathname();
   const epicName = pathname.split("/").filter(Boolean)[1];
   const [pending, setPending] = useState<Approval[]>([]);

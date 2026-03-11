@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ServerProvider } from "@/lib/server-context";
 import { Space_Grotesk, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -38,9 +39,11 @@ export default function RootLayout({
         className={`${spaceGrotesk.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable} font-sans antialiased`}
       >
         <ThemeProvider>
-          <main className="min-h-screen bg-background">
-            {children}
-          </main>
+          <ServerProvider>
+            <main className="min-h-screen bg-background">
+              {children}
+            </main>
+          </ServerProvider>
           <Toaster theme="dark" position="top-right" />
         </ThemeProvider>
       </body>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { api } from "@/lib/api";
+import { useApi } from "@/lib/server-context";
 import { deriveStoryStatus } from "@/lib/utils";
 import type { Story, StoryTask, StoryVersion, Review, Validation, ApprovalStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,7 @@ const approvalConfig: Record<
 };
 
 export default function StoryDetailPage() {
+  const api = useApi();
   const pathname = usePathname();
   const segs = pathname.split("/").filter(Boolean);
   // /epics/{id}/stories/{storyId}

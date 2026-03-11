@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Eye, Pencil, Check, X } from "lucide-react";
 import { cn, approvalDisplayTitle } from "@/lib/utils";
 import { useSidebar } from "@/lib/sidebar-context";
-import { api } from "@/lib/api";
+import { useApi } from "@/lib/server-context";
 import { useWebSocket } from "@/lib/ws";
 import type { WSEvent } from "@/lib/ws";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
@@ -21,6 +21,7 @@ const typeBadge: Record<ApprovalType, { label: string; bg: string; text: string 
 };
 
 export default function ReviewPage() {
+  const api = useApi();
   const pathname = usePathname();
   const segs = pathname.split("/").filter(Boolean);
   // /epics/{id}/approvals/{approvalId}/review

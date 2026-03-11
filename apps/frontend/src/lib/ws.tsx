@@ -23,7 +23,7 @@ interface WSContextValue {
 
 const WSContext = createContext<WSContextValue | null>(null);
 
-export function WebSocketProvider({ children }: { children: React.ReactNode }) {
+export function WebSocketProvider({ serverUrl, children }: { serverUrl?: string; children: React.ReactNode }) {
   const handlersRef = useRef<Set<Handler>>(new Set());
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -34,9 +34,15 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const connectCountRef = useRef(0);
 
   const connect = useCallback(() => {
-    // Determine WS URL: same origin, /ws path.
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${protocol}//${window.location.host}/ws`;
+    // Determine WS URL: use serverUrl if provided, otherwise same origin.
+    let wsBase: string;
+    if (serverUrl) {
+      wsBase = serverUrl.replace(/^http/, "ws");
+    } else {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      wsBase = `${protocol}//${window.location.host}`;
+    }
+    const url = `${wsBase}/ws`;
 
     const ws = new WebSocket(url);
     wsRef.current = ws;
@@ -69,7 +75,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     ws.onerror = () => {
       ws.close();
     };
-  }, []);
+  }, [serverUrl]);
 
   useEffect(() => {
     mountedRef.current = true;

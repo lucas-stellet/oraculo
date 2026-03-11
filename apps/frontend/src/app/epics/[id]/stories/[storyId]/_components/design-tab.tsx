@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, FileText } from "lucide-react";
-import { api } from "@/lib/api";
+import { useApi } from "@/lib/server-context";
 import { approvalDisplayTitle } from "@/lib/utils";
 import type { Approval } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 
 export function DesignTab({ epicName }: { epicName: string }) {
+  const api = useApi();
   const [approvals, setApprovals] = useState<Approval[]>([]);
   const [loading, setLoading] = useState(true);
 
