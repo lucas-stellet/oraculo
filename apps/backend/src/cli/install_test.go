@@ -327,17 +327,17 @@ func TestInstall_CopiesEmbeddedOraculoSkills(t *testing.T) {
 	}
 
 	// Walk the embedded FS and verify every file was copied to .claude/skills/oraculo-<name>/
-	err = fs.WalkDir(claudekit.SkillsFS, filepath.Join("skills", "oraculo"), func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(claudekit.SkillsFS, "skills", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return err
 		}
-		// path: skills/oraculo/epic/SKILL.md
+		// path: skills/epic/SKILL.md
 		// rel:  epic/SKILL.md
-		rel, err := filepath.Rel(filepath.Join("skills", "oraculo"), path)
+		rel, err := filepath.Rel("skills", path)
 		if err != nil {
 			return err
 		}
-		// skills/oraculo/epic/SKILL.md → .claude/skills/oraculo-epic/SKILL.md
+		// skills/epic/SKILL.md → .claude/skills/oraculo-epic/SKILL.md
 		parts := strings.SplitN(rel, string(filepath.Separator), 2)
 		var destPath string
 		if len(parts) == 2 {

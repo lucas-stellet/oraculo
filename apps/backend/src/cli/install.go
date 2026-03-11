@@ -134,7 +134,7 @@ func runInstall(cmd *cobra.Command) error {
 	fmt.Fprintln(w, "created .claude/settings.json")
 
 	// Step 7: Copy embedded skills to .claude/skills/oraculo-<name>/.
-	skillsSrcRoot := filepath.Join("skills", "oraculo")
+	skillsSrcRoot := "skills"
 	entries, err := fs.ReadDir(claudekit.SkillsFS, skillsSrcRoot)
 	if err != nil {
 		return fmt.Errorf("read embedded skills: %w", err)
