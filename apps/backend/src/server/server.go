@@ -24,11 +24,11 @@ type Server struct {
 	database     *db.DB
 	lastActivity time.Time
 	mu           sync.Mutex
-	staticPath   string
+	projectName  string
 }
 
 // New constructs a Server wired with all stores, bridge, and hub.
-func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Broadcaster, staticPath string, version string) *Server {
+func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Broadcaster, projectName string, version string) *Server {
 	var logger *slog.Logger
 	if logs != nil {
 		logger = slog.New(logs)
@@ -62,7 +62,9 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 	mux := http.NewServeMux()
 
 	// Health
-	mux.HandleFunc("GET /health", handleHealth)
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, map[string]string{"status": "ok", "project_name": projectName})
+	})
 
 	// Hook endpoints
 	mux.HandleFunc("POST /hooks/agent-start", hook.handleAgentStart)
@@ -104,14 +106,9 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 	}
 
 	// Static files for dashboard (embedded) with SPA fallback
-	if staticPath != "" {
-		slog.Info("server.static.enabled", "path", staticPath)
-	} else {
-		slog.Info("server.static.embedded")
-	}
 	mux.Handle("GET /", newSPAHandler(DashboardAssets))
 
-	s := &Server{mux: mux, database: database, lastActivity: time.Now(), staticPath: staticPath}
+	s := &Server{mux: mux, database: database, lastActivity: time.Now(), projectName: projectName}
 	s.handler = corsMiddleware(mux)
 	return s
 }
@@ -182,10 +179,6 @@ func (s *Server) ListenAndServe(ctx context.Context, port int, idleTimeout time.
 		return err
 	}
 	return nil
-}
-
-func handleHealth(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, map[string]string{"status": "ok"})
 }
 
 // newSPAHandler returns a handler that serves static files from assets,

@@ -88,8 +88,7 @@ func runStartAll(cmd *cobra.Command, version string) error {
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
 
-	// Dashboard is embedded in the binary, pass empty string
-	srv := server.New(database, bridge, hub, broadcaster, "", version)
+	srv := server.New(database, bridge, hub, broadcaster, cfg.ProjectName(), version)
 	mcpSrv := mcpserver.New(bridge, db.NewApprovalStore(database), logger)
 
 	// Register in global server registry.
@@ -219,8 +218,7 @@ func runStartHTTP(cmd *cobra.Command, version string) error {
 	hub := ws.NewHub()
 	bridge := approval.NewBridge(db.NewApprovalStore(database), hub)
 
-	// Dashboard is embedded in the binary, pass empty string
-	srv := server.New(database, bridge, hub, broadcaster, "", version)
+	srv := server.New(database, bridge, hub, broadcaster, cfg.ProjectName(), version)
 
 	// Register in global server registry.
 	regPath, regErr := registry.DefaultPath()

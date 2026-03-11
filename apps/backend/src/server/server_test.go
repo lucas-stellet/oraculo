@@ -2,10 +2,26 @@ package server_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/lucas/oraculo/apps/backend/src/server"
 )
+
+func TestHealth_IncludesProjectName(t *testing.T) {
+	srv := server.New(nil, nil, nil, nil, "test-project", "test")
+	req := httptest.NewRequest("GET", "/health", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+
+	var body map[string]string
+	json.NewDecoder(rec.Body).Decode(&body)
+	if body["project_name"] != "test-project" {
+		t.Errorf("expected project_name 'test-project', got %q", body["project_name"])
+	}
+}
 
 func TestLastActivity_UpdatedOnRequest(t *testing.T) {
 	srv := testServer(t)
