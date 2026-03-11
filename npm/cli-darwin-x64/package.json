@@ -1,0 +1,10 @@
+{
+  "name": "@oraculo/cli-darwin-x64",
+  "version": "0.0.0",
+  "description": "Oraculo CLI binary for macOS x64",
+  "os": ["darwin"],
+  "cpu": ["x64"],
+  "files": ["bin/oraculo"],
+  "license": "MIT",
+  "preferUnplugged": true
+}

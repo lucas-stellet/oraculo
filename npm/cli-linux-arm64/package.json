@@ -1,0 +1,10 @@
+{
+  "name": "@oraculo/cli-linux-arm64",
+  "version": "0.0.0",
+  "description": "Oraculo CLI binary for Linux ARM64",
+  "os": ["linux"],
+  "cpu": ["arm64"],
+  "files": ["bin/oraculo"],
+  "license": "MIT",
+  "preferUnplugged": true
+}
