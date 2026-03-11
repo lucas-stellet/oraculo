@@ -1,0 +1,19 @@
+{
+  "name": "@oraculo/cli",
+  "version": "0.0.0",
+  "description": "Socratic guide and team orchestrator for quality product development",
+  "bin": {
+    "oraculo": "bin/cli.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "optionalDependencies": {
+    "@oraculo/cli-darwin-arm64": "0.0.0",
+    "@oraculo/cli-darwin-x64": "0.0.0",
+    "@oraculo/cli-linux-x64": "0.0.0",
+    "@oraculo/cli-linux-arm64": "0.0.0"
+  },
+  "license": "MIT",
+  "files": ["bin/", "install.js"]
+}
