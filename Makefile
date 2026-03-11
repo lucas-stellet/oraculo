@@ -3,24 +3,19 @@ BUILD   := ./apps/backend/cmd/oraculo
 PREFIX  ?= $(HOME)/.local
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
-DASHBOARD_DIR := ./apps/dashboard
+FRONTEND_DIR := ./apps/frontend
 
-.PHONY: build rebuild install test vet clean web-dev cross-compile
+.PHONY: build build-frontend build-backend rebuild install test vet clean web-dev cross-compile
 
-build:
-	rm -rf $(DASHBOARD_DIR)/out apps/backend/src/server/dashboard_assets
-	cd $(DASHBOARD_DIR) && bun run build
-	mkdir -p apps/backend/src/server/dashboard_assets
-	cp -r $(DASHBOARD_DIR)/out/* apps/backend/src/server/dashboard_assets/
+build-frontend:
+	cd $(FRONTEND_DIR) && bun run build
+
+build-backend:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(BUILD)
 
-rebuild:
-	@# Force full rebuild: dashboard + Go binary
-	rm -rf $(DASHBOARD_DIR)/out apps/backend/src/server/dashboard_assets
-	cd $(DASHBOARD_DIR) && bun run build
-	mkdir -p apps/backend/src/server/dashboard_assets
-	cp -r $(DASHBOARD_DIR)/out/* apps/backend/src/server/dashboard_assets/
-	go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(BUILD)
+build: build-backend
+
+rebuild: build-frontend build-backend
 
 install: build
 	install -m 755 $(BINARY) $(DESTDIR)$(PREFIX)/bin/$(BINARY)
@@ -33,11 +28,11 @@ vet:
 
 clean:
 	rm -f $(BINARY)
-	rm -rf apps/backend/src/server/dashboard_assets
+	rm -rf $(FRONTEND_DIR)/out
 	rm -rf npm/cli-*/bin/
 
 web-dev:
-	cd $(DASHBOARD_DIR) && bun run dev
+	cd $(FRONTEND_DIR) && bun run dev
 
 # Cross-compile for npm distribution (local testing)
 cross-compile:

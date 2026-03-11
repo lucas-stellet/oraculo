@@ -62,7 +62,7 @@ Design index: [docs/ui/design.md](docs/ui/design.md)
 Monorepo application code.
 
 - **`apps/backend/`** — Go backend: CLI binary (`cmd/oraculo/`) and packages (`src/` — cli, db, domain, config, etc.)
-- **`apps/dashboard/`** — Web UI (Next.js) — the observation and control surface
+- **`apps/frontend/`** — Web UI (Next.js) — the observation and control surface
 
 ### `claude-kit/`
 
@@ -81,7 +81,7 @@ apps/
 ├── backend/
 │   ├── cmd/oraculo/        — CLI entrypoint
 │   └── src/                — Go packages (cli, db, domain, config, etc.)
-└── dashboard/              — Web UI (Next.js)
+└── frontend/               — Web UI (Next.js)
 claude-kit/
 ├── .claude-plugin/
 │   └── plugin.json         — Claude Code plugin manifest

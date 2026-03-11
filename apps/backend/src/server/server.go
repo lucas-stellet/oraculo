@@ -20,6 +20,7 @@ import (
 // Server is the HTTP server that exposes hooks, API, and WebSocket endpoints.
 type Server struct {
 	mux          *http.ServeMux
+	handler      http.Handler
 	database     *db.DB
 	lastActivity time.Time
 	mu           sync.Mutex
@@ -110,7 +111,9 @@ func New(database *db.DB, bridge *approval.Bridge, hub *ws.Hub, logs *applog.Bro
 	}
 	mux.Handle("GET /", newSPAHandler(DashboardAssets))
 
-	return &Server{mux: mux, database: database, lastActivity: time.Now(), staticPath: staticPath}
+	s := &Server{mux: mux, database: database, lastActivity: time.Now(), staticPath: staticPath}
+	s.handler = corsMiddleware(mux)
+	return s
 }
 
 // LastActivity returns the time of the last HTTP request.
@@ -129,7 +132,7 @@ func (s *Server) touchActivity() {
 // ServeHTTP implements http.Handler.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.touchActivity()
-	s.mux.ServeHTTP(w, r)
+	s.handler.ServeHTTP(w, r)
 }
 
 // ListenAndServe starts the HTTP server on the given port.
