@@ -83,6 +83,21 @@ func TestPreferredLanguageOmitEmpty(t *testing.T) {
 	}
 }
 
+func TestConfig_ProjectName_UsesConfiguredName(t *testing.T) {
+	cfg := &config.Config{Name: "my-project"}
+	if got := cfg.ProjectName(); got != "my-project" {
+		t.Errorf("expected 'my-project', got %q", got)
+	}
+}
+
+func TestConfig_ProjectName_FallsBackToBasename(t *testing.T) {
+	cfg := &config.Config{}
+	name := cfg.ProjectName()
+	if name == "" || name == "unknown" {
+		t.Errorf("expected a non-empty basename, got %q", name)
+	}
+}
+
 func TestFindPort(t *testing.T) {
 	port, err := config.FindPort(30000, 30099)
 	if err != nil {

@@ -20,6 +20,7 @@ import (
 	"github.com/lucas/oraculo/apps/backend/src/config"
 	"github.com/lucas/oraculo/apps/backend/src/db"
 	mcpserver "github.com/lucas/oraculo/apps/backend/src/mcp"
+	"github.com/lucas/oraculo/apps/backend/src/registry"
 	"github.com/lucas/oraculo/apps/backend/src/server"
 	"github.com/lucas/oraculo/apps/backend/src/ws"
 )
@@ -90,6 +91,19 @@ func runStartAll(cmd *cobra.Command, version string) error {
 	// Dashboard is embedded in the binary, pass empty string
 	srv := server.New(database, bridge, hub, broadcaster, "", version)
 	mcpSrv := mcpserver.New(bridge, db.NewApprovalStore(database), logger)
+
+	// Register in global server registry.
+	regPath, regErr := registry.DefaultPath()
+	if regErr == nil {
+		wd, _ := os.Getwd()
+		_ = registry.Register(regPath, registry.Entry{
+			Project: cfg.ProjectName(),
+			Path:    wd,
+			Port:    port,
+			PID:     os.Getpid(),
+		})
+		defer registry.Unregister(regPath, wd)
+	}
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return hub.Run(ctx) })
@@ -207,6 +221,19 @@ func runStartHTTP(cmd *cobra.Command, version string) error {
 
 	// Dashboard is embedded in the binary, pass empty string
 	srv := server.New(database, bridge, hub, broadcaster, "", version)
+
+	// Register in global server registry.
+	regPath, regErr := registry.DefaultPath()
+	if regErr == nil {
+		wd, _ := os.Getwd()
+		_ = registry.Register(regPath, registry.Entry{
+			Project: cfg.ProjectName(),
+			Path:    wd,
+			Port:    port,
+			PID:     os.Getpid(),
+		})
+		defer registry.Unregister(regPath, wd)
+	}
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return hub.Run(ctx) })

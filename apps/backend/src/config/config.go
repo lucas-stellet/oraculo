@@ -20,9 +20,22 @@ type AgentSkills struct {
 // Config holds Oraculo project configuration.
 type Config struct {
 	Port              int         `json:"port"`
+	Name              string      `json:"name,omitempty"`
 	// PreferredLanguage is the BCP 47 language tag for Oraculo sessions (e.g. "pt-BR", "en-US").
-	PreferredLanguage string `json:"preferred_language,omitempty"`
+	PreferredLanguage string      `json:"preferred_language,omitempty"`
 	Skills            AgentSkills `json:"skills,omitempty"`
+}
+
+// ProjectName returns the configured name, or falls back to the working directory basename.
+func (c *Config) ProjectName() string {
+	if c.Name != "" {
+		return c.Name
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return "unknown"
+	}
+	return filepath.Base(wd)
 }
 
 // Read loads .oraculo/config.json from the working directory.
