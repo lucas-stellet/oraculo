@@ -76,6 +76,42 @@ func TestSetup_CreatesHooksOnly(t *testing.T) {
 	}
 }
 
+func TestSetup_PreservesExistingConfig(t *testing.T) {
+	setupInstallDir(t)
+
+	// First run: creates config with a port
+	_, err := setupCmd(t)
+	if err != nil {
+		t.Fatalf("first setup failed: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(".oraculo", "config.json"))
+	if err != nil {
+		t.Fatalf("expected config after first setup: %v", err)
+	}
+	var cfg1 map[string]any
+	if err := json.Unmarshal(data, &cfg1); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	port1 := cfg1["port"]
+
+	// Second run: must not change the port
+	_, err = setupCmd(t)
+	if err != nil {
+		t.Fatalf("second setup failed: %v", err)
+	}
+	data, err = os.ReadFile(filepath.Join(".oraculo", "config.json"))
+	if err != nil {
+		t.Fatalf("expected config after second setup: %v", err)
+	}
+	var cfg2 map[string]any
+	if err := json.Unmarshal(data, &cfg2); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if cfg2["port"] != port1 {
+		t.Errorf("setup overwrote port: first=%v second=%v", port1, cfg2["port"])
+	}
+}
+
 func TestSetup_DoesNotCopySkills(t *testing.T) {
 	setupInstallDir(t)
 	_, err := setupCmd(t)

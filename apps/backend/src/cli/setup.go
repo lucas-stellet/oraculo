@@ -46,16 +46,31 @@ func runSetup(cmd *cobra.Command) error {
 	database.Close()
 	fmt.Fprintln(w, "created .oraculo/oraculo.db")
 
-	port, err := config.FindPort(3100, 3199)
-	if err != nil {
-		return fmt.Errorf("find port: %w", err)
+	existing, _ := config.Read()
+
+	port := 0
+	if existing != nil {
+		port = existing.Port
+	}
+	if port == 0 {
+		port, err = config.FindPort(3100, 3199)
+		if err != nil {
+			return fmt.Errorf("find port: %w", err)
+		}
 	}
 
 	lang, _ := cmd.Flags().GetString("lang")
 	if lang == "" {
-		lang = "pt-BR"
+		if existing != nil && existing.PreferredLanguage != "" {
+			lang = existing.PreferredLanguage
+		} else {
+			lang = "pt-BR"
+		}
 	}
 	cfg := &config.Config{Port: port, PreferredLanguage: lang}
+	if existing != nil {
+		cfg.Skills = existing.Skills
+	}
 	if err := config.Write(cfg); err != nil {
 		return fmt.Errorf("write config: %w", err)
 	}
@@ -96,6 +111,27 @@ func runSetup(cmd *cobra.Command) error {
 		return fmt.Errorf("write settings.json: %w", err)
 	}
 	fmt.Fprintln(w, "created .claude/settings.json (hooks only)")
+
+	binaryPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("resolve binary path: %w", err)
+	}
+	mcpConfig := map[string]any{
+		"mcpServers": map[string]any{
+			"oraculo": map[string]any{
+				"command": binaryPath,
+				"args":    []string{"start"},
+			},
+		},
+	}
+	mcpData, err := json.MarshalIndent(mcpConfig, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal mcp config: %w", err)
+	}
+	if err := os.WriteFile(".mcp.json", mcpData, 0o644); err != nil {
+		return fmt.Errorf("write .mcp.json: %w", err)
+	}
+	fmt.Fprintf(w, "created .mcp.json (command: %s start)\n", binaryPath)
 
 	fmt.Fprintln(w, "Oraculo setup complete. Install the plugin for skills and MCP.")
 	return nil
