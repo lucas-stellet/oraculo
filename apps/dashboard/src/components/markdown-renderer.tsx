@@ -159,6 +159,84 @@ function CommentHighlight({
   );
 }
 
+// ── Highlight Helpers ─────────────────────────────────────────────────────────
+
+function highlightText(container: HTMLElement, comment: InlineComment) {
+  const article = container.querySelector('article');
+  if (!article) return;
+
+  const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT);
+  const textNodes: Text[] = [];
+
+  let node: Text | null;
+  while ((node = walker.nextNode() as Text | null)) {
+    textNodes.push(node);
+  }
+
+  const searchText = comment.selected_text;
+
+  for (let i = 0; i < textNodes.length; i++) {
+    const textNode = textNodes[i];
+    const idx = textNode.textContent?.indexOf(searchText) ?? -1;
+
+    if (idx !== -1) {
+      // Found within a single text node — split and wrap
+      const range = document.createRange();
+      range.setStart(textNode, idx);
+      range.setEnd(textNode, idx + searchText.length);
+
+      const highlight = document.createElement('span');
+      highlight.setAttribute('data-comment-highlight', String(comment.id));
+      highlight.className = 'cursor-pointer rounded bg-yellow-500/20 px-0.5 transition-colors hover:bg-yellow-500/30';
+      highlight.title = comment.comment;
+
+      range.surroundContents(highlight);
+      return; // Only highlight first occurrence
+    }
+  }
+
+  // If not found in a single node, try across adjacent nodes
+  for (let i = 0; i < textNodes.length; i++) {
+    let combined = '';
+    const nodeSpans: Array<{ node: Text; start: number; length: number }> = [];
+
+    for (let j = i; j < textNodes.length && combined.length < searchText.length * 2; j++) {
+      const text = textNodes[j].textContent || '';
+      nodeSpans.push({ node: textNodes[j], start: combined.length, length: text.length });
+      combined += text;
+
+      const idx = combined.indexOf(searchText);
+      if (idx !== -1) {
+        // Found across multiple nodes — wrap each portion
+        const endIdx = idx + searchText.length;
+
+        for (const span of nodeSpans) {
+          const spanEnd = span.start + span.length;
+          const overlapStart = Math.max(idx, span.start);
+          const overlapEnd = Math.min(endIdx, spanEnd);
+
+          if (overlapStart < overlapEnd) {
+            const localStart = overlapStart - span.start;
+            const localEnd = overlapEnd - span.start;
+
+            const range = document.createRange();
+            range.setStart(span.node, localStart);
+            range.setEnd(span.node, localEnd);
+
+            const highlight = document.createElement('span');
+            highlight.setAttribute('data-comment-highlight', String(comment.id));
+            highlight.className = 'cursor-pointer rounded bg-yellow-500/20 px-0.5 transition-colors hover:bg-yellow-500/30';
+            highlight.title = comment.comment;
+
+            range.surroundContents(highlight);
+          }
+        }
+        return;
+      }
+    }
+  }
+}
+
 // ── Markdown Renderer ────────────────────────────────────────────────────────
 
 interface MarkdownRendererProps {
@@ -186,6 +264,12 @@ export function MarkdownRenderer({
     }
 
     const text = selection.toString().trim();
+
+    // Check if this text already has a comment
+    if (comments?.some(c => c.selected_text === text)) {
+      return; // Don't create duplicate comment
+    }
+
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
 
@@ -194,7 +278,45 @@ export function MarkdownRenderer({
       y: rect.top - 10 + window.scrollY,
       text,
     });
-  }, [onAddComment]);
+  }, [onAddComment, comments]);
+
+  const handleHighlightClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const commentId = target.getAttribute('data-comment-highlight');
+    if (!commentId || !comments) return;
+
+    const comment = comments.find(c => String(c.id) === commentId);
+    if (!comment) return;
+
+    // Scroll to the comment in the list below
+    const commentEl = document.getElementById(`comment-${comment.id}`);
+    if (commentEl) {
+      commentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      commentEl.classList.add('ring-2', 'ring-yellow-500/50');
+      setTimeout(() => commentEl.classList.remove('ring-2', 'ring-yellow-500/50'), 2000);
+    }
+  }, [comments]);
+
+  useEffect(() => {
+    if (!containerRef.current || !comments || comments.length === 0) return;
+
+    // Clean up previous highlights
+    const existing = containerRef.current.querySelectorAll('[data-comment-highlight]');
+    existing.forEach((el) => {
+      const parent = el.parentNode;
+      if (parent) {
+        // Replace highlight span with its text content
+        const text = document.createTextNode(el.textContent || '');
+        parent.replaceChild(text, el);
+        parent.normalize(); // Merge adjacent text nodes
+      }
+    });
+
+    // Apply highlights for each comment
+    comments.forEach((comment) => {
+      highlightText(containerRef.current!, comment);
+    });
+  }, [comments, content]);
 
   const handleAddComment = useCallback(
     (selectedText: string, comment: string) => {
@@ -205,13 +327,8 @@ export function MarkdownRenderer({
     [onAddComment]
   );
 
-  // Highlight commented text in content
-  const highlightedContent = content;
-  // For simplicity, comments are shown as a list below the content.
-  // True inline highlight requires DOM manipulation after render which adds complexity.
-
   return (
-    <div ref={containerRef} onMouseUp={handleMouseUp} className="relative">
+    <div ref={containerRef} onMouseUp={handleMouseUp} onClick={handleHighlightClick} className="relative">
       <article className="prose-custom max-w-none">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
@@ -346,7 +463,7 @@ export function MarkdownRenderer({
             ),
           }}
         >
-          {highlightedContent}
+          {content}
         </ReactMarkdown>
       </article>
 
@@ -358,7 +475,7 @@ export function MarkdownRenderer({
           </h4>
           <div className="space-y-3">
             {comments.map((c) => (
-              <div key={c.id} className="rounded-xl border border-[#22324a] bg-[#0b1120] p-3">
+              <div key={c.id} id={`comment-${c.id}`} className="rounded-xl border border-[#22324a] bg-[#0b1120] p-3 transition-all">
                 <div className="flex items-start justify-between">
                   <p className="mb-1 truncate text-xs text-[#525e6e] font-[family-name:var(--font-mono)]">
                     On: &ldquo;{c.selected_text.slice(0, 80)}
