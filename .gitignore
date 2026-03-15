@@ -18,3 +18,5 @@ apps/dashboard/next-env.d.ts
 
 # npm platform binaries (built by CI)
 npm/cli-*/bin/
+
+apps/desktop/bin/
