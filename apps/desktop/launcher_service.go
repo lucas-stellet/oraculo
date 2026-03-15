@@ -192,6 +192,7 @@ func (s *LauncherService) healthyPort(regPath, projectPath string) int {
 			}
 		}
 	}
+
 	return 0
 }
 

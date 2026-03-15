@@ -92,6 +92,8 @@ export default function LauncherPage() {
 
   useEffect(() => {
     refresh();
+    const id = setInterval(refresh, 3000);
+    return () => clearInterval(id);
   }, [refresh]);
 
   async function handleOpen(project: ProjectWithStatus) {
