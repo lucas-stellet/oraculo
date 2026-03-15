@@ -71,9 +71,14 @@ apps/orchestrator/
 │   ├── cli/
 │   │   ├── root.ts                 — Command tree (commander)
 │   │   ├── context.ts              — DB injection into subcommands
-│   │   ├── lifecycle.ts            — start, kill, restart, status, logs
-│   │   ├── install.ts              — install, setup, uninstall
+│   │   ├── lifecycle.ts            — start, kill (lsof+SIGTERM→SIGKILL), restart, status (dashboard), logs (SSE client)
+│   │   ├── install.ts              — install (--global/--local/--lang), setup (plugin-mode), uninstall (--purge)
 │   │   ├── version.ts              — version command
+│   │   ├── hooks/                  — Claude Code command-type hooks (called via .claude/settings.json)
+│   │   │   ├── session-start.ts    — Upsert claude_sessions, collect git metadata, auto-start daemon if offline
+│   │   │   ├── session-end.ts      — Update claude_sessions ended_at, record session_event
+│   │   │   ├── agent-start.ts      — Resolve epic/story/task, POST to /hooks/agent-start
+│   │   │   └── task-started.ts     — POST to /hooks/task-started
 │   │   └── tools/                  — Agent-facing subcommands (JSON output)
 │   │       ├── epic.ts
 │   │       ├── story.ts
@@ -102,10 +107,10 @@ apps/orchestrator/
 │   │       ├── validation-store.ts
 │   │       └── version-store.ts
 │   ├── domain/
-│   │   ├── entities.ts             — TypeScript interfaces
-│   │   ├── enums.ts                — Union types
+│   │   ├── entities.ts             — TypeScript interfaces (incl. EpicSummary, StorySummary, TaskEnriched)
+│   │   ├── enums.ts                — Union types (incl. SessionTypeToPhase mapping)
 │   │   ├── errors.ts               — DomainError with codes and context
-│   │   └── state.ts                — State machine transitions
+│   │   └── state.ts                — State machine transitions + phase sequences per session type
 │   ├── server/
 │   │   ├── http.ts                 — Hono on Bun.serve() — REST + WebSocket upgrade
 │   │   ├── ws.ts                   — WebSocket hub (broadcast, per-client buffering)
@@ -474,6 +479,141 @@ Simplified: no more copying skills from `embed.FS` to `.claude/skills/`. Just co
 - `claude-kit/embed.go` — Go embed directive
 - `claude-kit/skills/execute/` — replaced by `orchestrator/dispatch.ts` + `prompts.ts`
 - Hook-based orchestration in `.claude/settings.json` — replaced by Agent SDK hooks
+
+## Complete CLI Command Reference
+
+Every command from the Go backend must be replicated. This is the authoritative list.
+
+### Lifecycle Commands (`cli/lifecycle.ts`)
+
+| Command | Flags | Behavior |
+|---------|-------|----------|
+| `oraculo start` | | Runs HTTP + MCP servers concurrently via `Promise.all`, signal handling (SIGTERM/SIGINT) |
+| `oraculo start http` | | Spawns detached HTTP daemon, registers in `servers.json`, polls `/health` until ready |
+| `oraculo start mcp` | | Starts MCP server on stdio only (no HTTP) |
+| `oraculo kill` | | `lsof -ti tcp:<port>` to find PIDs → SIGTERM → wait 5s → SIGKILL → poll until port free |
+| `oraculo restart` | | Kill + wait port free + spawn new daemon (self re-exec via own binary path) |
+| `oraculo status` | | Dashboard: queries DB for epics list, task status counts per story, pending approvals. Renders ASCII table via `output.writeTable()` |
+| `oraculo logs` | | SSE client: connects to running server's `/logs` endpoint, parses `data:` lines, formats `[time] [level] msg` to terminal |
+| `oraculo version` | | Prints version string |
+
+### Install Commands (`cli/install.ts`)
+
+| Command | Flags | Behavior |
+|---------|-------|----------|
+| `oraculo install` | `--global`, `--local`, `--lang <bcp47>` | Creates `.oraculo/`, DB, finds port, writes config, writes `.claude/settings.json` (hooks + MCP) |
+| `oraculo setup` | `--lang <bcp47>` | Plugin-mode: hooks-only (no skills), writes `.mcp.json` separately, preserves existing config/port |
+| `oraculo uninstall` | `--purge` | Removes oraculo entries from settings.json, removes skill dirs. `--purge` also removes `.oraculo/` directory |
+
+### Hook CLI Commands (`cli/hooks/`)
+
+These are the command-type hooks configured in `.claude/settings.json` and invoked by Claude Code. They read JSON from stdin and proxy to the HTTP server.
+
+| Command | Stdin Fields | Behavior |
+|---------|-------------|----------|
+| `oraculo hook session-start` | `{ session_id, source }` | Upserts `claude_sessions` in DB, collects metadata (cwd, `git rev-parse --abbrev-ref HEAD`, source). **Auto-starts daemon if offline**: health check → `SpawnDaemon()` → `pollHealth()` until ready. Then POSTs to `/hooks/session-start` |
+| `oraculo hook session-end` | `{ session_id }` | Updates `claude_sessions.ended_at`, records `session_event`, POSTs to `/hooks/session-end` |
+| `oraculo hook agent-start` | (flags: `--session-id`, `--agent-name`, `--agent-type`, `--task-name`, `--story-name`, `--epic-name`) | POSTs to `/hooks/agent-start` |
+| `oraculo hook task-started` | (flags: `--task-name`, `--story-name`, `--epic-name`) | POSTs to `/hooks/task-started` |
+
+### Tool Commands (`cli/tools/`)
+
+All output JSON via `output.writeJSON()`. DB injected via `context.ts`.
+
+**Epic**: `init <name> --description`, `save <name>` (stdin→writes `.oraculo/epics/{name}/requirements.md`), `get <name>` (reads requirements.md), `list`, `update <name> --description`, `delete <name>`, `version <name>` (stdin→creates version + design approval), `versions <name>`
+
+**Story**: `init <name> --epic --description`, `save <name> --epic` (stdin→writes requirements.md), `get <name> --epic` (reads requirements.md), `list --epic`, `update <name> --epic --description`, `update-status <name> --epic --status`, `delete <name> --epic`, `version <name> --epic` (stdin→creates version + design approval), `versions <name> --epic`
+
+**Task**: `init <name> --epic --story --description --depends-on` (with cycle detection), `start <name> --epic --story`, `complete <name> --epic --story` (stdin JSON: summary, logs, skills_used, files_modified → inserts TaskResult), `fail <name> --epic --story --reason`, `get <name> --epic --story`, `list --epic --story`, `delete <name> --epic --story`
+
+**Memory**: `store --domain --category --finding --source --confidence`, `search <query> --domain --limit`, `domains`
+
+**Approval**: `request --type --epic --story` (stdin), `status <id>`, `list --pending`, `verdict <id> --verdict --comment`
+
+**Session**: `init --type --epic --description`, `status --type --epic`, `state --session`, `close --session --reason`
+
+**Phase**: `complete <phase> --session` (stdin, auto-closes session on last phase)
+
+**Design**: `save <story> --epic` (stdin→writes `.oraculo/epics/{epic}/stories/{story}/design.md`), `get <story> --epic` (reads design.md)
+
+**Review**: `create <version-id> --type --verdict --comment` (propagates approval_status to parent entity), `get <review-id>`, `list <version-id> --type`
+
+**Validation**: `save <story> --epic --verdict --findings`
+
+### Filesystem Operations
+
+Several commands read/write markdown files to `.oraculo/epics/` — these are NOT just DB operations:
+
+- `epic save` → writes `.oraculo/epics/{name}/requirements.md`
+- `epic get` → reads `.oraculo/epics/{name}/requirements.md`
+- `story save` → writes `.oraculo/epics/{epic}/stories/{story}/requirements.md`
+- `story get` → reads `.oraculo/epics/{epic}/stories/{story}/requirements.md`
+- `design save` → writes `.oraculo/epics/{epic}/stories/{story}/design.md`
+- `design get` → reads `.oraculo/epics/{epic}/stories/{story}/design.md`
+
+## Complete HTTP Endpoint Reference
+
+| Method | Path | Handler | Notes |
+|--------|------|---------|-------|
+| `GET` | `/health` | healthHandler | Returns `{"status":"ok","project_name":"..."}` |
+| `GET` | `/api/system/status` | systemStatusHandler | Returns `{version, update_available, project_commit, started_at, new_version}`. Binary update detection via file mtime vs server start time. Project commit via `git rev-parse --short HEAD` |
+| `GET` | `/api/epics` | listEpics | ListSummaries: complex JOIN with active session, phase, story/task counts |
+| `POST` | `/api/epics` | createEpic | Create new epic |
+| `GET` | `/api/epics/:epicName/stories` | listStories | ListSummaries: JOIN with task counts (total, completed, failed) |
+| `GET` | `/api/epics/:epicName/stories/:storyName/tasks` | listTasks | ListEnriched: batch fetch deps + results |
+| `GET` | `/api/epics/:epicName/stories/:storyName/versions` | listVersions | Story versions |
+| `GET` | `/api/epics/:epicName/stories/:storyName/reviews` | listReviews | ListByStory (cross-version) |
+| `GET` | `/api/epics/:epicName/stories/:storyName/validations` | listValidations | ListByStory |
+| `GET` | `/api/approvals` | listApprovals | Supports `?status=pending` and `?epic_id=` filters (uses ListByEpic) |
+| `GET` | `/api/approvals/:id` | getApproval | Single approval with details |
+| `POST` | `/api/approvals/:id/verdict` | handleVerdict | Submit verdict via bridge. Deletes comments on approve |
+| `POST` | `/api/approvals/:id/comments` | createComment | Create inline comment |
+| `GET` | `/api/approvals/:id/comments` | listComments | List comments for approval |
+| `DELETE` | `/api/approvals/:id/comments/:commentId` | deleteComment | Delete comment |
+| `POST` | `/hooks/agent-start` | hookAgentStart | Creates agent record, broadcasts WS |
+| `POST` | `/hooks/agent-stop` | hookAgentStop | Stops agent, broadcasts WS |
+| `POST` | `/hooks/tool-used` | hookToolUsed | Records tool event, broadcasts WS |
+| `POST` | `/hooks/task-completed` | hookTaskCompleted | Records session event, broadcasts WS |
+| `POST` | `/hooks/task-started` | hookTaskStarted | Broadcasts WS |
+| `POST` | `/hooks/stop` | hookStop | Records session event, broadcasts WS |
+| `POST` | `/hooks/teammate-idle` | hookTeammateIdle | Records session event, broadcasts WS |
+| `POST` | `/hooks/session-start` | hookSessionStart | Broadcasts session_started |
+| `POST` | `/hooks/session-end` | hookSessionEnd | Broadcasts session_ended |
+| `GET` | `/ws` | WebSocket upgrade | Hub with broadcast |
+| `GET` | `/logs` | SSE stream | Ring buffer replay + live fan-out |
+
+## Complete Store Method Reference
+
+All specialized store methods must be replicated:
+
+- **EpicStore**: Create, GetByName, List, **ListSummaries** (JOIN: active session, phase, story/task counts), Update, Delete, UpdateApprovalStatus
+- **StoryStore**: Create, GetByName, List, **ListSummaries** (JOIN: task total/completed/failed counts), Update, Delete, UpdateApprovalStatus
+- **TaskStore**: Create (with tx + deps + cycle detection), GetByName, List, **ListEnriched** (batch deps + results), Start, Complete (with tx + result insert), Fail, Delete, addDependencies, **detectCycle** (BFS)
+- **MemoryStore**: Store, **Search** (FTS5), Domains
+- **ApprovalStore**: Request, GetByID, List, **ListByEpic** (used by `?epic_id=` filter), Verdict, CreateComment, ListComments, DeleteComment, **DeleteCommentsByApproval** (on approve verdict)
+- **SessionStore**: Create, Get, Close, CompletePhase, Phases, CurrentPhase, **ActiveByEpic**
+- **VersionStore**: CreateEpicVersion (auto-increment + set pending), GetEpicVersion, ListEpicVersions, **LatestEpicVersion**, CreateStoryVersion, GetStoryVersion, ListStoryVersions, **LatestStoryVersion**
+- **ReviewStore**: Create (propagates approval_status to parent), GetByID, ListByVersion, **ListByStory** (cross-version, used by API)
+- **ValidationStore**: Save, ListByStory
+- **AgentStore**: Start (with optional taskID), Stop, ListBySession
+- **ToolEventStore**: Record, ListBySession
+- **SessionEventStore**: Record, ListBySession
+
+## Config Fields
+
+```typescript
+interface Config {
+  port: number;              // HTTP server port (default: auto-discovered 3100-3199)
+  name: string;              // Project name (default: cwd basename)
+  preferred_language: string; // BCP 47 language tag
+  skills: {
+    design_agent: string[];  // Design agent skill commands
+    code_agent: string[];    // Code agent skill commands
+  };
+}
+```
+
+Atomic write: temp file + rename (same as Go).
 
 ## Risks and Mitigations
 
