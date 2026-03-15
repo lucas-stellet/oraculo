@@ -9,6 +9,8 @@ import { versionCmd } from "./lifecycle.ts";
 import { installCmd } from "./install.ts";
 import { setupCmd } from "./install.ts";
 import { uninstallCmd } from "./install.ts";
+import { hookCommands } from "./hooks/index.ts";
+import { toolCommands } from "./tools/index.ts";
 
 export function createProgram(): Command {
   const program = new Command();
@@ -28,6 +30,12 @@ export function createProgram(): Command {
   program.addCommand(statusCmd());
   program.addCommand(logsCmd());
   program.addCommand(versionCmd());
+
+  // Hooks (triggered by Claude Code)
+  program.addCommand(hookCommands());
+
+  // Agent-facing tools
+  program.addCommand(toolCommands());
 
   // Install / setup / uninstall
   program.addCommand(installCmd());

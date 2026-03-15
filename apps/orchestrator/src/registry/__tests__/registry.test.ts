@@ -5,6 +5,8 @@ import { join } from "node:path";
 import { register, unregister, list, defaultPath } from "../registry.ts";
 import type { ServerEntry } from "../registry.ts";
 
+const ts = "2026-01-01T00:00:00.000Z";
+
 describe("registry", () => {
   let tempDir: string;
   let registryPath: string;
@@ -24,7 +26,8 @@ describe("registry", () => {
         project: "test-project",
         port: 8080,
         pid: process.pid,
-        directory: "/tmp/test",
+        path: "/tmp/test",
+        started_at: ts,
       };
 
       await register(registryPath, entry);
@@ -34,12 +37,13 @@ describe("registry", () => {
       expect(entries[0].port).toBe(8080);
     });
 
-    it("updates existing entry with same directory", async () => {
+    it("updates existing entry with same path", async () => {
       const entry1: ServerEntry = {
         project: "proj",
         port: 8080,
         pid: process.pid,
-        directory: "/tmp/test",
+        path: "/tmp/test",
+        started_at: ts,
       };
       await register(registryPath, entry1);
 
@@ -47,7 +51,8 @@ describe("registry", () => {
         project: "proj",
         port: 9090,
         pid: process.pid,
-        directory: "/tmp/test",
+        path: "/tmp/test",
+        started_at: ts,
       };
       await register(registryPath, entry2);
 
@@ -56,18 +61,20 @@ describe("registry", () => {
       expect(entries[0].port).toBe(9090);
     });
 
-    it("adds multiple entries with different directories", async () => {
+    it("adds multiple entries with different paths", async () => {
       await register(registryPath, {
         project: "proj-a",
         port: 8080,
         pid: process.pid,
-        directory: "/tmp/a",
+        path: "/tmp/a",
+        started_at: ts,
       });
       await register(registryPath, {
         project: "proj-b",
         port: 8081,
         pid: process.pid,
-        directory: "/tmp/b",
+        path: "/tmp/b",
+        started_at: ts,
       });
 
       const entries = await list(registryPath);
@@ -80,7 +87,8 @@ describe("registry", () => {
         project: "proj",
         port: 8080,
         pid: process.pid,
-        directory: "/tmp/test",
+        path: "/tmp/test",
+        started_at: ts,
       });
 
       const entries = await list(nestedPath);
@@ -89,12 +97,13 @@ describe("registry", () => {
   });
 
   describe("unregister", () => {
-    it("removes entry by directory", async () => {
+    it("removes entry by path", async () => {
       await register(registryPath, {
         project: "proj",
         port: 8080,
         pid: process.pid,
-        directory: "/tmp/test",
+        path: "/tmp/test",
+        started_at: ts,
       });
 
       await unregister(registryPath, "/tmp/test");
@@ -102,12 +111,13 @@ describe("registry", () => {
       expect(entries).toHaveLength(0);
     });
 
-    it("does nothing when directory not found", async () => {
+    it("does nothing when path not found", async () => {
       await register(registryPath, {
         project: "proj",
         port: 8080,
         pid: process.pid,
-        directory: "/tmp/test",
+        path: "/tmp/test",
+        started_at: ts,
       });
 
       await unregister(registryPath, "/tmp/nonexistent");
@@ -129,8 +139,8 @@ describe("registry", () => {
     it("filters out stale entries with non-running PIDs", async () => {
       // Write entries directly — one with current PID (alive), one with bogus PID (stale)
       const entries: ServerEntry[] = [
-        { project: "alive", port: 8080, pid: process.pid, directory: "/tmp/alive" },
-        { project: "stale", port: 8081, pid: 999999, directory: "/tmp/stale" },
+        { project: "alive", port: 8080, pid: process.pid, path: "/tmp/alive", started_at: ts },
+        { project: "stale", port: 8081, pid: 999999, path: "/tmp/stale", started_at: ts },
       ];
       await Bun.write(registryPath, JSON.stringify(entries, null, 2) + "\n");
 

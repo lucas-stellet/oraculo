@@ -7,7 +7,8 @@ export interface ServerEntry {
   project: string;
   port: number;
   pid: number;
-  directory: string;
+  path: string;
+  started_at: string;
 }
 
 /**
@@ -37,7 +38,7 @@ export async function list(registryPath: string): Promise<ServerEntry[]> {
 }
 
 /**
- * Registers a server entry. Updates existing entry if directory matches.
+ * Registers a server entry. Updates existing entry if path matches.
  * Creates parent directories if needed.
  */
 export async function register(registryPath: string, entry: ServerEntry): Promise<void> {
@@ -45,7 +46,7 @@ export async function register(registryPath: string, entry: ServerEntry): Promis
 
   const entries = await readRaw(registryPath);
 
-  const idx = entries.findIndex((e) => e.directory === entry.directory);
+  const idx = entries.findIndex((e) => e.path === entry.path);
   if (idx >= 0) {
     entries[idx] = entry;
   } else {
@@ -56,11 +57,11 @@ export async function register(registryPath: string, entry: ServerEntry): Promis
 }
 
 /**
- * Removes the entry matching the given directory.
+ * Removes the entry matching the given path.
  */
-export async function unregister(registryPath: string, directory: string): Promise<void> {
+export async function unregister(registryPath: string, path: string): Promise<void> {
   const entries = await readRaw(registryPath);
-  const filtered = entries.filter((e) => e.directory !== directory);
+  const filtered = entries.filter((e) => e.path !== path);
   await writeEntries(registryPath, filtered);
 }
 

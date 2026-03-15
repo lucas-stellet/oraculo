@@ -1,6 +1,7 @@
 import { Command } from "commander";
-import { readConfig } from "../../config/config.ts";
+import { readConfig, getProjectName } from "../../config/config.ts";
 import { openProjectDb } from "../../db/index.ts";
+import { registerProject } from "../../registry/projects.ts";
 
 export function sessionStartCommand(): Command {
   return new Command("session-start")
@@ -45,6 +46,11 @@ async function handleSessionStart(): Promise<void> {
   } finally {
     db.close();
   }
+
+  // Register project in ~/.oraculo/projects.json so desktop app can discover it
+  const cwd = process.cwd();
+  const projectName = await getProjectName(cwd);
+  await registerProject(cwd, projectName);
 
   // Health check and auto-start
   const config = await readConfig(process.cwd());

@@ -62,7 +62,8 @@ async function runStartHttp(): Promise<void> {
     project: projectName,
     port,
     pid: process.pid,
-    directory: wd,
+    path: wd,
+    started_at: new Date().toISOString(),
   });
 
   const cleanup = async () => {

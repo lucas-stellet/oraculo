@@ -114,17 +114,24 @@ Atualizações em tempo real fluem por dois canais: HTTP hooks enviam eventos de
 
 ### Via marketplace de plugins do Claude Code
 
-Procure por **Oraculo** no marketplace de plugins do Claude Code, ou instale diretamente:
-
 ```bash
-# Em breve via marketplace
+claude plugin add oraculo --marketplace lucas-stellet/oraculo-marketplace
 ```
 
-### Via npm (apenas CLI)
+Isso instala as skills (`/oraculo:epic`, `/oraculo:story`, etc.) e a configuração MCP. Em seguida, no diretório do seu projeto:
+
+```bash
+oraculo setup
+```
+
+`oraculo setup` cria o diretório `.oraculo/`, banco SQLite e registra os HTTP hooks — a infraestrutura que as skills precisam para funcionar.
+
+### Via npm (CLI + plugin)
 
 ```bash
 bun install -g @oraculo/cli
-oraculo install
+claude plugin add oraculo --marketplace lucas-stellet/oraculo-marketplace
+oraculo setup
 ```
 
 ### Do código-fonte
@@ -136,7 +143,7 @@ cd apps/orchestrator && bun install && cd ../..
 make install
 ```
 
-`oraculo install` registra HTTP hooks no `.claude/settings.json` do seu projeto, copia skills e inicia o servidor local.
+`make install` compila o binário e coloca em `$HOME/.local/bin/oraculo`. Em seguida, instale o plugin e execute `oraculo setup` no seu projeto para completar a configuração.
 
 ---
 
