@@ -10,6 +10,10 @@
     <img src="https://img.shields.io/badge/Platform-macOS-000000?style=flat-square&logo=apple" alt="macOS" />
     <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" />
   </p>
+
+  <p>
+    <a href="README.pt-BR.md">Leia em Português</a>
+  </p>
 </div>
 
 ---
@@ -102,31 +106,28 @@ Real-time updates flow through two channels: HTTP hooks push telemetry events as
 
 ## Install
 
-### Prerequisites / Pré-requisitos
+### Prerequisites
 
-- [Claude Code](https://claude.ai/code) installed / instalado
-- [Bun](https://bun.sh) runtime (for building from source / para compilar do código-fonte)
-- macOS (Linux support in progress / suporte a Linux em progresso)
+- [Claude Code](https://claude.ai/code) installed
+- [Bun](https://bun.sh) runtime (for building from source)
+- macOS (Linux support in progress)
 
 ### Via Claude Code plugin marketplace
 
 Search for **Oraculo** in the Claude Code plugin marketplace, or install directly:
 
-Procure por **Oraculo** no marketplace de plugins do Claude Code, ou instale diretamente:
-
 ```bash
 # Coming soon via marketplace
-# Em breve via marketplace
 ```
 
-### Via npm (CLI only / apenas CLI)
+### Via npm (CLI only)
 
 ```bash
 bun install -g @oraculo/cli
 oraculo install
 ```
 
-### From source / Do código-fonte
+### From source
 
 ```bash
 git clone https://github.com/your-org/oraculo
@@ -137,31 +138,25 @@ make install
 
 `oraculo install` registers HTTP hooks in your project's `.claude/settings.json`, copies skills, and starts the local server.
 
-`oraculo install` registra HTTP hooks no `.claude/settings.json` do seu projeto, copia skills e inicia o servidor local.
-
 ---
 
-## Usage / Uso
+## Usage
 
 Once installed in a project, Oraculo is invoked through Claude Code slash commands:
 
-Uma vez instalado no projeto, o Oraculo é invocado através de slash commands do Claude Code:
-
 ```
-/oraculo:epic    — Start product discovery / Iniciar descoberta de produto
-/oraculo:story   — Define and plan a work item / Definir e planejar um item de trabalho
-/oraculo:plan    — Decompose into an executable DAG / Decompor em um DAG executável
-/oraculo:execute — Dispatch agents to implement / Despachar agentes para implementar
-/oraculo:validate — Run independent QA / Executar QA independente
+/oraculo:epic     — Start product discovery for a new feature idea
+/oraculo:story    — Define and plan a specific work item
+/oraculo:plan     — Decompose a story into an executable DAG
+/oraculo:execute  — Dispatch agents to implement the plan
+/oraculo:validate — Run independent QA on the implementation
 ```
 
 Open the dashboard to monitor agents, review artifacts, and deliver verdicts at approval gates.
 
-Abra o dashboard para monitorar agentes, revisar artefatos e entregar veredictos nos gates de aprovação.
-
 ---
 
-## Architecture / Arquitetura
+## Architecture
 
 ```
 claude-kit/skills/       — Claude Code skills (slash commands)
@@ -190,41 +185,37 @@ npm/                     — Cross-platform binary distribution via npm
 
 The orchestrator binary is the **Trust Layer** — all data access goes through it. The dashboard never reads files or queries SQLite directly; everything flows through the CLI's validated commands.
 
-O binário do orquestrador é a **Camada de Confiança** — todo acesso a dados passa por ele. O dashboard nunca lê arquivos ou consulta SQLite diretamente; tudo flui pelos comandos validados do CLI.
-
 ### Data
 
 SQLite (`.oraculo/oraculo.db`) holds two kinds of data: transient operational state (tasks, approvals, agent lifecycle) and a persistent `knowledge` table that accumulates lessons learned across all epics.
 
-SQLite (`.oraculo/oraculo.db`) armazena dois tipos de dados: estado operacional transitório (tarefas, aprovações, ciclo de vida de agentes) e uma tabela persistente `knowledge` que acumula lições aprendidas de todos os épicos.
-
 ---
 
-## Development / Desenvolvimento
+## Development
 
 ### Build
 
 ```bash
-# Install dependencies / Instalar dependências
+# Install dependencies
 cd apps/orchestrator && bun install
 
-# Build the CLI binary / Compilar o binário CLI
+# Build the CLI binary
 make build
 
-# Build everything (frontend + backend) / Compilar tudo
+# Build everything (frontend + backend)
 make rebuild
 
-# Run tests / Executar testes
+# Run tests
 make test
 
-# Run the dashboard in dev mode / Dashboard em modo de desenvolvimento
+# Run the dashboard in dev mode
 make web-dev
 
-# Cross-compile for all platforms / Compilar para todas as plataformas
+# Cross-compile for all platforms
 make cross-compile
 ```
 
-### Project structure / Estrutura do projeto
+### Project structure
 
 ```
 apps/orchestrator/src/
@@ -242,17 +233,13 @@ apps/orchestrator/src/
 
 ---
 
-## Philosophy / Filosofia
+## Philosophy
 
 > *Ask before doing. Orchestrate, never execute. Maximize parallelism. Quality over speed. Human in the loop.*
 
-> *Perguntar antes de fazer. Orquestrar, nunca executar. Maximizar paralelismo. Qualidade sobre velocidade. Humano no controle.*
-
 Oraculo is built on the conviction that most AI-generated code problems are requirements problems. The agent understood the wrong thing, made a scope assumption, or skipped a constraint that wasn't written down. The fix isn't faster agents — it's a better process before the agents start.
 
-O Oraculo é construído na convicção de que a maioria dos problemas com código gerado por IA são problemas de requisitos. O agente entendeu errado, fez uma suposição de escopo ou pulou uma restrição que não foi documentada. A solução não são agentes mais rápidos — é um processo melhor antes dos agentes começarem.
-
-Full philosophy / Filosofia completa: [docs/philosophy.md](docs/philosophy.md)
+Full philosophy: [docs/philosophy.md](docs/philosophy.md)
 
 ---
 
