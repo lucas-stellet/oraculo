@@ -3,7 +3,9 @@ module github.com/lucas/oraculo/apps/desktop
 go 1.25.0
 
 require (
-	github.com/lucas/oraculo v0.0.0
+	github.com/coder/websocket v1.8.14
+	github.com/gen2brain/beeep v0.11.2
+	github.com/gofrs/flock v0.13.0
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.74
 )
 
@@ -15,18 +17,15 @@ require (
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
-	github.com/coder/websocket v1.8.14 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.1 // indirect
 	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/esiqveland/notify v0.13.3 // indirect
-	github.com/gen2brain/beeep v0.11.2 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.7.0 // indirect
 	github.com/go-git/go-git/v5 v5.16.4 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
-	github.com/gofrs/flock v0.13.0 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jackmordaunt/icns/v3 v3.0.1 // indirect
@@ -57,5 +56,3 @@ require (
 	golang.org/x/text v0.33.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
-
-replace github.com/lucas/oraculo => ../..

@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lucas/oraculo/apps/backend/src/registry"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -47,14 +46,14 @@ func (s *LauncherService) ServiceShutdown() error {
 
 func (s *LauncherService) ListProjects(ctx context.Context) ([]ProjectWithStatus, error) {
 	projects, _ := readProjects()
-	regPath, err := registry.DefaultPath()
+	regPath, err := registryDefaultPath()
 	if err != nil {
 		return nil, err
 	}
-	entries, _ := registry.List(regPath)
+	entries, _ := registryList(regPath)
 
-	serverMap := make(map[string]registry.Entry)
-	var alive []registry.Entry
+	serverMap := make(map[string]registryEntry)
+	var alive []registryEntry
 	for _, e := range entries {
 		if processAlive(e.PID) {
 			serverMap[e.Path] = e
@@ -64,7 +63,7 @@ func (s *LauncherService) ListProjects(ctx context.Context) ([]ProjectWithStatus
 
 	// Clean orphaned entries
 	if len(alive) != len(entries) {
-		_ = registry.WriteAll(regPath, alive)
+		_ = registryWriteAll(regPath, alive)
 	}
 
 	var result []ProjectWithStatus
@@ -124,7 +123,7 @@ func (s *LauncherService) RemoveProject(ctx context.Context, projectPath string)
 }
 
 func (s *LauncherService) StartServer(ctx context.Context, projectPath string) error {
-	regPath, _ := registry.DefaultPath()
+	regPath, _ := registryDefaultPath()
 
 	// If already registered and healthy, just connect the monitor.
 	if port := s.healthyPort(regPath, projectPath); port != 0 {
@@ -183,7 +182,7 @@ func (s *LauncherService) StartServer(ctx context.Context, projectPath string) e
 }
 
 func (s *LauncherService) healthyPort(regPath, projectPath string) int {
-	entries, _ := registry.List(regPath)
+	entries, _ := registryList(regPath)
 	for _, e := range entries {
 		if e.Path == projectPath {
 			resp, err := http.Get(fmt.Sprintf("http://localhost:%d/health", e.Port))
