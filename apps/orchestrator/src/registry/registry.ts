@@ -32,7 +32,8 @@ export async function list(registryPath: string): Promise<ServerEntry[]> {
   }
 
   const file = Bun.file(registryPath);
-  const entries: ServerEntry[] = await file.json();
+  const data = await file.json();
+  const entries: ServerEntry[] = Array.isArray(data) ? data : [];
 
   return entries.filter((e) => isProcessRunning(e.pid));
 }
@@ -80,7 +81,8 @@ async function readRaw(registryPath: string): Promise<ServerEntry[]> {
     return [];
   }
   const file = Bun.file(registryPath);
-  return await file.json();
+  const data = await file.json();
+  return Array.isArray(data) ? data : [];
 }
 
 /**

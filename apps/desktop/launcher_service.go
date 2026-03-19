@@ -133,6 +133,9 @@ func (s *LauncherService) StartServer(ctx context.Context, projectPath string) e
 
 	// Open log file so the daemon writes to .oraculo/server.log.
 	logPath := filepath.Join(projectPath, ".oraculo", "server.log")
+	if err := os.MkdirAll(filepath.Dir(logPath), 0o755); err != nil {
+		return fmt.Errorf("create log dir: %w", err)
+	}
 	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return fmt.Errorf("open log file: %w", err)
