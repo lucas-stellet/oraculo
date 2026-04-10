@@ -54,7 +54,7 @@ function EpicLayoutInner({ children }: { children: React.ReactNode }) {
   useWebSocket(handleWS);
 
   return (
-    <div className="flex overflow-hidden bg-[#020617]" style={{ height: "calc(100vh - var(--titlebar-height))" }}>
+    <div className="flex h-full overflow-hidden bg-[#020617]">
       <Sidebar
         epicId={epicName}
         epicName={epicName}

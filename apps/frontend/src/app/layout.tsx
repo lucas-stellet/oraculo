@@ -40,7 +40,7 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <ServerProvider>
-            <main className="min-h-screen bg-background">
+            <main className="h-full bg-background">
               {children}
             </main>
           </ServerProvider>
